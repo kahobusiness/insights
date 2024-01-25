@@ -8,8 +8,9 @@ const config: DocsThemeConfig = {
   },
   docsRepositoryBase: 'https://github.com/kahobusiness/docs-kaho-io/tree/main/',
   navigation: false,
-  themeSwitch: {
-    component: false,
+  darkMode: false,
+  nextThemes: {
+    defaultTheme: 'light',
   },
   editLink: {
     component: null,
