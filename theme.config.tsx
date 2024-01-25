@@ -19,7 +19,7 @@ const config: DocsThemeConfig = {
   },
   useNextSeoProps() {
     return {
-      titleTemplate: '%s – Insight'
+      titleTemplate: '%s – 👀 Insight'
     }
   },
 }
