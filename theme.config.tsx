@@ -2,16 +2,25 @@ import React from 'react'
 import { DocsThemeConfig } from 'nextra-theme-docs'
 
 const config: DocsThemeConfig = {
-  logo: <span>Kaho's Project</span>,
+  logo: <span style={{ fontSize: '22px', fontWeight: 700 }}>👀 Insight</span>,
   project: {
-    link: 'https://github.com/shuding/nextra-docs-template',
+    link: 'https://github.com/kahobusiness/docs-kaho-io',
   },
-  // chat: {
-  //   link: 'https://discord.com',
-  // },
-  // docsRepositoryBase: 'https://github.com/shuding/nextra-docs-template',
+  docsRepositoryBase: 'https://github.com/kahobusiness/docs-kaho-io/tree/main/',
+  navigation: false,
+  themeSwitch: {
+    component: false,
+  },
+  editLink: {
+    component: null,
+  },
   footer: {
-    text: '⚠️ On building ⚠️',
+    component: null,
+  },
+  useNextSeoProps() {
+    return {
+      titleTemplate: '%s – Insight'
+    }
   },
 }
 
