@@ -1,23 +1,12 @@
-# Nextra Docs Template 
+# 👋 你好,世界
 
-This is a template for creating documentation with [Nextra](https://nextra.site).
+经过一番折腾，终于把这个这个基于  [nextra](https://nextra.site) 的小站搭建起来了😄
 
-[**Live Demo →**](https://nextra-docs-template.vercel.app)
+* 利用 Vercel 部署
+* 利用 GitHub 托管
+* 在 PC 端利用 VSCode 对站点进行开发，利用 Typora 进行 Markdown 内容编辑
+* 在 iPad 端利用 Working Copy 与 GitHub 仓库连接并进行内容管理，利用 Tiao 进行Markdown 内容编辑
 
-[![](.github/screenshot.png)](https://nextra-docs-template.vercel.app)
+方案基本免费（为了体验购买了一个域名做绑定），服务稳定，在国内外都有不错的访问速度，PC/Mobile 上都可以愉快阅读，可以利用 git 实现多端同步和版本管理，可以利用 iPad 来写愉快写文，总体上找到了一个比较满意的解决方案。
 
-## Quick Start
-
-Click the button to clone this repository and deploy it on Vercel:
-
-[![](https://vercel.com/button)](https://vercel.com/new/clone?s=https%3A%2F%2Fgithub.com%2Fshuding%2Fnextra-docs-template&showOptionalTeamCreation=false)
-
-## Local Development
-
-First, run `pnpm i` to install the dependencies.
-
-Then, run `pnpm dev` to start the development server and visit localhost:3000.
-
-## License
-
-This project is licensed under the MIT License.
+小站会不定期更新一些产品经理的工作心得、工具产品体验分享、旅游见闻等。希望能对你有帮助或启发 ❤️
