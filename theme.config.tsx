@@ -13,7 +13,7 @@ const config: DocsThemeConfig = {
     defaultTheme: 'light',
   },
   editLink: {
-    component: null,
+    text: null
   },
   footer: {
     component: null,
