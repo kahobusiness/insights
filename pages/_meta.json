@@ -1,9 +1,16 @@
 {
     "index": "👋 你好，世界",
     "logs": "📔 更新日志",
-    "thoughts": {
+    "-- thoughts": {
         "type": "separator",
-        "title":"产品思维"
+        "title": "产品思维"
     },
-    "journey": "旅行"
+    "user": "用户",
+    "iteration": "迭代",
+    "commercialization": "商业化",
+    "-- journey": {
+        "type": "separator",
+        "title": "旅行"
+    },
+    "japan-journey": "🇯🇵 端午日本游记"
 }
