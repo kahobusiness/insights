@@ -1,6 +1,9 @@
 {
     "index": "👋 你好，世界",
     "logs": "📔 更新日志",
-    "product-design": "产品设计",
+    "thoughts": {
+        "type": "separator",
+        "title":"产品思维"
+    },
     "journey": "旅行"
 }
