@@ -4,9 +4,9 @@ import { DocsThemeConfig } from 'nextra-theme-docs'
 const config: DocsThemeConfig = {
   logo: <span style={{ fontSize: '22px', fontWeight: 700 }}>👀 Insight</span>,
   project: {
-    link: 'https://github.com/kahobusiness/docs-kaho-io',
+    link: 'https://github.com/kahobusiness/insights',
   },
-  docsRepositoryBase: 'https://github.com/kahobusiness/docs-kaho-io/tree/main/',
+  docsRepositoryBase: 'https://github.com/kahobusiness/insights/tree/main/',
   navigation: false,
   darkMode: false,
   nextThemes: {
@@ -14,6 +14,9 @@ const config: DocsThemeConfig = {
   },
   editLink: {
     text: null
+  },
+  feedback: {
+    content: "评论、讨论请移步 →"
   },
   footer: {
     component: null,
