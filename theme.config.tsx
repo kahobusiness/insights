@@ -15,6 +15,9 @@ const config: DocsThemeConfig = {
   editLink: {
     text: null
   },
+  feedback: {
+    content: "评论、讨论请移步 →"
+  },
   footer: {
     component: null,
   },
