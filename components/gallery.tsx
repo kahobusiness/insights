@@ -34,7 +34,7 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
   return (
     <div>
       {images.map((src, index) => (
-        <img key={index} src={src} alt={`Image ${index}`} style={{ maxWidth: '100%', height: 'auto' }} />
+        <img key={index} src={src} alt={`Image ${src}`} style={{ maxWidth: '100%', height: 'auto' }} />
       ))}
     </div>
   );
