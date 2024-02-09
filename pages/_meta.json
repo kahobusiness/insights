@@ -8,9 +8,14 @@
     "user": "用户",
     "iteration": "迭代",
     "commercialization": "商业化",
+    "ai-era": "AI 时代",
     "-- journey": {
         "type": "separator",
         "title": "旅行"
     },
-    "japan-journey": "🇯🇵 端午日本游记"
+    "japan-journey": "🇯🇵 端午日本游记",
+    "japan-gallery": {
+        "display": "hidden",
+        "title": "📷 旅行画册：日本"
+    }
 }
