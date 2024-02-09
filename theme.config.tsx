@@ -23,7 +23,7 @@ const config: DocsThemeConfig = {
   },
   useNextSeoProps() {
     return {
-      titleTemplate: '%s – 👀 Insights'
+      titleTemplate: '%s – 👀Insights'
     }
   },
 }
