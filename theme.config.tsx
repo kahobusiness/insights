@@ -16,7 +16,7 @@ const config: DocsThemeConfig = {
     text: null
   },
   feedback: {
-    content: "评论、讨论请移步 →"
+    content: "评论请移步 / Click to Comment →"
   },
   footer: {
     component: null,
