@@ -26,6 +26,10 @@ const config: DocsThemeConfig = {
       titleTemplate: '%s – 👀Insights'
     }
   },
+  i18n: [
+    { locale: 'zh-CN', text: '中文 (Translate)' },
+    { locale: 'en-US', text: 'English (翻译)' }
+  ]
 }
 
 export default config
