@@ -11,9 +11,9 @@
     "ai-era": "AI Era",
     "-- journey": {
         "type": "separator",
-        "title": "Journery"
+        "title": "Journey"
     },
-    "japan-journey": "🇯🇵 A tour to Japan",
+    "japan-journey": "🇯🇵 Japan Journey",
     "japan-gallery": {
         "display": "hidden",
         "title": "📷 Gallery：Japan"
