@@ -1,0 +1,21 @@
+{
+    "index": "👋 Hello, World!",
+    "logs": "📔 Change Logs",
+    "-- thoughts": {
+        "type": "separator",
+        "title": "Product Thinking"
+    },
+    "user": "User",
+    "iteration": "Iteration",
+    "commercialization": "Commercialization",
+    "ai-era": "AI Era",
+    "-- journey": {
+        "type": "separator",
+        "title": "Journey"
+    },
+    "japan-journey": "🇯🇵 Japan Journey",
+    "japan-gallery": {
+        "display": "hidden",
+        "title": "📷 Gallery：Japan"
+    }
+}
