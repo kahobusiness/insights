@@ -1,8 +1,8 @@
 //这是一个客户端组件，通过 fetch 调用 /pages/api/images.tsx 中的 API，获取指定的图片数据
 
-import { useEffect, useState } from 'react';
-import styles from './gallery.module.css'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import styles from './gallery.module.css'
 
 interface Image {
   src: string;
