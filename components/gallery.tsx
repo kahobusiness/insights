@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import styles from './gallery.module.css'
+import Image from 'next/image'
 
 interface Image {
   src: string;
@@ -34,6 +35,45 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
     fetchImages();
   }, [filePath]);
 
+  //懒加载视口
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries, observer) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            const src = img.getAttribute('data-src');
+            img.setAttribute('src', src);
+            observer.unobserve(img);
+          }
+        });
+      },
+      {
+        rootMargin: '0px',
+        threshold: 0.1,
+      }
+    );
+
+    return () => observer.disconnect();
+  }, [images]);
+
+  useEffect(() => {
+    // 处理 Esc 键的函数
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isModalOpen) {
+        setIsModalOpen(false);
+      }
+    };
+
+    // 当模态窗口打开时，添加键盘事件监听
+    document.addEventListener('keydown', handleKeyDown);
+
+    // 清理函数：组件卸载时移除事件监听
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isModalOpen]); // 依赖项包括 isModalOpen 状态，确保每次状态变化时都正确设置监听器
+
   useEffect(() => {
     if (isModalOpen) {
       // 模态窗口打开时禁止页面滚动
@@ -63,10 +103,12 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
     <div>
       <div className={styles.gallery}>
         {images.map((src, index) => (
-          <img
+          <Image
             key={index}
             src={src}
-            alt={`Image ${src}`}
+            alt={`Image: ${src}`}
+            width={500}
+            height={500}
             onClick={() => openModal(src)}
             style={{ maxWidth: '100%', height: 'auto', cursor: 'pointer' }}
           />
