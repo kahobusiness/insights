@@ -7,7 +7,7 @@ import { StaticImport } from 'next/dist/shared/lib/get-img-props';
 
 interface Image {
   src: string;
-  blurBase64?: string; // 可选属性
+  blurBase64: string;
 }
 
 const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
@@ -19,7 +19,7 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
     const fetchImages = async () => {
       try {
 
-        // 在URL中包含查询参数
+        // 在 URL 中包含查询参数
         const url = new URL('/api/images', window.location.origin);
         url.searchParams.append('filePath', filePath);
         // 调取 API 获取图片
@@ -27,8 +27,11 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
-        const data = await response.json();
-        setImages(data.images);
+        const data = await response.json() as { images: { src: string; blurBase64: string }[] };
+
+        if (data.images && Array.isArray(data.images)) {
+          setImages(data.images); // 确保这里的data.images是ImageData[]类型
+        }
       } catch (error) {
         console.error("Fetching images failed", error);
       }
@@ -36,28 +39,6 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
 
     fetchImages();
   }, [filePath]);
-
-  //懒加载视口
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries, observer) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const img = entry.target;
-            const src = img.getAttribute('data-src');
-            img.setAttribute('src', src);
-            observer.unobserve(img);
-          }
-        });
-      },
-      {
-        rootMargin: '0px',
-        threshold: 0.1,
-      }
-    );
-
-    return () => observer.disconnect();
-  }, [images]);
 
   useEffect(() => {
     // 处理 Esc 键的函数
