@@ -102,16 +102,16 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
   return (
     <div>
       <div className={styles.gallery}>
-        {images.map((src, index) => (
+        {images.map((image, index) => (
           <Image
             key={index}
-            src={src}
-            alt={`Image ${src}`}
-            width={500}
-            height={500}
+            src={image.src}
+            alt={`Image ${image.src}`}
+            width={600}
+            height={400}
             placeholder='blur'
-            blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mM8IQkAAa8A48opxD0AAAAASUVORK5CYII='
-            onClick={() => openModal(src)}
+            blurDataURL={image.blurBase64}
+            onClick={() => openModal(image.src)}
             style={{ maxWidth: '100%', height: 'auto', cursor: 'pointer' }}
           />
         ))}
