@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import styles from './gallery.module.css'
+import { StaticImport } from 'next/dist/shared/lib/get-img-props';
 
 interface Image {
   src: string;
@@ -102,7 +103,7 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
   return (
     <div>
       <div className={styles.gallery}>
-        {images.map((image, index) => (
+        {images.map((image: { src: string; blurBase64: string; }, index) => (
           <Image
             key={index}
             src={image.src}
