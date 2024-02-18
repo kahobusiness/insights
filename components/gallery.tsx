@@ -7,6 +7,7 @@ import { StaticImport } from 'next/dist/shared/lib/get-img-props';
 
 interface Image {
   src: string;
+  blurBase64?: string; // 可选属性
 }
 
 const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
