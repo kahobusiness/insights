@@ -21,6 +21,7 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
         // 在 URL 中包含查询参数
         const url = new URL('/api/images', window.location.origin);
         url.searchParams.append('filePath', filePath);
+        
         // 调取 API 获取图片
         const response = await fetch(url.toString());
         if (!response.ok) {
