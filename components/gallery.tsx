@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import styles from './gallery.module.css'
-import { StaticImport } from 'next/dist/shared/lib/get-img-props';
 
 interface Image {
   src: string;
@@ -11,7 +10,7 @@ interface Image {
 }
 
 const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<Image[]>([]);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [currentImage, setCurrentImage] = useState<string>('');
 
