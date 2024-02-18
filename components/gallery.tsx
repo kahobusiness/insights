@@ -110,7 +110,7 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
             width={500}
             height={500}
             placeholder='blur'
-            blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mM8MRMAAi8BYwiZfwEAAAAASUVORK5CYII='
+            blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mM8IQkAAa8A48opxD0AAAAASUVORK5CYII='
             onClick={() => openModal(src)}
             style={{ maxWidth: '100%', height: 'auto', cursor: 'pointer' }}
           />
