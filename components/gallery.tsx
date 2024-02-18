@@ -103,7 +103,7 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
   return (
     <div>
       <div className={styles.gallery}>
-        {images.map((image: { src: string; blurBase64: string; }, index) => (
+        {images.map((image, index) => (
           <Image
             key={index}
             src={image.src}
