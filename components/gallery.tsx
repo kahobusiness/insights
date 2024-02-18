@@ -9,7 +9,7 @@ interface Image {
 }
 
 const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<Image[]>([]);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [currentImage, setCurrentImage] = useState<string>('');
 
@@ -17,16 +17,21 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
     const fetchImages = async () => {
       try {
 
-        // 在URL中包含查询参数
+        // 在 URL 中包含查询参数
         const url = new URL('/api/images', window.location.origin);
         url.searchParams.append('filePath', filePath);
+        
         // 调取 API 获取图片
         const response = await fetch(url.toString());
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
+
         const data = await response.json();
-        setImages(data.images);
+
+        if (data.images && Array.isArray(data.images)) {
+          setImages(data.images); // 确保这里的data.images是ImageData[]类型
+        }
       } catch (error) {
         console.error("Fetching images failed", error);
       }
@@ -34,28 +39,6 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
 
     fetchImages();
   }, [filePath]);
-
-  //懒加载视口
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries, observer) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const img = entry.target;
-            const src = img.getAttribute('data-src');
-            img.setAttribute('src', src);
-            observer.unobserve(img);
-          }
-        });
-      },
-      {
-        rootMargin: '0px',
-        threshold: 0.1,
-      }
-    );
-
-    return () => observer.disconnect();
-  }, [images]);
 
   useEffect(() => {
     // 处理 Esc 键的函数
@@ -102,14 +85,16 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
   return (
     <div>
       <div className={styles.gallery}>
-        {images.map((src, index) => (
+        {images.map((image, index) => (
           <Image
             key={index}
-            src={src}
-            alt={`Image: ${src}`}
-            width={500}
-            height={500}
-            onClick={() => openModal(src)}
+            src={image.src}
+            alt={`Image ${image.src}`}
+            width={600}
+            height={400}
+            placeholder='blur'
+            blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mM8IQkAAa8A48opxD0AAAAASUVORK5CYII='
+            onClick={() => openModal(image.src)}
             style={{ maxWidth: '100%', height: 'auto', cursor: 'pointer' }}
           />
         ))}

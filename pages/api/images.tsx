@@ -5,8 +5,8 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import fs from 'fs';
 import path from 'path';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+
   // 接受传入的参数作为文件查询路径
   let { filePath } = req.query;
 
@@ -22,14 +22,22 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   // 读取指定目录下的文件
   const imagesDirectory = path.join(process.cwd(), 'public', filePath as string);
-  fs.readdir(imagesDirectory, (err, files) => {
-    if (err) {
-      return res.status(500).json({ error: 'Failed to read directory' });
-    }
 
-    // 过滤文件列表以返回所需的数据格式，例如只返回文件名
-    const images = files.map(file => `/${filePath}/${file}`);
+  try {
+    // 返回所需要的图片数据
+    const files = await fs.promises.readdir(imagesDirectory);
+    const images = await Promise.all(
+      files.map(async (file) => {
+        const imagePath = path.join(imagesDirectory, file);
+        return {
+          src: `/${filePath}/${file}`,
+        };
+      })
+    );
 
-    res.status(200).json({ images });
-  });
+    res.status(200).json({ images: images });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to read the images' });
+  };
 }

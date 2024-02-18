@@ -10,16 +10,19 @@ const config: DocsThemeConfig = {
   navigation: false,
   darkMode: false,
   nextThemes: {
-    defaultTheme: 'light',
+    defaultTheme: 'light'
+  },
+  toc: {
+    title: 'TOC / 大纲 '
   },
   editLink: {
     text: null
   },
   feedback: {
-    content: "评论请移步 / Click to Comment →"
+    content: "Click to Comment / 评论请移步 →"
   },
   footer: {
-    component: null,
+    component: null
   },
   useNextSeoProps() {
     return {
