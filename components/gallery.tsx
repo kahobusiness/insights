@@ -6,7 +6,6 @@ import styles from './gallery.module.css'
 
 interface Image {
   src: string;
-  blurBase64: string;
 }
 
 const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
@@ -27,7 +26,8 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
-        const data = await response.json() as { images: { src: string; blurBase64: string }[] };
+
+        const data = await response.json();
 
         if (data.images && Array.isArray(data.images)) {
           setImages(data.images); // 确保这里的data.images是ImageData[]类型
@@ -93,7 +93,7 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
             width={600}
             height={400}
             placeholder='blur'
-            blurDataURL={image.blurBase64}
+            blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mM8IQkAAa8A48opxD0AAAAASUVORK5CYII='
             onClick={() => openModal(image.src)}
             style={{ maxWidth: '100%', height: 'auto', cursor: 'pointer' }}
           />

@@ -4,8 +4,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import fs from 'fs';
 import path from 'path';
-import { getPlaiceholder } from 'plaiceholder';
-
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
 
@@ -27,23 +25,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // 返回所需要的图片数据
-    // 同时为每个文件生成模糊占位符，以 base64 返回
     const files = await fs.promises.readdir(imagesDirectory);
-    const imagesWithPlaceholder = await Promise.all(
+    const images = await Promise.all(
       files.map(async (file) => {
         const imagePath = path.join(imagesDirectory, file);
-        const imageBuffer = await fs.promises.readFile(imagePath);
-        const { base64 } = await getPlaiceholder(imageBuffer);
         return {
           src: `/${filePath}/${file}`,
-          blurBase64: base64,
         };
       })
     );
 
-    res.status(200).json({ images: imagesWithPlaceholder });
+    res.status(200).json({ images: images });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to read the images or generate plaiceholders' });
+    res.status(500).json({ error: 'Failed to read the images' });
   };
 }
