@@ -106,9 +106,11 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
           <Image
             key={index}
             src={src}
-            alt={`Image: ${src}`}
+            alt={`Image ${src}`}
             width={500}
             height={500}
+            placeholder='blur'
+            blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mM8MRMAAi8BYwiZfwEAAAAASUVORK5CYII='
             onClick={() => openModal(src)}
             style={{ maxWidth: '100%', height: 'auto', cursor: 'pointer' }}
           />
