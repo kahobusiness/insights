@@ -15,7 +15,11 @@
     },
     "japan-journey": "🇯🇵 Journey Through Japan",
     "japan-gallery": {
+        "type": "page",
         "display": "hidden",
-        "title": "📷 Gallery：Japan"
+        "title": "📷 Gallery：Japan",
+        "theme": {
+            "typesetting": "article"
+        }
     }
 }

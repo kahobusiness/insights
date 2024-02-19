@@ -15,7 +15,11 @@
     },
     "japan-journey": "🇯🇵 端午日本游记",
     "japan-gallery": {
+        "type": "page",
         "display": "hidden",
-        "title": "📷 旅行画册：日本"
+        "title": "📷 旅行画册：日本",
+        "theme": {
+            "typesetting": "article"
+        }
     }
 }
