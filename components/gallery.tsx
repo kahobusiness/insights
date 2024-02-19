@@ -4,14 +4,17 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import styles from './gallery.module.css'
 
+import LightGallery from 'lightgallery/react'
+import lgZoom from 'lightgallery/plugins/zoom'
+import 'lightgallery/css/lightgallery.css'
+import 'lightgallery/css/lg-zoom.css'
+
 interface Image {
   src: string;
 }
 
 const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
   const [images, setImages] = useState<Image[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [currentImage, setCurrentImage] = useState<string>('');
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -20,7 +23,7 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
         // 在 URL 中包含查询参数
         const url = new URL('/api/images', window.location.origin);
         url.searchParams.append('filePath', filePath);
-        
+
         // 调取 API 获取图片
         const response = await fetch(url.toString());
         if (!response.ok) {
@@ -40,70 +43,42 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
     fetchImages();
   }, [filePath]);
 
-  useEffect(() => {
-    // 处理 Esc 键的函数
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isModalOpen) {
-        setIsModalOpen(false);
-      }
-    };
-
-    // 当模态窗口打开时，添加键盘事件监听
-    document.addEventListener('keydown', handleKeyDown);
-
-    // 清理函数：组件卸载时移除事件监听
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isModalOpen]); // 依赖项包括 isModalOpen 状态，确保每次状态变化时都正确设置监听器
-
-  useEffect(() => {
-    if (isModalOpen) {
-      // 模态窗口打开时禁止页面滚动
-      document.body.style.overflow = 'hidden';
-    } else {
-      // 模态窗口关闭时允许页面滚动
-      document.body.style.overflow = '';
-    }
-
-    // 组件卸载时恢复滚动
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isModalOpen]);
-
-  //实现点击图片时能放大显示
-  const openModal = (src: string) => {
-    setCurrentImage(src);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
+  const getAltFromSrc = (src) => {
+    const parts = src.split('/');
+    const lastPart = parts[parts.length - 1];
+    return lastPart.split('.')[0]; // 移除文件扩展名
   };
 
   return (
-    <div>
-      <div className={styles.gallery}>
+    <div className={styles.gallery}>
+      <LightGallery
+        licenseKey='852-0769-020-9527'
+        plugins={[lgZoom]}
+        backdropDuration={150}
+        mode="lg-fade"
+        speed={300}
+        download={false}
+        mousewheel={true}
+      //更多 LightGallery 设置见：https://www.lightgalleryjs.com/docs/settings/
+      >
         {images.map((image, index) => (
-          <Image
+          <a
             key={index}
-            src={image.src}
-            alt={`Image ${image.src}`}
-            width={600}
-            height={400}
-            placeholder='blur'
-            blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mM8IQkAAa8A48opxD0AAAAASUVORK5CYII='
-            onClick={() => openModal(image.src)}
-            style={{ maxWidth: '100%', height: 'auto', cursor: 'pointer' }}
-          />
+            data-src={image.src}
+          >
+            <Image
+              key={index}
+              src={image.src}
+              alt={`Image: ${getAltFromSrc(image.src)}`}
+              width={600}
+              height={400}
+              placeholder='blur'
+              blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mM8IQkAAa8A48opxD0AAAAASUVORK5CYII='
+              style={{ maxWidth: '100%', height: 'auto', cursor: 'pointer' }}
+            />
+          </a>
         ))}
-      </div>
-      {isModalOpen && (
-        <div className={styles.modal} onClick={closeModal}>
-          <img src={currentImage} alt={`Image ${currentImage}`} style={{ maxWidth: '90%', maxHeight: '90%' }} />
-        </div>
-      )}
+      </LightGallery>
     </div>
   );
 };

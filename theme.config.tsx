@@ -3,6 +3,7 @@ import { DocsThemeConfig } from 'nextra-theme-docs'
 
 const config: DocsThemeConfig = {
   logo: <span style={{ fontSize: '22px', fontWeight: 700 }}>👀 Insights</span>,
+  faviconGlyph: '👀',
   project: {
     link: 'https://github.com/kahobusiness/insights',
   },
