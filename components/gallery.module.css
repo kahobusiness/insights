@@ -16,17 +16,7 @@
     width: 100%;
     height: auto;
     border-radius: 4px;
-    display: block; /* 防止图片下方有间隙 */
     margin-bottom: 4px; /* 在图片之间添加一些间隔 */
+    display: block; /* 防止图片下方有间隙 */
     break-inside: avoid; /* 防止图片被分割到不同的列 */
-}
-
-.modal {
-    z-index: 21;
-    position: fixed;
-    inset: 0px;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
