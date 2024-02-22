@@ -19,17 +19,29 @@ fs.readdir(targetDirectory, (err, files) => {
   }
 
   // 过滤文件列表以包含特定类型的文件，例如只有 jpg 图片
-  const imageFiles = files.filter(file => path.extname(file).toLowerCase() === '.jpg');
-
+  const imageFiles = files.filter(file => 
+    path.extname(file).toLowerCase() === '.jpg' || path.extname(file).toLowerCase() === '.png'
+  );
+  
   // 构建 images 数组
   const images = imageFiles.map(file => ({
     src: `/japan-journey/${file}`
   }));
 
-  // 将数组转换为字符串并打印出来
-  console.log('export const images = [');
-  images.forEach(image => {
-    console.log(`  { src: '${image.src}' },`);
+  //从 src 中取文件名
+  const getAltFromSrc = (src) => {
+    const parts = src.split('/');
+    const lastPart = parts[parts.length - 1];
+    return lastPart.split('.')[0]; // 移除文件扩展名
+  };
+
+  // 打印 images 数组
+  images.forEach((image, index) => {
+    console.log(`import image${index} from '../public${image.src}'`);
+  });
+  console.log('\nexport const images = [');
+  images.forEach((image, index) => {
+    console.log(`   { img: image${index}, src: '${image.src}' },`);
   });
   console.log('];');
 });
