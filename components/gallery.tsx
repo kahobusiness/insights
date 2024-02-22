@@ -51,6 +51,7 @@ const Gallery: React.FC<{ images: Image[] }> = ({ images }) => {
               key={index}
               src={image.img}
               alt={`Image: ${getAltFromSrc(image.src)}`}
+              placeholder='blur'
             />
           </a>
         ))}
