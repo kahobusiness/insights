@@ -1,6 +1,5 @@
 //这是一个客户端组件，通过 fetch 调用 /pages/api/images.tsx 中的 API，获取指定的图片数据
 
-import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import styles from './gallery.module.css'
 
@@ -9,39 +8,21 @@ import lgZoom from 'lightgallery/plugins/zoom'
 import 'lightgallery/css/lightgallery.css'
 import 'lightgallery/css/lg-zoom.css'
 
-interface Image {
+interface ImgDetails { // 使用 ImgDetails 接口作为 img 属性的类型
   src: string;
+  height: number;
+  width: number;
+  blurDataURL: string;
+  blurWidth: number;
+  blurHeight: number;
 }
 
-const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
-  const [images, setImages] = useState<Image[]>([]);
+interface Image {
+  img: ImgDetails; // 图片对象
+  src: string;  // 图片路径
+}
 
-  useEffect(() => {
-    const fetchImages = async () => {
-      try {
-
-        // 在 URL 中包含查询参数
-        const url = new URL('/api/images', window.location.origin);
-        url.searchParams.append('filePath', filePath);
-
-        // 调取 API 获取图片
-        const response = await fetch(url.toString());
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-
-        const data = await response.json();
-
-        if (data.images && Array.isArray(data.images)) {
-          setImages(data.images); // 确保这里的data.images是ImageData[]类型
-        }
-      } catch (error) {
-        console.error("Fetching images failed", error);
-      }
-    };
-
-    fetchImages();
-  }, [filePath]);
+const Gallery: React.FC<{ images: Image[] }> = ({ images }) => {
 
   const getAltFromSrc = (src) => {
     const parts = src.split('/');
@@ -68,13 +49,9 @@ const Gallery: React.FC<{ filePath: string }> = ({ filePath }) => {
           >
             <Image
               key={index}
-              src={image.src}
+              src={image.img}
               alt={`Image: ${getAltFromSrc(image.src)}`}
-              width={600}
-              height={400}
               placeholder='blur'
-              blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mM8IQkAAa8A48opxD0AAAAASUVORK5CYII='
-              style={{ maxWidth: '100%', height: 'auto', cursor: 'pointer' }}
             />
           </a>
         ))}
