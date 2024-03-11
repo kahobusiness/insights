@@ -1,4 +1,4 @@
-//这是一个客户端组件，通过 fetch 调用 /pages/api/images.tsx 中的 API，获取指定的图片数据
+//这是一个相册组件，接受页面传入的 images 数组，以画廊形式渲染
 
 import Image from 'next/image'
 import styles from './gallery.module.css'
