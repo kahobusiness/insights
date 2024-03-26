@@ -1,1 +1,31 @@
 # 💬 Annotation Reply
+## What is Annotated Reply
+
+Annotated reply refers to the ability to provide customizable high-quality question and answer capabilities for applications through manually editing Q&A pairs.
+
+## Applicable Scenarios of Annotated Reply
+
+1. Annotated reply is suitable for customizing answers in specific domains: For example, in customer service Q&A scenarios, for specific questions, if you want to ensure that the system answers with a "standard answer", or for some questions "do not answer", you can use the annotated reply ability to customize.
+2. Rapid tuning of product DEMO: In the POC stage of the product, customized answers can be achieved through annotated replies, to improve the generation expectations of Q&A results and improve the experience.
+
+The annotated reply is equivalent to providing another set of retrieval enhancement systems, bypassing the generation link of the large model, and avoiding the generation illusion problem of RAG.
+
+## Practice of Annotated Reply
+
+Before using the annotated reply capability, you need to make the following preparations:
+
+1. **Prepare Q&A pair data**: Provide the question and its standard answer
+2. **Vectorization of Q&A pair**: Vectorize the above Q&A pair, for subsequent retrieval
+
+When providing Q&A pair data, you can refer to the following table. In addition to the QA pair, an additional "similar question" column is added to improve the retrieval effect:
+
+| Question | Answer | Similar Question 1 | Similar Question 2 |
+| --- | --- | --- | --- |
+| What is the capital of Zhejiang Province? | Hangzhou | Where is the administrative center of Zhejiang Province? | Where is the provincial government of Zhejiang Province located? |
+| ... | ... | ... | ... |
+
+After completing the above preparations, the following steps can be executed when the user asks questions later:
+
+1. **Question Retrieval**: Vectorize the user's question and query whether there are similar annotated questions
+2. **Direct Answer**: If similar questions exist, directly return the answer corresponding to the question in the annotation, and do not pass it to RAG or LLM
+3. **RAG or LLM Answer**: If there are no similar questions, pass the question to RAG or LLM
