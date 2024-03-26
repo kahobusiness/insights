@@ -1,3 +1,6 @@
-.next
 .DS_Store
+.codesandbox
+.devcontainer
+.next
+/.github/dependabot.yml
 node_modules
