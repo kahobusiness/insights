@@ -31,7 +31,7 @@ const config: DocsThemeConfig = {
   navigation: false,
   darkMode: false,
   nextThemes: {
-    defaultTheme: 'light'
+    defaultTheme: 'dark'
   },
   toc: {
     title: 'TOC / 大纲 '
