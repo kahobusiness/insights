@@ -1,9 +1,9 @@
 {
   "dictionary": "📚 Dictionary",
-  "rag": "🔗 RAG",
+  "rag": "🔗 RAG Intro",
   "rag-r4": {
     "display": "hidden",
     "title": "🔗 Details of RAG R4 Link"
   },
-  "annotation-reply": "💬 annotation-reply"
+  "annotation-reply": "💬 Annotation Reply"
 }
