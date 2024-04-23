@@ -29,7 +29,7 @@ const config: DocsThemeConfig = {
   },
   docsRepositoryBase: 'https://github.com/kahobusiness/insights/tree/main/',
   navigation: false,
-  darkMode: false,
+  darkMode: true,
   nextThemes: {
     defaultTheme: 'dark'
   },
