@@ -1,5 +1,16 @@
 {
-  "translator": {
-    "translate": "🇬🇧 Translate"
-  }
+  "banner" : "欢迎来到我的小站！",
+  "editPage" : "编辑此页面",
+  "feedback" : "反馈",
+  "footer" : "© 2025 我的个人网站",
+  "lastUpdated" : "最后更新于：",
+  "searchEmptyResults" : "没有找到相关结果",
+  "searchError" : "搜索时出错，请稍后再试",
+  "searchPlaceholder" : "请输入搜索内容",
+  "searchLoding" : "正在搜索...",
+  "dark": "深色模式",
+  "light": "浅色模式",
+  "system": "跟随系统",
+  "backToTop": "返回顶部",
+  "tocTitle": "目录"
 }

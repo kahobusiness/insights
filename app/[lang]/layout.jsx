@@ -8,6 +8,11 @@ import 'nextra-theme-docs/style.css'
 export const metadata = {
   // ... your metadata API
   // https://nextjs.org/docs/app/building-your-application/optimizing/metadata
+  title: {
+    default: '👀 Insights',
+    template: '%s | 👀 Insights'
+  },
+  description: 'A collection of knowledge and experience about product design.'
 }
  
 export default async function RootLayout({ children, params }) {
@@ -23,11 +28,13 @@ export default async function RootLayout({ children, params }) {
       // Suggested by `next-themes` package https://github.com/pacocoursey/next-themes#with-app
       suppressHydrationWarning
     >
-      <Head />
+      <Head>
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
       <body>
         <Layout
           banner={<Banner storageKey="some-key">{dictionary.banner}</Banner>}
-          docsRepositoryBase="https://github.com/shuding/nextra/blob/main/examples/swr-site"
+          docsRepositoryBase="https://github.com/kahobusiness/insights"
           editLink={dictionary.editPage}
           feedback={{ content: dictionary.feedback }}
           footer={<Footer>{dictionary.footer}</Footer>}
@@ -36,7 +43,7 @@ export default async function RootLayout({ children, params }) {
             { locale: 'zh', name: '中文（Translate）' }
           ]}
           lastUpdated={<LastUpdated>{dictionary.lastUpdated}</LastUpdated>}
-          navbar={<Navbar logo={<b>Nextra</b>} />}
+          navbar={<Navbar logo={<b>👀 Insights</b>} />}
           pageMap={pageMap}
           search={
             <Search
