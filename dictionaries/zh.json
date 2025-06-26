@@ -1,9 +1,5 @@
 {
-  "server-component": {
-    "welcome": "你好"
-  },
-  "counter": {
-    "increment": "增加",
-    "decrement": "减少"
+  "translator": {
+    "translate": "🇬🇧 Translate"
   }
 }
