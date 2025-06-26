@@ -33,11 +33,11 @@ export default async function RootLayout({ children, params }) {
       </Head>
       <body>
         <Layout
-          banner={<Banner storageKey="some-key">{dictionary.banner}</Banner>}
+          // banner={<Banner storageKey="some-key">{dictionary.banner}</Banner>} // 禁用 banner
           docsRepositoryBase="https://github.com/kahobusiness/insights"
           editLink={dictionary.editPage}
           feedback={{ content: dictionary.feedback }}
-          footer={<Footer>{dictionary.footer}</Footer>}
+          // footer={<Footer>{dictionary.footer}</Footer>} // 禁用 footer
           i18n={[
             { locale: 'en', name: 'English（翻译）' },
             { locale: 'zh', name: '中文（Translate）' }

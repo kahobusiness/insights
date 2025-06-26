@@ -14,7 +14,10 @@
     "nextra-theme-docs": "^4.2.17",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "server-only": "0.0.1"
+    "server-only": "0.0.1",
+    "@vercel/analytics": "^1.1.2",
+    "@vercel/speed-insights": "^1.0.9",
+    "lightgallery": "^2.9.0"
   },
   "devDependencies": {
     "@types/negotiator": "0.6.3",

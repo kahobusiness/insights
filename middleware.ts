@@ -35,6 +35,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+    // 跳过 public 下的静态资源（常见扩展名）
+  if (
+    pathname.match(/\.(png|jpe?g|gif|svg|webp|ico|bmp|txt|xml|json|pdf|woff2?|ttf|eot|mp4|mp3|zip|rar)$/i)
+  ) {
+    return NextResponse.next();
+  }
+
   let response: NextResponse | undefined;
 
   // 访问根路径或语言根路径时，重定向到 say_hello

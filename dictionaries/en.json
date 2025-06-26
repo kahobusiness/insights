@@ -1,6 +1,6 @@
 {
   "banner" : "Welcome to our website!",
-  "editPage" : "Edit this page",
+  "editPage" : null,
   "feedback" : "Feedback",
   "footer" : "© 2025 All rights reserved.",
   "lastUpdated" : "Last updated: ",
