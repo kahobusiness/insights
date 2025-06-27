@@ -1,0 +1,16 @@
+{
+  "banner" : "Welcome to our website!",
+  "editPage" : null,
+  "feedback" : "Feedback",
+  "footer" : "© 2025 All rights reserved.",
+  "lastUpdated" : "Last updated: ",
+  "searchEmptyResults" : "No results found for your search.",
+  "searchError" : "An error occurred while searching. Please try again later.",
+  "searchPlaceholder" : "Search...",
+  "searchLoding" : "Loading search results...",
+  "dark": "Dark Mode",
+  "light": "Light Mode",
+  "system": "System Mode",
+  "backToTop": "Back to Top",
+  "tocTitle": "Table of Contents"
+}
