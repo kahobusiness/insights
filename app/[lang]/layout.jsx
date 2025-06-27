@@ -2,6 +2,10 @@ import { Footer, LastUpdated, Layout, Navbar } from 'nextra-theme-docs'
 import { Banner, Head, Search } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import { getDictionary, getDirection } from '../../get-dictionary'
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
+
+
 // Required for theme styles, previously was imported under the hood
 import 'nextra-theme-docs/style.css'
  
@@ -67,6 +71,8 @@ export default async function RootLayout({ children, params }) {
           }}
         >
           {children}
+          <Analytics />
+          <SpeedInsights />
         </Layout>
       </body>
     </html>
