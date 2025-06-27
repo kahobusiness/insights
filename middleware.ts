@@ -44,11 +44,11 @@ export function middleware(request: NextRequest) {
 
   let response: NextResponse | undefined;
 
-  // 访问根路径或语言根路径时，重定向到 say_hello
+  // 访问根路径或语言根路径时，重定向到 say-hello
   for (const locale of i18n.locales) {
     if (pathname === `/${locale}` || pathname === `/${locale}/`) {
       response = NextResponse.redirect(
-        new URL(`/${locale}/say_hello`, request.url)
+        new URL(`/${locale}/say-hello`, request.url)
       );
       response.cookies.set(LOCALE_COOKIE_NAME, locale, { path: "/" });
       return response;
@@ -57,7 +57,7 @@ export function middleware(request: NextRequest) {
   if (pathname === "/") {
     const locale = getLocale(request);
     response = NextResponse.redirect(
-      new URL(`/${locale}/say_hello`, request.url)
+      new URL(`/${locale}/say-hello`, request.url)
     );
     response.cookies.set(LOCALE_COOKIE_NAME, locale, { path: "/" });
     return response;

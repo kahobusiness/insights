@@ -1,3 +1,21 @@
 export default {
-  say_hello: 'Say Hello'
+  'say-hello': '👋 Hello, world!',
+  'logs': '📔 Change Logs',
+  'thoughts': {
+    type: 'separator',
+    title: 'Product Thinking'
+  },
+  'ai-era': ' AI Era',
+  'user': 'User Thinking',
+  'commercialization': 'Commercialization',
+  'journey': {
+    type: 'separator',
+    title: 'Travel'
+  },
+  'japan-journey': '🇯🇵 Japan Journey',
+  'japan-gallery': {
+    type: 'page',
+    display: 'hidden',
+    title: '📷 Journey Gallery: Japan'
+  }
 }

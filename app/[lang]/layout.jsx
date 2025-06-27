@@ -43,7 +43,10 @@ export default async function RootLayout({ children, params }) {
             { locale: 'zh', name: '中文（Translate）' }
           ]}
           lastUpdated={<LastUpdated>{dictionary.lastUpdated}</LastUpdated>}
-          navbar={<Navbar logo={<b>👀 Insights</b>} />}
+          navbar={<Navbar 
+            logo={<b style={{ fontSize: 22 }}>👀 Insights</b>} 
+            projectLink="https://github.com/kahobusiness/insights"
+            />}
           pageMap={pageMap}
           search={
             <Search
