@@ -20,12 +20,16 @@
       }
     ]
   },
-  "include": [
+    "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     "next.config.js",
-    ".next/types/**/*.ts"
-, "app/[lang]/page.mdx", "app/[lang]/layout.jsx", "app/[lang]/[[...mdxPath]]/page.jsx", "app/[lang]/[[...mdxPath]]/page.jsx", "app/[lang]/[[...mdxPath]]/page.jsx", "app/[lang]/not-found.js", "middleware.js"  ],
+    ".next/types/**/*.ts",
+    "app/[lang]/**/*.js",
+    "app/[lang]/**/*.jsx",
+    "app/[lang]/**/*.mdx",
+    "middleware.js"
+  ],
   "exclude": ["node_modules"]
 }
