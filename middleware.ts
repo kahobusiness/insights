@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
 import { i18n } from "./i18n-config";
 import { match as matchLocale } from "@formatjs/intl-localematcher";
 import Negotiator from "negotiator";
@@ -8,8 +7,8 @@ import Negotiator from "negotiator";
 const LOCALE_COOKIE_NAME = "NEXT_LOCALE";
 
 function getLocale(request: NextRequest): string {
-  // 1. 优先从 cookie 读取
   const cookieLocale = request.cookies.get(LOCALE_COOKIE_NAME)?.value;
+  // 优先从 cookie 读取有效语言
   if (
     cookieLocale &&
     (i18n.locales as readonly string[]).includes(cookieLocale)
@@ -17,77 +16,53 @@ function getLocale(request: NextRequest): string {
     return cookieLocale as typeof i18n.locales[number];
   }
 
-  // 2. 从 Accept-Language 头部自动检测
-  const negotiatorHeaders: Record<string, string> = {};
-  request.headers.forEach((value, key) => (negotiatorHeaders[key] = value));
-  const locales: string[] = i18n.locales.slice();
-  let languages = new Negotiator({ headers: negotiatorHeaders }).languages(locales);
-  const locale = matchLocale(languages, locales, i18n.defaultLocale);
-
-  return locale;
+  // 从请求头自动检测语言
+  const headers: Record<string, string> = {};
+  request.headers.forEach((v, k) => (headers[k] = v));
+  const languages = new Negotiator({ headers }).languages([...i18n.locales]);
+  return matchLocale(languages, i18n.locales, i18n.defaultLocale);
 }
 
 export function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
+  const { pathname } = request.nextUrl;
 
-  // 跳过 _pagefind 静态资源
-  if (pathname.startsWith('/_pagefind')) {
-    return NextResponse.next();
-  }
-
-    // 跳过 public 下的静态资源（常见扩展名）
+  // 跳过静态资源
   if (
+    pathname.startsWith('/_pagefind') ||
     pathname.match(/\.(png|jpe?g|gif|svg|webp|ico|bmp|txt|xml|json|pdf|woff2?|ttf|eot|mp4|mp3|zip|rar)$/i)
   ) {
     return NextResponse.next();
   }
 
-  let response: NextResponse | undefined;
-
-  // 访问根路径或语言根路径时，重定向到 say-hello
-  for (const locale of i18n.locales) {
-    if (pathname === `/${locale}` || pathname === `/${locale}/`) {
-      response = NextResponse.redirect(
-        new URL(`/${locale}/say-hello`, request.url)
-      );
-      response.cookies.set(LOCALE_COOKIE_NAME, locale, { path: "/" });
-      return response;
-    }
-  }
-  if (pathname === "/") {
+  // 根路径或语言根路径重定向到 say-hello
+  if (pathname === "/" || i18n.locales.some(locale => pathname === `/${locale}` || pathname === `/${locale}/`)) {
     const locale = getLocale(request);
-    response = NextResponse.redirect(
-      new URL(`/${locale}/say-hello`, request.url)
-    );
+    const url = new URL(`/${locale}/say-hello`, request.url);
+    const response = NextResponse.redirect(url);
     response.cookies.set(LOCALE_COOKIE_NAME, locale, { path: "/" });
     return response;
   }
 
-  // 检查路径中是否缺少 locale
-  const pathnameIsMissingLocale = i18n.locales.every(
-    (locale) =>
-      !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`,
+  // 路径缺少 locale，自动补全
+  const missingLocale = i18n.locales.every(
+    locale => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
   );
-
-  if (pathnameIsMissingLocale) {
+  if (missingLocale) {
     const locale = getLocale(request);
-    response = NextResponse.redirect(
-      new URL(
-        `/${locale}${pathname.startsWith("/") ? "" : "/"}${pathname}`,
-        request.url,
-      ),
-    );
+    const url = new URL(`/${locale}${pathname.startsWith("/") ? "" : "/"}${pathname}`, request.url);
+    const response = NextResponse.redirect(url);
     response.cookies.set(LOCALE_COOKIE_NAME, locale, { path: "/" });
     return response;
   }
 
-  // 如果路径中已包含 locale，则设置 cookie 方便下次使用
-  for (const locale of i18n.locales) {
-    if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
-      response = NextResponse.next();
-      response.cookies.set(LOCALE_COOKIE_NAME, locale, { path: "/" });
-      return response;
-    }
+  // 路径已包含 locale，设置 cookie
+  const matchedLocale = i18n.locales.find(
+    locale => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+  );
+  if (matchedLocale) {
+    const response = NextResponse.next();
+    response.cookies.set(LOCALE_COOKIE_NAME, matchedLocale, { path: "/" });
+    return response;
   }
 }
 
