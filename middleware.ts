@@ -19,7 +19,7 @@ function getLocale(request: NextRequest): string {
 
   // 2. 从 Accept-Language 头部自动检测
   const negotiatorHeaders: Record<string, string> = {};
-  request.headers.forEach((value, key) => (negotiatorHeaders[key] = value));
+  request.headers.forEach((value: string, key: string | number) => (negotiatorHeaders[key] = value));
   const locales: string[] = i18n.locales.slice();
   let languages = new Negotiator({ headers: negotiatorHeaders }).languages(locales);
   const locale = matchLocale(languages, locales, i18n.defaultLocale);
