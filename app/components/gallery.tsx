@@ -30,11 +30,11 @@ const Gallery: React.FC<{ images: Image[] }> = ({ images }) => {
     (src: string): string;
   }
 
-  const getAltFromSrc: GetAltFromSrc = (src) => {
-    const parts = src.split('/');
-    const lastPart = parts[parts.length - 1];
-    return lastPart.split('.')[0]; // 移除文件扩展名
-  };
+const getAltFromSrc: GetAltFromSrc = (src) => {
+  const parts = src.split('/');
+  const lastPart = parts[parts.length - 1] || '';
+  return lastPart.split('.')[0] || 'image'; // 保证始终返回 string
+}
 
   return (
     <div className={styles.gallery}>
