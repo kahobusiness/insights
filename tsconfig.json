@@ -1,19 +1,15 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "node16",
-    "moduleResolution": "node16",
+    "module": "esnext",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -24,7 +20,7 @@
       }
     ]
   },
-  "include": [
+    "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
@@ -33,10 +29,7 @@
     "app/[lang]/**/*.js",
     "app/[lang]/**/*.jsx",
     "app/[lang]/**/*.mdx",
-    "middleware.ts",
-    "app/components/gallery.tsx"
+    "middleware.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }
