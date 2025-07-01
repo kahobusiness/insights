@@ -3,6 +3,7 @@
 'use client';
 
 import Image from 'next/image'
+import type { StaticImageData } from 'next/image'
 import styles from './gallery.module.css'
 
 import LightGallery from 'lightgallery/react'
@@ -24,17 +25,15 @@ interface Image {
   src: string;  // 图片路径
 }
 
-const Gallery: React.FC<{ images: Image[] }> = ({ images }) => {
-
-  interface GetAltFromSrc {
-    (src: string): string;
-  }
-
-const getAltFromSrc: GetAltFromSrc = (src) => {
-  const parts = src.split('/');
-  const lastPart = parts[parts.length - 1] || '';
-  return lastPart.split('.')[0] || 'image'; // 保证始终返回 string
+interface GalleryProps {
+  images: StaticImageData[]; // 直接传图片对象数组
 }
+
+const Gallery: React.FC<GalleryProps> = ({ images }) => {
+  const getAltFromSrc = (src: string) => {
+    const last = src.split('/').pop() || '';
+    return last.split('.')[0] || 'image';
+  };
 
   return (
     <div className={styles.gallery}>
@@ -48,19 +47,15 @@ const getAltFromSrc: GetAltFromSrc = (src) => {
         mousewheel={true}
       //更多 LightGallery 设置见：https://www.lightgalleryjs.com/docs/settings/
       >
-        {images.map((image, index) => (
-          <a
-            key={index}
-            data-src={image.src}
-          >
+        {images.map((img, idx) => (
+          <a key={img.src} data-src={img.src}>
             <Image
-              key={index}
-              src={image.img.src}
-              alt={`Image: ${getAltFromSrc(image.src)}`}
-              width={image.img.width}
-              height={image.img.height}
+              src={img}
+              alt={getAltFromSrc(img.src)}
+              width={img.width}
+              height={img.height}
               placeholder='blur'
-              blurDataURL={image.img.blurDataURL}
+              blurDataURL={img.blurDataURL}
             />
           </a>
         ))}
