@@ -14,11 +14,11 @@
 
 小站会不定期更新一些产品经理的工作心得、工具产品体验分享、旅游见闻等。希望能对你有帮助或启发 ❤️
 
----
+--
 
 This is a casual blog about AI, product design, and travel.
 
-👉 [Visit it](https://insights.kaho.io)
+👉 [Visit the blog](https://insights.kaho.io)
 
 * Built with [nextra](https://nextra.site)
 * Deployed via Vercel
