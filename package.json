@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next",
+    "dev": "next dev --turbopack",
     "build": "next build && pagefind --site .next/server/app --output-path public/_pagefind",
     "start": "next start"
   },
