@@ -13,8 +13,8 @@ export const metadata = {
   // ... your metadata API
   // https://nextjs.org/docs/app/building-your-application/optimizing/metadata
   title: {
-    default: '👀 Insights',
-    template: '%s | 👀 Insights'
+    default: 'Insights',
+    template: '%s | Insights'
   },
   description: 'A collection of knowledge and experience about product design.'
 }

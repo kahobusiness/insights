@@ -10,7 +10,7 @@ export default {
   'commercialization': 'Commercialization',
   'journey': {
     type: 'separator',
-    title: 'Travel'
+    title: 'Life Notes'
   },
   'japan-journey': '🇯🇵 Japan Journey',
   'japan-gallery': {
