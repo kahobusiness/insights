@@ -2,28 +2,38 @@ import { Footer, LastUpdated, Layout, Navbar } from 'nextra-theme-docs'
 import { Banner, Head, Search } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import { getDictionary, getDirection } from '../../get-dictionary'
-import { Analytics } from '@vercel/analytics/next';
-import { SpeedInsights } from '@vercel/speed-insights/next';
-
+import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
+import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
+import type { Locale } from '../../i18n-config'
 
 // Required for theme styles, previously was imported under the hood
 import 'nextra-theme-docs/style.css'
- 
-export const metadata = {
+
+interface LayoutProps {
+  children: ReactNode
+  params: Promise<{
+    lang: Locale
+  }>
+}
+
+export const metadata: Metadata = {
   // ... your metadata API
   // https://nextjs.org/docs/app/building-your-application/optimizing/metadata
   title: {
-    default: '👀 Insights',
-    template: '%s | 👀 Insights'
+    default: 'Insights',
+    template: '%s | Insights'
   },
   description: 'A collection of knowledge and experience about product design.'
 }
- 
-export default async function RootLayout({ children, params }) {
+
+export default async function RootLayout({ children, params }: LayoutProps): Promise<JSX.Element> {
   const { lang } = await params
   const pageMap = await getPageMap(lang)
   const direction = getDirection(lang)
   const dictionary = await getDictionary(lang)
+  
   return (
     <html
       lang={lang}
@@ -77,4 +87,4 @@ export default async function RootLayout({ children, params }) {
       </body>
     </html>
   )
-}
+} 

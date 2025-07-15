@@ -10,7 +10,7 @@ export default {
   'commercialization': '商业化',
   'journey': {
     type: 'separator',
-    title: '旅行'
+    title: '生活随记'
   },
   'japan-journey': '🇯🇵 端午日本游记',
   'japan-gallery': {

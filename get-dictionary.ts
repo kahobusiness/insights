@@ -11,6 +11,6 @@ const dictionaries = {
 export const getDictionary = async (locale: Locale) =>
   dictionaries[locale]?.() ?? dictionaries.en();
 
-export function getDirection(locale: Locale): 'ltr' | 'rtl' {
+export function getDirection(_locale: Locale): 'ltr' | 'rtl' {
       return 'ltr'
   }
