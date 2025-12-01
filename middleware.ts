@@ -5,6 +5,7 @@ import { match as matchLocale } from "@formatjs/intl-localematcher";
 import Negotiator from "negotiator";
 
 const LOCALE_COOKIE_NAME = "NEXT_LOCALE";
+const STATIC_FILE_REGEX = /\.(png|jpe?g|gif|svg|webp|ico|bmp|txt|xml|json|pdf|woff2?|ttf|eot|mp4|mp3|zip|rar)$/i;
 
 function getLocale(request: NextRequest): string {
   const cookieLocale = request.cookies.get(LOCALE_COOKIE_NAME)?.value;
@@ -29,7 +30,7 @@ export function middleware(request: NextRequest) {
   // 跳过静态资源
   if (
     pathname.startsWith('/_pagefind') ||
-    pathname.match(/\.(png|jpe?g|gif|svg|webp|ico|bmp|txt|xml|json|pdf|woff2?|ttf|eot|mp4|mp3|zip|rar)$/i)
+    STATIC_FILE_REGEX.test(pathname)
   ) {
     return NextResponse.next();
   }

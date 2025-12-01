@@ -1,0 +1,41 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+This is a bilingual (English/Chinese) blog built with Nextra 4 and Next.js 15, deployed on Vercel. The site covers AI, product design, and travel topics.
+
+## Development Commands
+
+```bash
+npm run dev      # Start dev server with Turbopack
+npm run build    # Build for production (includes pagefind search index generation)
+npm start        # Start production server
+```
+
+## Architecture
+
+### Content Structure
+- `content/en/` and `content/zh/` - MDX content files mirrored for both locales
+- `content/{locale}/_meta.js` - Navigation structure and page titles for Nextra
+- Navigation supports separators and hidden pages via `_meta.js` configuration
+
+### Internationalization
+- Locales: `en` (default), `zh`
+- `i18n-config.ts` - Locale configuration and types
+- `middleware.ts` - Handles locale detection (cookie → browser preference), redirects root to `/say-hello`
+- `dictionaries/` - UI strings for each locale (JSON files)
+- `get-dictionary.ts` - Server-only dictionary loader
+
+### Routing
+- Dynamic route: `app/[lang]/[[...mdxPath]]/page.tsx` handles all MDX pages
+- Root path and locale roots redirect to `/{locale}/say-hello`
+- Middleware auto-prepends locale to paths missing it
+
+### Custom Components
+- `app/components/gallery.tsx` - Image gallery component using LightGallery for photo pages
+- `mdx-components.js` - Custom MDX component configuration extending Nextra theme
+
+### Path Alias
+- `@app/*` maps to `./app/*`

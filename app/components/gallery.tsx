@@ -11,20 +11,6 @@ import lgZoom from 'lightgallery/plugins/zoom'
 import 'lightgallery/css/lightgallery.css'
 import 'lightgallery/css/lg-zoom.css'
 
-interface ImgDetails { // 使用 ImgDetails 接口作为 img 属性的类型
-  src: string;
-  height: number;
-  width: number;
-  blurDataURL: string;
-  blurWidth: number;
-  blurHeight: number;
-}
-
-interface Image {
-  img: ImgDetails; // 图片对象
-  src: string;  // 图片路径
-}
-
 interface GalleryProps {
   images: StaticImageData[]; // 直接传图片对象数组
 }

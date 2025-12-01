@@ -2,3 +2,12 @@
 node_modules
 .next
 _pagefind/
+
+# Logs
+*.log
+
+# Environment files
+.env*.local
+
+# Vercel
+.vercel
