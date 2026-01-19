@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a bilingual (English/Chinese) blog built with Nextra 4 and Next.js 15, deployed on Vercel. The site covers AI, product design, and travel topics.
+This is a bilingual (English/Chinese) blog built with Nextra 4 and Next.js 16, deployed on Vercel. The site covers AI, product design, and travel topics.
 
 ## Development Commands
 
@@ -24,14 +24,14 @@ npm start        # Start production server
 ### Internationalization
 - Locales: `en` (default), `zh`
 - `i18n-config.ts` - Locale configuration and types
-- `middleware.ts` - Handles locale detection (cookie → browser preference), redirects root to `/say-hello`
+- `proxy.ts` - Handles locale detection (cookie → browser preference), redirects root to `/say-hello` (Next.js 16 proxy convention)
 - `dictionaries/` - UI strings for each locale (JSON files)
 - `get-dictionary.ts` - Server-only dictionary loader
 
 ### Routing
 - Dynamic route: `app/[lang]/[[...mdxPath]]/page.tsx` handles all MDX pages
 - Root path and locale roots redirect to `/{locale}/say-hello`
-- Middleware auto-prepends locale to paths missing it
+- Proxy auto-prepends locale to paths missing it
 
 ### Custom Components
 - `app/components/gallery.tsx` - Image gallery component using LightGallery for photo pages
