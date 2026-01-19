@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   description: 'A collection of knowledge and experience about product design.'
 }
 
-export default async function RootLayout({ children, params }: LayoutProps): Promise<JSX.Element> {
+export default async function RootLayout({ children, params }: LayoutProps) {
   const { lang } = await params
   const pageMap = await getPageMap(lang)
   const direction = getDirection(lang)
