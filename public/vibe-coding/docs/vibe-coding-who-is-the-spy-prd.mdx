@@ -1,0 +1,1476 @@
+# 产品需求文档（PRD）- 谁是卧底游戏
+
+## 版本信息
+- 文档版本：1.0.0
+- 项目名称：谁是卧底 - 百宝箱单机版
+- 创建日期：2025-11-19
+- 文档目标：提供完整的技术规格，使 LLM 能够从零复刻此项目
+
+---
+
+## 目录
+1. [项目概览](#1-项目概览)
+2. [技术栈](#2-技术栈)
+3. [项目结构](#3-项目结构)
+4. [依赖配置](#4-依赖配置)
+5. [类型系统](#5-类型系统)
+6. [游戏规则](#6-游戏规则)
+7. [游戏数据](#7-游戏数据)
+8. [核心组件](#8-核心组件)
+9. [游戏状态管理](#9-游戏状态管理)
+10. [游戏流程](#10-游戏流程)
+11. [AI 逻辑](#11-ai-逻辑)
+12. [UI 设计规范](#12-ui-设计规范)
+13. [交互逻辑](#13-交互逻辑)
+14. [配置文件](#14-配置文件)
+15. [实现细节](#15-实现细节)
+
+---
+
+## 1. 项目概览
+
+### 1.1 产品定位
+这是一款基于 Next.js 的单人"谁是卧底"网页游戏，玩家与 AI 对手进行文字推理对抗。
+
+### 1.2 核心玩法
+- 玩家扮演玩家 1，与 AI 玩家一起参与游戏
+- 每个玩家获得一个词语（平民词、卧底词或白板无词）
+- 每轮游戏分为两个阶段：描述阶段 + 投票阶段
+- 玩家需要通过描述和投票找出所有卧底
+- 胜利条件：所有卧底被淘汰（平民胜）或 卧底数量 ≥ 平民数量（卧底胜）
+
+### 1.3 游戏特色
+- 单机游戏，无需联网
+- AI 角色使用预设描述模板，模拟真实玩家
+- 聊天室风格的游戏界面
+- 支持自定义玩家数量、卧底数量、白板数量
+
+---
+
+## 2. 技术栈
+
+### 2.1 核心框架
+```json
+{
+  "框架": "Next.js 14",
+  "路由模式": "App Router",
+  "渲染模式": "客户端渲染（'use client'）",
+  "语言": "TypeScript（严格模式）",
+  "React 版本": "^18.2.0"
+}
+```
+
+### 2.2 样式工具
+- **CSS 框架**: Tailwind CSS ^3.3.6
+- **图标库**: lucide-react ^0.294.0
+- **样式方案**: Utility-first CSS classes
+
+### 2.3 开发工具
+- TypeScript 5.3.3
+- PostCSS + Autoprefixer
+- ESLint (Next.js 配置)
+
+---
+
+## 3. 项目结构
+
+```
+who_is_the_spy/
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx          # 根布局，设置 HTML 结构和元数据
+│   │   ├── page.tsx            # 主页面，导入并渲染游戏组件
+│   │   └── globals.css         # 全局样式（仅 Tailwind 指令）
+│   └── components/
+│       ├── game.tsx            # 核心游戏组件（所有逻辑在此）
+│       └── types.ts            # TypeScript 类型定义
+├── public/                     # 静态资源（无特殊文件）
+├── .gitignore                  # Git 忽略规则
+├── package.json                # 项目依赖
+├── tsconfig.json               # TypeScript 配置
+├── tailwind.config.ts          # Tailwind 配置
+├── postcss.config.js           # PostCSS 配置
+├── next.config.js              # Next.js 配置
+└── CLAUDE.md                   # 项目说明文档
+```
+
+---
+
+## 4. 依赖配置
+
+### 4.1 package.json
+```json
+{
+  "name": "who-is-the-spy",
+  "version": "1.0.0",
+  "description": "谁是卧底 - 单机版游戏",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "next": "^14.0.4",
+    "lucide-react": "^0.294.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "typescript": "^5.3.3"
+  }
+}
+```
+
+---
+
+## 5. 类型系统
+
+### 5.1 完整类型定义（src/components/types.ts）
+
+```typescript
+// 游戏类型定义
+
+export type PlayerRole = 'civilian' | 'undercover' | 'blank';
+export type GameState = 'setup' | 'viewWord' | 'playing' | 'ended';
+export type GamePhase = 'describe' | 'vote';
+export type AvatarSize = 'sm' | 'md' | 'lg';
+export type MessageType = 'system' | 'user' | 'ai' | 'vote' | 'result';
+
+export interface Player {
+  id: number;              // 玩家 ID（1 = 人类玩家，2+ = AI 玩家）
+  role: PlayerRole;        // 玩家角色
+  word: string;            // 玩家的词语（白板为 "白板"）
+  alive: boolean;          // 是否存活
+  isHuman: boolean;        // 是否是人类玩家
+}
+
+export interface Message {
+  type: MessageType;       // 消息类型
+  content: string;         // 消息内容
+  timestamp: Date;         // 时间戳
+  playerId?: number;       // 发送者 ID（可选）
+  playerName?: string;     // 发送者名称（可选）
+  votedFor?: number;       // 投票目标 ID（vote 类型使用）
+  eliminatedId?: number;   // 被淘汰者 ID（result 类型使用）
+}
+
+export interface AvatarProps {
+  playerId: number;        // 玩家 ID
+  isHuman: boolean;        // 是否人类
+  size?: AvatarSize;       // 头像尺寸（默认 'md'）
+}
+
+export interface WordPair {
+  civilian: string;        // 平民词语
+  undercover: string;      // 卧底词语
+}
+
+export interface VoteResults {
+  [key: number]: number;   // 玩家 ID -> 得票数
+}
+
+export interface Descriptions {
+  [key: number]: string;   // 玩家 ID -> 描述内容
+}
+```
+
+---
+
+## 6. 游戏规则
+
+### 6.1 角色定义
+1. **平民（Civilian）**
+   - 拥有平民词语
+   - 目标：找出并投票淘汰所有卧底
+   - 描述策略：准确描述词语，但不能太明显
+
+2. **卧底（Undercover）**
+   - 拥有卧底词语（与平民词语相似但不同）
+   - 目标：隐藏身份，混入平民
+   - 描述策略：使用模糊描述，避免被发现
+
+3. **白板（Blank）**
+   - 没有词语
+   - 目标：通过听取他人描述猜测词语，伪装成平民
+   - 描述策略：使用通用描述，避免露馅
+
+### 6.2 游戏流程
+1. **设置阶段（Setup）**
+   - 选择玩家总数（3-10 人）
+   - 选择卧底数量（1 到总数一半）
+   - 选择白板数量（0 到 总数-卧底数-2）
+
+2. **查看词语阶段（View Word）**
+   - 玩家查看自己的词语
+   - 白板玩家看到"🤫"和"白板 - 没有词语哦！"
+
+3. **游戏进行阶段（Playing）**
+   - 每轮分为两个阶段：
+     - **描述阶段（Describe）**: 所有玩家依次描述词语
+     - **投票阶段（Vote）**: 所有玩家投票淘汰一名玩家
+
+4. **游戏结束阶段（Ended）**
+   - 显示所有玩家的身份和词语
+   - 显示胜负结果
+
+### 6.3 发言顺序
+- **人类玩家非白板**：人类玩家先发言，然后 AI 玩家依次发言
+- **人类玩家是白板**：AI 玩家先依次发言，最后人类玩家发言
+
+### 6.4 胜利条件
+- **平民胜利**：所有卧底被淘汰
+- **卧底胜利**：卧底数量 ≥ 平民数量
+- **玩家失败**：人类玩家被淘汰
+
+### 6.5 重要规则
+- **禁止重复描述**：任何玩家不能使用已经在本局游戏中使用过的描述（包括跨轮次和同轮次的所有描述）
+- **描述验证**：人类玩家提交描述时会检查是否重复，如果重复会显示警告并拒绝提交
+
+---
+
+## 7. 游戏数据
+
+### 7.1 AI 角色配置
+```typescript
+const AI_ROLES = [
+  { name: '文档创作师', avatar: 'https://mdn.alipayobjects.com/cto_doraemon/afts/img/DUqmS4-28OAAAAAAQTAAAAgAehe3AQBr/original' },
+  { name: '海报设计师', avatar: 'https://mdn.alipayobjects.com/cto_doraemon/afts/img/ZxBETYXga1cAAAAAR2AAAAgAehe3AQBr/original' },
+  { name: '产品设计师', avatar: 'https://mdn.alipayobjects.com/cto_doraemon/afts/img/4gD4RYQg0ZAAAAAAUZAAAAgAehe3AQBr/original' },
+  { name: '网页工程师', avatar: 'https://mdn.alipayobjects.com/cto_doraemon/afts/img/P4VXS5OJGskAAAAAQHAAAAgAehe3AQBr/original' },
+  { name: '数据分析师', avatar: 'https://mdn.alipayobjects.com/cto_doraemon/afts/img/GvCCSryn8HoAAAAAQIAAAAgAehe3AQBr/original' }
+];
+
+// AI 名称获取函数
+const getAIName = (playerId: number) => {
+  return AI_ROLES[(playerId - 2) % AI_ROLES.length].name;
+};
+```
+
+### 7.2 词语对数据（15 组）
+```typescript
+const wordPairs = [
+  { civilian: '面条', undercover: '米线' },
+  { civilian: '西瓜', undercover: '冬瓜' },
+  { civilian: '眉毛', undercover: '睫毛' },
+  { civilian: '饺子', undercover: '包子' },
+  { civilian: '马', undercover: '驴' },
+  { civilian: '牛奶', undercover: '豆浆' },
+  { civilian: '玫瑰', undercover: '月季' },
+  { civilian: '蜘蛛侠', undercover: '蝙蝠侠' },
+  { civilian: '保安', undercover: '保镖' },
+  { civilian: '状元', undercover: '冠军' },
+  { civilian: '饼干', undercover: '薯片' },
+  { civilian: '电影院', undercover: '电视' },
+  { civilian: '口红', undercover: '唇彩' },
+  { civilian: '作家', undercover: '编剧' },
+  { civilian: '医生', undercover: '护士' },
+];
+```
+
+### 7.3 描述模板数据（每个词语 25 个描述）
+**重要说明**：为每个词语（包括平民词和卧底词）准备 25 个不同的描述模板。
+
+**示例 - 面条**：
+```typescript
+'面条': [
+  '细长的主食', '煮熟了软软的', '汤里常见的', '可以用筷子挑起来',
+  '一根一根的食物', '需要煮的', '有点滑', '长条形的', '小麦做的',
+  '可以拌着吃', '中餐常见', '条状的东西', '煮在水里', '配汤很好',
+  '黄色或白色的', '可以炒着吃', '面粉制作的', '很筋道', '需要开水煮',
+  '北方人喜欢吃', '可以做汤面', '吃的时候会吸溜', '有时候很长',
+  '可以加肉酱', '超市有卖'
+]
+```
+
+**完整词语描述模板**（共 30 个词语 × 25 描述 = 750 条描述）：
+- **面条**（25 条）、**米线**（25 条）
+- **西瓜**（25 条）、**冬瓜**（25 条）
+- **眉毛**（25 条）、**睫毛**（25 条）
+- **饺子**（25 条）、**包子**（25 条）
+- **马**（25 条）、**驴**（25 条）
+- **牛奶**（25 条）、**豆浆**（25 条）
+- **玫瑰**（25 条）、**月季**（25 条）
+- **蜘蛛侠**（25 条）、**蝙蝠侠**（25 条）
+- **保安**（25 条）、**保镖**（25 条）
+- **状元**（25 条）、**冠军**（25 条）
+- **饼干**（25 条）、**薯片**（25 条）
+- **电影院**（25 条）、**电视**（25 条）
+- **口红**（25 条）、**唇彩**（25 条）
+- **作家**（25 条）、**编剧**（25 条）
+- **医生**（25 条）、**护士**（25 条）
+
+**详细描述模板请参考源代码 src/components/game.tsx 第 66-97 行**
+
+### 7.4 白板描述数据（15 个通用描述）
+```typescript
+const blankDescriptions = [
+  '这个...挺常见的', '嗯，大家应该都知道', '怎么描述呢，挺普通的',
+  '日常能见到', '这个不好说啊', '很难形容', '我觉得还挺好的',
+  '应该都接触过', '说不太清楚', '就那样吧', '平时会用到',
+  '这东西挺有意思', '大概就是那种感觉', '不太会描述', '你们懂的'
+];
+```
+
+---
+
+## 8. 核心组件
+
+### 8.1 Avatar 组件（头像）
+```typescript
+const Avatar: React.FC<AvatarProps> = ({ playerId, isHuman, size = 'md' }) => {
+  const sizeClasses: Record<AvatarSize, string> = {
+    sm: 'w-8 h-8',
+    md: 'w-12 h-12',
+    lg: 'w-16 h-16'
+  };
+
+  if (isHuman) {
+    // 人类玩家：绿色渐变背景 + 😊 emoji
+    return (
+      <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-md`}>
+        <span className="text-white text-2xl">😊</span>
+      </div>
+    );
+  }
+
+  // AI 玩家：使用头像图片
+  const aiRole = AI_ROLES[(playerId - 2) % AI_ROLES.length];
+  return (
+    <img
+      src={aiRole.avatar}
+      alt={aiRole.name}
+      className={`${sizeClasses[size]} rounded-full shadow-md object-cover`}
+    />
+  );
+};
+```
+
+### 8.2 UndercoverGame 主组件
+这是唯一的游戏组件，包含所有游戏逻辑。
+
+---
+
+## 9. 游戏状态管理
+
+### 9.1 状态变量（使用 React useState）
+
+```typescript
+// 游戏状态
+const [gameState, setGameState] = useState<GameState>('setup');
+
+// 游戏配置
+const [totalPlayers, setTotalPlayers] = useState<number>(6);
+const [undercoverCount, setUndercoverCount] = useState<number>(1);
+const [blankCount, setBlankCount] = useState<number>(0);
+
+// 词语显示
+const [showWord, setShowWord] = useState<boolean>(false);
+
+// 玩家数据
+const [players, setPlayers] = useState<Player[]>([]);
+const [humanPlayer, setHumanPlayer] = useState<Player | null>(null);
+
+// 游戏进度
+const [round, setRound] = useState<number>(1);
+const [currentPhase, setCurrentPhase] = useState<GamePhase>('describe');
+
+// 消息系统
+const [messages, setMessages] = useState<Message[]>([]);
+const messagesEndRef = useRef<HTMLDivElement>(null);
+
+// 人类玩家输入
+const [humanDescription, setHumanDescription] = useState<string>('');
+const [selectedVote, setSelectedVote] = useState<number | null>(null);
+
+// 投票结果
+const [voteResults, setVoteResults] = useState<VoteResults>({});
+
+// 已使用的描述（防重复）
+const [usedDescriptions, setUsedDescriptions] = useState<Record<number, string[]>>({});
+```
+
+### 9.2 生命周期 Hook
+```typescript
+// 自动滚动到消息底部
+useEffect(() => {
+  messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+}, [messages]);
+```
+
+---
+
+## 10. 游戏流程
+
+### 10.1 开始游戏（startGame）
+
+**功能**：初始化游戏，分配角色和词语
+
+**步骤**：
+1. 随机选择一组词语对
+2. 创建角色数组：
+   - 添加 `undercoverCount` 个卧底角色（卧底词）
+   - 添加 `blankCount` 个白板角色（"白板"）
+   - 添加剩余数量的平民角色（平民词）
+3. 打乱角色数组（Fisher-Yates 洗牌算法）
+4. 创建玩家数组：
+   - 玩家 1（索引 0）设为人类玩家
+   - 其余为 AI 玩家
+5. 切换到 `viewWord` 状态
+
+**代码逻辑**：
+```typescript
+const startGame = () => {
+  const wordPair = wordPairs[Math.floor(Math.random() * wordPairs.length)];
+  const playerRoles: Array<{ role: PlayerRole; word: string }> = [];
+
+  // 添加角色
+  for (let i = 0; i < undercoverCount; i++) {
+    playerRoles.push({ role: 'undercover' as PlayerRole, word: wordPair.undercover });
+  }
+  for (let i = 0; i < blankCount; i++) {
+    playerRoles.push({ role: 'blank' as PlayerRole, word: '白板' });
+  }
+  for (let i = 0; i < totalPlayers - undercoverCount - blankCount; i++) {
+    playerRoles.push({ role: 'civilian' as PlayerRole, word: wordPair.civilian });
+  }
+
+  // 洗牌
+  for (let i = playerRoles.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [playerRoles[i], playerRoles[j]] = [playerRoles[j], playerRoles[i]];
+  }
+
+  // 创建玩家
+  const newPlayers = playerRoles.map((p, i) => ({
+    id: i + 1,
+    ...p,
+    alive: true,
+    isHuman: i === 0
+  }));
+
+  setPlayers(newPlayers);
+  setHumanPlayer(newPlayers[0]);
+  setGameState('viewWord');
+  setShowWord(false);
+  setMessages([]);
+  setUsedDescriptions({});
+};
+```
+
+### 10.2 开始回合（startRound）
+
+**功能**：开始新一轮的描述阶段
+
+**两种发言顺序**：
+
+#### 情况 1：人类玩家不是白板
+```typescript
+// 延迟 300ms 后提示人类玩家发言
+setTimeout(() => {
+  const systemMsg: Message = {
+    type: 'system' as MessageType,
+    content: `第 ${round} 轮开始！💬 请描述你的词语`,
+    timestamp: new Date()
+  };
+  setMessages([systemMsg]);
+}, 300);
+```
+
+#### 情况 2：人类玩家是白板
+```typescript
+// AI 先发言，每个 AI 间隔 800ms
+const systemMsg: Message = {
+  type: 'system' as MessageType,
+  content: `第 ${round} 轮开始！`,
+  timestamp: new Date()
+};
+setMessages([systemMsg]);
+
+const aiPlayers = players.filter(p => p.alive && !p.isHuman);
+const roundDescriptions: string[] = [];
+
+aiPlayers.forEach((player, index) => {
+  setTimeout(() => {
+    const aiDesc = generateDescription(player.word, player.role, player.id, usedDescriptions, roundDescriptions);
+    roundDescriptions.push(aiDesc);
+
+    setUsedDescriptions(prev => ({
+      ...prev,
+      [player.id]: [...(prev[player.id] || []), aiDesc]
+    }));
+
+    setMessages(prev => [...prev, {
+      type: 'ai' as MessageType,
+      playerId: player.id,
+      playerName: getAIName(player.id),
+      content: aiDesc,
+      timestamp: new Date()
+    } as Message]);
+
+    // 最后一个 AI 发言后提示人类玩家
+    if (index === aiPlayers.length - 1) {
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          type: 'system' as MessageType,
+          content: '💬 轮到你了，请描述你的词语',
+          timestamp: new Date()
+        } as Message]);
+      }, 500);
+    }
+  }, index * 800);
+});
+```
+
+### 10.3 提交描述（submitDescription）
+
+**功能**：人类玩家提交描述
+
+**步骤**：
+1. **验证描述不为空**
+2. **检查描述是否重复**：
+   - 检查所有玩家的历史描述（`usedDescriptions`）
+   - 检查当前轮次的消息（`messages`）
+   - 如果重复，显示警告并拒绝提交
+3. **记录人类玩家的描述**到 `usedDescriptions`
+4. **添加用户消息**到消息列表
+5. **触发 AI 发言**或**进入投票阶段**：
+
+#### 情况 1：人类玩家是白板（已是最后发言）
+```typescript
+setTimeout(() => {
+  setMessages(prev => [...prev, {
+    type: 'system' as MessageType,
+    content: '所有玩家已完成描述，现在开始投票！',
+    timestamp: new Date()
+  } as Message]);
+  setCurrentPhase('vote');
+}, 1000);
+```
+
+#### 情况 2：人类玩家不是白板（AI 依次发言）
+```typescript
+const aiPlayers = players.filter(p => p.alive && !p.isHuman);
+const roundDescriptions: string[] = [humanDescription.trim()];
+
+aiPlayers.forEach((player, index) => {
+  setTimeout(() => {
+    const aiDesc = generateDescription(player.word, player.role, player.id, usedDescriptions, roundDescriptions);
+    roundDescriptions.push(aiDesc);
+
+    setUsedDescriptions(prev => ({
+      ...prev,
+      [player.id]: [...(prev[player.id] || []), aiDesc]
+    }));
+
+    setMessages(prev => [...prev, {
+      type: 'ai' as MessageType,
+      playerId: player.id,
+      playerName: getAIName(player.id),
+      content: aiDesc,
+      timestamp: new Date()
+    } as Message]);
+  }, (index + 1) * 800);
+});
+
+// 所有 AI 发言完毕后进入投票
+setTimeout(() => {
+  setMessages(prev => [...prev, {
+    type: 'system' as MessageType,
+    content: '所有玩家已完成描述，现在开始投票！',
+    timestamp: new Date()
+  } as Message]);
+  setCurrentPhase('vote');
+}, (aiPlayers.length + 1) * 800 + 500);
+```
+
+### 10.4 提交投票（submitVote）
+
+**功能**：人类玩家投票并触发 AI 投票
+
+**步骤**：
+1. 验证已选择投票目标
+2. 创建投票结果对象，记录人类玩家的投票
+3. 添加人类玩家的投票消息
+4. **立即切换到描述阶段**（防止重复提交）
+5. 收集本轮所有玩家的描述（用于 AI 投票决策）
+6. AI 玩家依次投票（每个间隔 600ms）
+7. 延迟后显示投票结果
+
+```typescript
+const submitVote = () => {
+  if (selectedVote === null) return;
+
+  const votes: VoteResults = { [selectedVote]: 1 };
+
+  // 添加人类玩家的投票消息
+  setMessages(prev => [...prev, {
+    type: 'vote' as MessageType,
+    playerId: 1,
+    playerName: '你',
+    content: `投票给 ${getAIName(selectedVote)}`,
+    votedFor: selectedVote,
+    timestamp: new Date()
+  } as Message]);
+
+  // 切换到描述阶段（防止重复提交）
+  setCurrentPhase('describe');
+  setSelectedVote(null);
+
+  // 收集描述
+  const aiDescriptions: Descriptions = {};
+  messages.forEach(msg => {
+    if ((msg.type === 'user' || msg.type === 'ai') && msg.playerId) {
+      aiDescriptions[msg.playerId] = msg.content;
+    }
+  });
+
+  // AI 依次投票
+  players.forEach(player => {
+    if (player.alive && !player.isHuman) {
+      const vote = generateAIVote(player, players, aiDescriptions);
+      votes[vote] = (votes[vote] || 0) + 1;
+
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          type: 'vote' as MessageType,
+          playerId: player.id,
+          playerName: getAIName(player.id),
+          content: `投票给 ${vote === 1 ? '你' : getAIName(vote)}`,
+          votedFor: vote,
+          timestamp: new Date()
+        } as Message]);
+      }, (player.id - 1) * 600);
+    }
+  });
+
+  setVoteResults(votes);
+
+  // 显示投票结果
+  setTimeout(() => {
+    showVoteResultsAndExecute(votes);
+  }, players.length * 600 + 500);
+};
+```
+
+### 10.5 显示投票结果并执行淘汰（showVoteResultsAndExecute）
+
+**功能**：计算投票结果，淘汰玩家，检查游戏结束条件
+
+**步骤**：
+1. 计算得票最多的玩家
+2. 显示淘汰结果消息
+3. 更新玩家状态（设置 `alive: false`）
+4. 检查游戏结束条件：
+   - 人类玩家被淘汰 → 游戏结束
+   - 所有卧底被淘汰 → 游戏结束
+   - 卧底数量 ≥ 平民数量 → 游戏结束
+5. 如果游戏未结束：
+   - 增加轮次
+   - 重置状态
+   - 显示新一轮开始消息
+
+```typescript
+const showVoteResultsAndExecute = (votes: VoteResults) => {
+  let maxVotes = 0;
+  let eliminatedId: number | null = null;
+
+  Object.entries(votes).forEach(([id, count]) => {
+    if (count > maxVotes) {
+      maxVotes = count;
+      eliminatedId = parseInt(id);
+    }
+  });
+
+  if (eliminatedId === null) return;
+
+  const resultText = `投票结果：${eliminatedId === 1 ? '你' : getAIName(eliminatedId)} 被淘汰（${maxVotes} 票）`;
+
+  setMessages(prev => [...prev, {
+    type: 'result' as MessageType,
+    content: resultText,
+    eliminatedId: eliminatedId,
+    timestamp: new Date()
+  } as Message]);
+
+  const newPlayers = players.map(p =>
+    p.id === eliminatedId ? { ...p, alive: false } : p
+  );
+
+  setPlayers(newPlayers);
+
+  const aliveRoles = newPlayers.filter(p => p.alive);
+  const aliveUndercovers = aliveRoles.filter(p => p.role === 'undercover').length;
+  const aliveCivilians = aliveRoles.filter(p => p.role === 'civilian').length;
+  const humanAlive = newPlayers.find(p => p.isHuman)?.alive;
+
+  setTimeout(() => {
+    // 检查游戏结束条件
+    if (!humanAlive || aliveUndercovers === 0) {
+      setGameState('ended');
+      return;
+    }
+
+    if (aliveUndercovers >= aliveCivilians) {
+      setGameState('ended');
+      return;
+    }
+
+    // 继续下一轮
+    setRound(round + 1);
+    setSelectedVote(null);
+    setVoteResults({});
+    setCurrentPhase('describe');
+
+    setMessages(prev => [...prev, {
+      type: 'system' as MessageType,
+      content: `第 ${round + 1} 轮开始！继续描述词语`,
+      timestamp: new Date()
+    } as Message]);
+  }, 2000);
+};
+```
+
+### 10.6 重置游戏（resetGame）
+
+**功能**：重置所有状态，返回设置页面
+
+```typescript
+const resetGame = () => {
+  setGameState('setup');
+  setPlayers([]);
+  setHumanPlayer(null);
+  setRound(1);
+  setMessages([]);
+  setHumanDescription('');
+  setSelectedVote(null);
+  setVoteResults({});
+  setCurrentPhase('describe');
+  setUsedDescriptions({});
+};
+```
+
+---
+
+## 11. AI 逻辑
+
+### 11.1 AI 描述生成（generateDescription）
+
+**功能**：为 AI 玩家生成描述
+
+**参数**：
+- `word`: 玩家的词语
+- `role`: 玩家角色
+- `playerId`: 玩家 ID
+- `usedDescs`: 所有玩家历史使用的描述
+- `currentRoundUsed`: 当前轮次已使用的描述
+
+**逻辑**：
+1. 获取所有历史使用过的描述（跨轮次）
+2. 根据角色选择描述池：
+   - **白板**：使用 `blankDescriptions`
+   - **平民/卧底**：使用 `descriptionTemplates[word]`
+3. 过滤掉已使用的描述（历史 + 当前轮次）
+4. 如果没有可用描述，随机选择一个
+5. 返回描述
+
+```typescript
+const generateDescription = (
+  word: string,
+  role: PlayerRole,
+  playerId: number,
+  usedDescs: Record<number, string[]>,
+  currentRoundUsed: string[] = []
+): string => {
+  const allHistoricalDescs = Object.values(usedDescs).flat();
+
+  if (role === 'blank') {
+    const availableBlank = blankDescriptions.filter(
+      desc => !allHistoricalDescs.includes(desc) && !currentRoundUsed.includes(desc)
+    );
+    if (availableBlank.length === 0) {
+      return blankDescriptions[Math.floor(Math.random() * blankDescriptions.length)];
+    }
+    return availableBlank[Math.floor(Math.random() * availableBlank.length)];
+  }
+
+  const templates = descriptionTemplates[word as keyof typeof descriptionTemplates];
+  if (!templates) return '这个东西很常见';
+
+  const availableDescs = templates.filter(
+    desc => !allHistoricalDescs.includes(desc) && !currentRoundUsed.includes(desc)
+  );
+
+  if (availableDescs.length === 0) {
+    return templates[Math.floor(Math.random() * templates.length)];
+  }
+
+  return availableDescs[Math.floor(Math.random() * availableDescs.length)];
+};
+```
+
+### 11.2 AI 投票逻辑（generateAIVote）
+
+**功能**：AI 玩家根据描述决定投票目标
+
+**参数**：
+- `player`: 当前投票的 AI 玩家
+- `allPlayers`: 所有玩家数组
+- `allDescriptions`: 所有玩家的描述
+
+**评分机制**：
+1. **基础分**：随机 0-30 分
+2. **模糊描述加分**（+40 分）：
+   - 描述长度 < 15
+   - 包含 "..."、"挺"、"这个"、"不好说"、"难形容"
+3. **词语矛盾加分**（+35 分）：
+   - 平民玩家的特定词语检测：
+     - 面条玩家：描述包含"米"或"云南"
+     - 米线玩家：描述包含"面"或"小麦"
+     - 西瓜玩家：描述包含"冬"、"汤"或"蔬菜"
+     - 冬瓜玩家：描述包含"夏"、"甜"或"汁"
+4. **卧底策略加分**（+25 分）：
+   - 如果当前玩家是卧底，优先投票给平民
+
+**投票决策**：
+- 70% 概率投票给可疑度最高的玩家
+- 30% 概率投票给可疑度第二高的玩家
+
+```typescript
+const generateAIVote = (player: Player, allPlayers: Player[], allDescriptions: Descriptions): number => {
+  const alivePlayers = allPlayers.filter((p: Player) => p.alive && p.id !== player.id);
+
+  const suspiciousness = alivePlayers.map((p: Player) => {
+    let score = Math.random() * 30;
+
+    const desc = allDescriptions[p.id] || '';
+
+    // 模糊描述加分
+    if (desc.length < 15 ||
+        desc.includes('...') ||
+        desc.includes('挺') ||
+        desc.includes('这个') ||
+        desc.includes('不好说') ||
+        desc.includes('难形容')) {
+      score += 40;
+    }
+
+    // 词语矛盾加分
+    if (player.role === 'civilian') {
+      if (player.word === '面条' && (desc.includes('米') || desc.includes('云南'))) score += 35;
+      if (player.word === '米线' && (desc.includes('面') || desc.includes('小麦'))) score += 35;
+      if (player.word === '西瓜' && (desc.includes('冬') || desc.includes('汤') || desc.includes('蔬菜'))) score += 35;
+      if (player.word === '冬瓜' && (desc.includes('夏') || desc.includes('甜') || desc.includes('汁'))) score += 35;
+    }
+
+    // 卧底策略加分
+    if (player.role === 'undercover' && p.role === 'civilian') {
+      score += 25;
+    }
+
+    return { player: p, score };
+  });
+
+  suspiciousness.sort((a, b) => b.score - a.score);
+
+  if (Math.random() < 0.7 || suspiciousness.length === 1) {
+    return suspiciousness[0].player.id;
+  } else {
+    return suspiciousness[1].player.id;
+  }
+};
+```
+
+---
+
+## 12. UI 设计规范
+
+### 12.1 颜色方案
+
+#### 背景图片
+- 所有页面（除游戏中）使用背景图：
+  ```
+  https://mdn.alipayobjects.com/huamei_x5kcfq/afts/img/A*gINhS6gkpbEAAAAAbWAAAAgAekfLAQ/original
+  ```
+
+#### 渐变色方案
+```css
+/* 游戏中页面背景 */
+bg-gradient-to-br from-slate-900 via-purple-950 to-indigo-950
+
+/* 游戏中顶部栏 */
+bg-gradient-to-r from-slate-900/90 via-purple-900/90 to-indigo-900/90
+
+/* 按钮渐变 */
+from-purple-600 to-blue-600  /* 主要按钮 */
+from-green-500 via-emerald-500 to-teal-500  /* 胜利 */
+from-red-500 via-rose-500 to-pink-500  /* 失败 */
+
+/* 卡片渐变 */
+from-purple-50 via-pink-50 to-blue-50  /* 词语卡片 */
+from-blue-50 via-purple-50 to-indigo-50  /* 统计卡片 */
+```
+
+#### 角色颜色
+```css
+/* 平民 */
+bg-blue-100 text-blue-800
+
+/* 卧底 */
+bg-red-100 text-red-800
+
+/* 白板 */
+bg-gray-100 text-gray-800
+```
+
+### 12.2 布局结构
+
+#### 设置/查看词语/结束页面
+```
+min-h-screen (背景图片)
+  └─ max-w-md w-full bg-white rounded-2xl shadow-xl p-8
+       └─ 内容
+```
+
+#### 游戏进行页面
+```
+h-screen flex flex-col (深色渐变背景)
+  ├─ 顶部栏（玩家列表、轮次、重新开始）
+  ├─ 消息区域（flex-1 overflow-y-auto）
+  └─ 底部输入区（描述阶段）或投票区（投票阶段）
+```
+
+### 12.3 组件样式
+
+#### 按钮样式
+```css
+/* 主要按钮 */
+bg-gradient-to-r from-purple-600 to-blue-600 text-white
+py-3 rounded-lg font-semibold
+hover:from-purple-700 hover:to-blue-700
+transition-all flex items-center justify-center gap-2
+
+/* 禁用按钮 */
+bg-gray-700/50 text-gray-500 cursor-not-allowed
+```
+
+#### 输入框样式
+```css
+/* 数字输入（设置页面） */
+px-4 py-2 border border-gray-300 rounded-lg
+focus:ring-2 focus:ring-purple-500 focus:border-transparent
+
+/* 文本输入（游戏中） */
+px-4 py-3 border border-purple-500/40 rounded-xl
+focus:outline-none focus:ring-1 focus:ring-purple-400/50
+bg-slate-800/80 backdrop-blur-sm text-gray-200
+placeholder-gray-400
+```
+
+#### 消息样式
+
+**系统消息**：
+```css
+bg-gradient-to-r from-purple-500/20 to-blue-500/20
+text-purple-300 px-5 py-2 rounded-full text-sm
+font-medium border border-purple-400/40
+shadow-lg backdrop-blur-sm
+```
+
+**结果消息**：
+```css
+bg-gradient-to-r from-rose-500/30 to-pink-500/30
+text-rose-200 px-6 py-3 rounded-xl text-sm
+font-bold border-2 border-rose-400/50
+shadow-lg backdrop-blur-sm
+```
+
+**用户消息**：
+```css
+bg-gradient-to-r from-purple-600 to-blue-600
+text-white px-4 py-3 rounded-2xl shadow-lg
+```
+
+**AI 消息**：
+```css
+bg-slate-800/80 backdrop-blur-sm
+border-2 border-blue-500/30 text-gray-200
+px-4 py-3 rounded-2xl shadow-lg
+```
+
+**投票消息**（特殊）：
+- 用户投票：与用户消息相同
+- AI 投票：`bg-slate-800/80 backdrop-blur-sm border-2 border-purple-500/30`
+
+### 12.4 动画效果
+
+```css
+/* 脉冲动画 */
+animate-pulse
+
+/* 弹跳动画 */
+animate-bounce
+
+/* 延迟动画 */
+style={{ animationDelay: '0.5s' }}
+```
+
+### 12.5 图标使用
+
+所有图标来自 `lucide-react`：
+```typescript
+import { Eye, RotateCcw, Play, User, Send, Users } from 'lucide-react';
+```
+
+---
+
+## 13. 交互逻辑
+
+### 13.1 设置页面
+
+**输入验证**：
+- 玩家总数：3-10 人
+- 卧底数量：1 到总数一半
+- 白板数量：0 到 总数-卧底数-2
+
+**交互细节**：
+- 输入框获得焦点时自动选中内容（`onFocus={(e) => e.target.select()}`）
+- 实时显示角色分配统计
+
+### 13.2 查看词语页面
+
+**交互流程**：
+1. 显示"点击查看词语"按钮
+2. 点击后显示词语卡片：
+   - 非白板：显示词语文字
+   - 白板：显示 🤫 和提示文字
+3. 显示"进入游戏聊天室 →"按钮
+
+### 13.3 游戏进行页面
+
+#### 顶部栏
+- 显示当前轮次和存活人数
+- 显示所有玩家头像：
+  - 存活玩家：彩色边框
+  - 淘汰玩家：灰色半透明 + ✕ 标记
+
+#### 消息区域
+- 自动滚动到底部
+- 消息类型：
+  - 系统消息：居中显示
+  - 用户消息：右对齐 + 头像
+  - AI 消息：左对齐 + 头像 + 名称
+  - 投票消息：带 🗳️ emoji
+  - 结果消息：居中显示，红色强调
+
+#### 描述阶段
+- 文本框支持多行输入
+- 按 Enter 发送（Shift+Enter 换行）
+- 空内容时按钮禁用
+
+#### 投票阶段
+- 显示所有存活的 AI 玩家
+- 点击选择（高亮显示）
+- 未选择时按钮禁用
+
+### 13.4 结束页面
+
+**显示内容**：
+1. 胜负结果（emoji + 文字）
+2. 游戏进行轮次
+3. 所有玩家的身份揭晓：
+   - 头像 + 名称 + 角色徽章 + 词语
+   - 显示是否已出局
+4. "再来一局"按钮
+
+---
+
+## 14. 配置文件
+
+### 14.1 src/app/layout.tsx
+```typescript
+import type { Metadata } from 'next'
+import './globals.css'
+
+export const metadata: Metadata = {
+  title: '谁是卧底',
+  description: '谁是卧底 - 百宝箱 Tbox',
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="zh-CN">
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+
+### 14.2 src/app/page.tsx
+```typescript
+import UndercoverGame from '@/components/game'
+
+export default function Home() {
+  return <UndercoverGame />
+}
+```
+
+### 14.3 src/app/globals.css
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+### 14.4 next.config.js
+```javascript
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+}
+
+module.exports = nextConfig
+```
+
+### 14.5 tsconfig.json
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+```
+
+### 14.6 tailwind.config.ts
+```typescript
+import type { Config } from 'tailwindcss'
+
+const config: Config = {
+  content: [
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+export default config
+```
+
+### 14.7 postcss.config.js
+```javascript
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+```
+
+### 14.8 .gitignore
+```
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Next.js
+/.next/
+/out/
+.next
+out
+
+# Production
+/build
+dist
+
+# Testing
+/coverage
+*.lcov
+.nyc_output
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Misc
+.DS_Store
+*.pem
+Thumbs.db
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env*.local
+
+# Vercel
+.vercel
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+```
+
+---
+
+## 15. 实现细节
+
+### 15.1 关键实现要点
+
+#### 1. 防止重复描述
+```typescript
+// 收集所有已使用的描述
+const allHistoricalDescs = Object.values(usedDescriptions).flat();
+const currentRoundDescs = messages
+  .filter(msg => (msg.type === 'user' || msg.type === 'ai') && msg.content)
+  .map(msg => msg.content);
+const allUsedDescs = [...allHistoricalDescs, ...currentRoundDescs];
+
+// 验证
+if (allUsedDescs.includes(humanDescription.trim())) {
+  // 显示警告
+  return;
+}
+```
+
+#### 2. 异步流程控制
+- 使用 `setTimeout` 控制 AI 发言间隔（800ms）
+- 使用 `setTimeout` 控制投票显示间隔（600ms）
+- 所有异步操作使用函数式状态更新（`prev => ...`）
+
+#### 3. 类型安全
+- 所有对象字面量需要显式类型断言（`as MessageType`）
+- 使用 `Record<>` 类型定义动态键对象
+
+#### 4. 响应式滚动
+```typescript
+const messagesEndRef = useRef<HTMLDivElement>(null);
+
+useEffect(() => {
+  messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+}, [messages]);
+
+// 在消息列表末尾
+<div ref={messagesEndRef} />
+```
+
+#### 5. Enter 键提交
+```typescript
+onKeyDown={(e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    submitDescription();
+  }
+}}
+```
+
+### 15.2 代码组织
+
+**单一文件架构**：
+- 所有游戏逻辑集中在 `src/components/game.tsx`
+- 按功能分块：
+  1. 导入和类型定义
+  2. 常量数据（AI 角色、词语对、描述模板）
+  3. 辅助函数（getAIName）
+  4. Avatar 组件
+  5. 描述生成函数
+  6. 投票逻辑函数
+  7. 主组件（状态 + 生命周期 + 事件处理 + 渲染）
+
+### 15.3 性能优化
+
+- 无外部状态管理库（纯 React hooks）
+- 按需渲染（根据 `gameState` 条件渲染不同页面）
+- 无不必要的重渲染（状态更新精确）
+
+---
+
+## 16. 开发流程
+
+### 16.1 初始化项目
+```bash
+npx create-next-app@latest who-is-the-spy --typescript --tailwind --app
+cd who-is-the-spy
+npm install lucide-react
+```
+
+### 16.2 开发步骤
+1. 创建 `src/components/types.ts` - 定义所有类型
+2. 创建 `src/components/game.tsx` - 实现游戏逻辑
+3. 修改 `src/app/page.tsx` - 导入游戏组件
+4. 修改 `src/app/layout.tsx` - 设置元数据
+5. 配置 `tailwind.config.ts`、`tsconfig.json`、`next.config.js`
+
+### 16.3 测试要点
+1. 设置阶段：验证输入边界值
+2. 角色分配：验证随机性和准确性
+3. 发言顺序：测试白板和非白板两种情况
+4. 重复描述：测试防重复机制
+5. 投票逻辑：验证 AI 投票准确性
+6. 游戏结束：测试所有胜负条件
+
+### 16.4 运行命令
+```bash
+npm run dev      # 开发模式（http://localhost:3000）
+npm run build    # 生产构建
+npm start        # 生产模式
+npm run lint     # 代码检查
+```
+
+---
+
+## 17. 扩展性建议
+
+### 17.1 可能的功能扩展
+1. 添加更多词语对
+2. 支持自定义词语
+3. 添加游戏难度（调整 AI 智能度）
+4. 添加游戏历史记录
+5. 支持多人联机模式
+6. 添加音效和动画
+
+### 17.2 代码优化方向
+1. 将游戏逻辑拆分为多个组件
+2. 使用状态管理库（如 Zustand）
+3. 添加单元测试
+4. 优化 AI 投票算法
+
+---
+
+## 18. 完整源代码位置
+
+- **核心游戏逻辑**：`src/components/game.tsx`（965 行）
+- **类型定义**：`src/components/types.ts`（45 行）
+- **应用入口**：`src/app/page.tsx`（5 行）
+- **根布局**：`src/app/layout.tsx`（19 行）
+- **全局样式**：`src/app/globals.css`（3 行）
+
+---
+
+## 19. 关键算法伪代码
+
+### 19.1 游戏初始化算法
+```
+function startGame():
+  1. 随机选择词语对
+  2. 创建角色数组 = [卧底×N, 白板×M, 平民×剩余]
+  3. Fisher-Yates 洗牌(角色数组)
+  4. 创建玩家数组，索引0为人类玩家
+  5. 切换到查看词语阶段
+```
+
+### 19.2 描述生成算法
+```
+function generateDescription(word, role, playerId, usedDescs, currentRoundUsed):
+  1. 获取所有历史描述 = flatten(usedDescs)
+  2. if role == 'blank':
+       可用描述 = 白板描述 - (历史描述 + 当前轮次描述)
+     else:
+       可用描述 = 词语模板[word] - (历史描述 + 当前轮次描述)
+  3. if 可用描述为空:
+       return 随机选择一个
+     else:
+       return 随机选择可用描述
+```
+
+### 19.3 投票决策算法
+```
+function generateAIVote(player, allPlayers, allDescriptions):
+  1. 获取所有存活的其他玩家
+  2. for 每个玩家 p:
+       可疑度 = random(0, 30)
+       描述 = allDescriptions[p.id]
+
+       if 描述模糊:
+         可疑度 += 40
+
+       if 词语矛盾:
+         可疑度 += 35
+
+       if player是卧底 and p是平民:
+         可疑度 += 25
+
+  3. 按可疑度排序
+  4. if random() < 0.7:
+       return 最可疑的玩家
+     else:
+       return 第二可疑的玩家
+```
+
+---
+
+## 20. 总结
+
+本文档提供了完整的技术规格，涵盖：
+- 完整的项目结构和文件内容
+- 详细的类型系统定义
+- 精确的游戏规则和逻辑
+- 完整的 AI 行为算法
+- 详尽的 UI 设计规范
+- 所有配置文件的内容
+
+任何 LLM 模型应该能够根据此文档完全复刻项目。
+
+---
+
+**文档完成日期**：2025-11-19
+**文档作者**：Claude (Anthropic)
+**项目版本**：1.0.0
