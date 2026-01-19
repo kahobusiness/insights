@@ -1,5 +1,6 @@
 {
   "private": true,
+  "packageManager": "pnpm@10.18.3",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build && pagefind --site .next/server/app --output-path public/_pagefind",
