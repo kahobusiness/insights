@@ -9,9 +9,9 @@ This is a bilingual (English/Chinese) blog built with Nextra 4 and Next.js 16, d
 ## Development Commands
 
 ```bash
-npm run dev      # Start dev server with Turbopack
-npm run build    # Build for production (includes pagefind search index generation)
-npm start        # Start production server
+pnpm dev      # Start dev server with Turbopack
+pnpm build    # Build for production (includes pagefind search index generation)
+pnpm start    # Start production server
 ```
 
 ## Architecture
