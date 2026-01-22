@@ -6,13 +6,20 @@
 }
 
 .imageRow > div {
-    flex: 1; /* 默认值，会被 JS 动态覆盖 */
+    flex: 1; /* 默认平分，可通过 ratios prop 覆盖 */
     min-width: 0;
+}
+
+/* 处理 MDX 中 markdown 图片的 p 标签包裹 */
+.imageRow > div > p {
+    margin: 0;
+    height: 100%;
 }
 
 .imageRow img {
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: cover;
     border-radius: 4px;
     display: block;
 }
@@ -24,7 +31,12 @@
     }
 
     .imageRow > div {
-        flex: none !important; /* 移动端忽略 JS 设置的 flex */
+        flex: none !important;
         width: 100%;
+    }
+
+    .imageRow img {
+        height: auto;
+        object-fit: contain;
     }
 }
