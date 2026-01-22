@@ -1,4 +1,4 @@
-{
+export default {
     "the-7-question": "The 7 Question",
     "user-value": "User Value",
     "yuque-for-consumer": "Case Study: Yuque's Consumer Product Line"
