@@ -1,0 +1,30 @@
+.imageRow {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    margin: 1rem 0;
+}
+
+.imageRow > div {
+    flex: 1; /* 默认值，会被 JS 动态覆盖 */
+    min-width: 0;
+}
+
+.imageRow img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    display: block;
+}
+
+/* 移动端垂直堆叠 */
+@media (max-width: 768px) {
+    .imageRow {
+        flex-direction: column;
+    }
+
+    .imageRow > div {
+        flex: none !important; /* 移动端忽略 JS 设置的 flex */
+        width: 100%;
+    }
+}
