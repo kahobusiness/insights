@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2022",
+    "types": ["node"],
     "lib": [
       "dom",
       "dom.iterable",
@@ -18,7 +19,6 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "moduleResolution": "bundler",
-    "baseUrl": "./",
     "paths": {
       "@app/*": [
         "./app/*"
