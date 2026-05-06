@@ -7,5 +7,6 @@ export default {
     "title": "🔗 RAG-R4 链路详述"
   },
   "annotation-reply": "💬 标注回复",
-  "dictionary": "📚 名词解释"
+  "dictionary": "📚 名词解释",
+  "LLM-Learning-0": "✏️ 重新学习 LLM：工作原理、推理速度及推理成本"
 }
