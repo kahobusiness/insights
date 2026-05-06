@@ -7,5 +7,6 @@ export default {
     "title": "🔗 Details of RAG R4 Link"
   },
   "annotation-reply": "💬 Annotation Reply",
-  "dictionary": "📚 Dictionary"
+  "dictionary": "📚 Dictionary",
+  "LLM-Learning-0": "✏️ Relearning LLMs: How Inference Works, Speed, and Cost"
 }
