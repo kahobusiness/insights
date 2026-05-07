@@ -1,0 +1,336 @@
+.root {
+  border-radius: 1.25rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f0f9ff 100%);
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.5;
+  container-type: inline-size;
+}
+
+@media (min-width: 480px) {
+  .root {
+    padding: 1.25rem;
+    border-radius: 1.5rem;
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 480px) {
+  .stack {
+    gap: 1.25rem;
+  }
+}
+
+.panel {
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  padding: 1rem;
+}
+
+@media (min-width: 480px) {
+  .panel {
+    padding: 1.25rem;
+    border-radius: 1.25rem;
+  }
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: #0f172a;
+}
+
+@media (min-width: 480px) {
+  .title {
+    font-size: 1.375rem;
+  }
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.desc {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+/* Controls grid: 1 col on phone, 2 on tablet, 3 on wider — driven by container width, not viewport. */
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.625rem;
+}
+
+.controlPanel {
+  border-radius: 0.875rem;
+  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  padding: 0.75rem 0.875rem;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.controlHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.5rem;
+}
+
+.controlMeta {
+  min-width: 0;
+}
+
+/* When the card itself is narrow (< 300px inline size), drop the input row
+   below label/helper so it sits between description and the slider. */
+@container (max-width: 300px) {
+  .controlHeader {
+    grid-template-columns: 1fr;
+  }
+  .controlInputRow {
+    justify-content: flex-start;
+  }
+}
+
+.controlLabel {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.controlHelper {
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.controlInputRow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.numberInput {
+  height: 1.875rem;
+  width: 5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #cbd5e1;
+  background: white;
+  padding: 0 0.5rem;
+  text-align: right;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  font-size: 0.8125rem;
+  outline: none;
+  color: #0f172a;
+  -moz-appearance: textfield;
+}
+
+.numberInput::-webkit-outer-spin-button,
+.numberInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.numberInput:focus {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 2px rgba(199, 210, 254, 0.55);
+}
+
+.unit {
+  font-size: 0.7rem;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.slider {
+  margin-top: 0.75rem;
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 999px;
+  background: transparent;
+  touch-action: pan-x;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid currentColor;
+  margin-top: -7px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+  transition: transform 120ms ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.08);
+}
+
+.slider::-moz-range-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid currentColor;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+}
+
+.sliderLabels {
+  margin-top: 0.25rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+/* Stats: a single grid; Bottleneck spans the full row, the other 6 cards
+   form 3 × 2 (or 2 × 3 / 1 × 6 on narrower containers). */
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.625rem;
+}
+
+.statSpanFull {
+  grid-column: 1 / -1;
+}
+
+.statCard {
+  border-radius: 0.875rem;
+  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  padding: 0.875rem 1rem;
+  min-width: 0;
+}
+
+.statLabel {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  word-break: break-word;
+}
+
+.statValue {
+  margin-top: 0.375rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+@media (min-width: 480px) {
+  .statValue {
+    font-size: 1.25rem;
+  }
+}
+
+.statNote {
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  color: #64748b;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+/* Chart: shorter on phone, taller on desktop. */
+.chart {
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  padding: 0.75rem 0.5rem 0.5rem;
+  height: 320px;
+}
+
+@media (min-width: 480px) {
+  .chart {
+    height: 380px;
+    padding: 1rem 0.75rem 0.5rem;
+    border-radius: 1.25rem;
+  }
+}
+
+@media (min-width: 720px) {
+  .chart {
+    height: 440px;
+  }
+}
+
+.notesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.625rem;
+}
+
+.note {
+  border-radius: 0.875rem;
+  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  padding: 0.875rem 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  color: #334155;
+}
+
+.note p {
+  margin: 0.4rem 0 0;
+  word-break: break-word;
+}
+
+.noteTitle {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 0.875rem;
+}
+
+.noteSub {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
