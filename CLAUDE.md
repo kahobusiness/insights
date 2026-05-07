@@ -96,6 +96,32 @@ pnpm start    # Start production server
 2. /en 目录下，新增文件应使用 `Published:`，修改文件应使用 `Updated:`
 3. /zh 目录下，新增文件应使用 `新增文档：`，修改文件应使用 `更新文档：`
 
+### 检查 4: SEO frontmatter 完整性检查
+
+**触发条件**: 本次 commit 在 `content/en/` 或 `content/zh/` 下新增 `.mdx` 文件
+
+**检查步骤**:
+1. 读取新增文件，确认顶部存在 `export const metadata = { description: '...' }`
+2. `description` 字段不能为空字符串，且建议长度在 60–160 字符（搜索结果摘要常见上限）
+3. 该 `description` 会被 `BlogPosting` JSON-LD schema 与 OG/Twitter card 复用，缺失会让搜索引擎与社交分享退化为站点级默认描述
+
+**若缺失**:
+- 提示用户该文件缺少 `description`
+- 建议在 `import` 之后、H1 之前补充 `export const metadata = { description: '一句话描述本文要点' }`
+
+### 检查 5: 图片 alt 与内链锚文本检查
+
+**触发条件**: 本次 commit 在 `content/en/` 或 `content/zh/` 下新增或修改 `.mdx` 文件
+
+**检查步骤**:
+1. 扫描本次变更内容中的 `![alt](src)` 图片，确认 `alt` 文本非空且具有描述性
+2. 扫描 `[文本](url)` 链接，确认锚文本不是「点击这里」「这里」「click here」「here」「link」「了解更多」等无描述性的占位词
+3. 这两项直接影响搜索引擎理解图片含义和链接目标，也是无障碍体验的基础
+
+**若发现问题**:
+- 列出具体行号与问题类型（EMPTY_ALT / GENERIC_ANCHOR）
+- 建议改写为描述图片内容或链接目的的文本
+
 ### 检查结果处理
 
 | 检查项 | 通过 | 未通过 |
@@ -103,5 +129,7 @@ pnpm start    # Start production server
 | 双语对应 | 继续 | 询问是否创建对应语言文件 |
 | _meta.js | 继续 | 提示并建议配置 |
 | logs.mdx | 继续 | 提示并建议日志内容 |
+| SEO description | 继续 | 提示并建议补充 metadata.description |
+| 图片 alt / 链接锚文本 | 继续 | 列出问题并建议改写 |
 
 **执行时机**: 用户请求 commit 时，先执行以上检查，全部通过或用户确认处理完问题后，再执行 commit 操作。
