@@ -1,6 +1,7 @@
-# ✏️ Relearning LLMs 02: Writing Inference as Equations
-
 import { Callout } from 'nextra/components'
+import { TComputeMemorySimulator } from '@app/components/t-compute-memory-simulator'
+
+# ✏️ Relearning LLMs 02: Writing Inference as Equations
 
 <Callout type="info" emoji="📖">
 
@@ -336,6 +337,10 @@ Geometrically:
 This also explains a real phenomenon: **services handling long documents/long conversations rely more heavily on user volume to operate**. KV pressure shifts the sweet spot rightward, requiring more concurrent users to fill the GPU. Without enough users, machines wobble in the inefficient region — that's why long-context APIs are both expensive and hard to operate.
 
 Going further: at some critical context length, KV-move time **fully overtakes** parameter-move time, and the system flips from "weight-bound" to "**KV-bound**." This is the physical root of Gemini's 50% price hike past 200K context — the threshold isn't arbitrary, it's computed.
+
+Below is an interactive simulator. Drag `L`, `b`, `BW`, `N_active` and watch how the crossover B\* between T_compute and T_memory shifts:
+
+<TComputeMemorySimulator />
 
 ---
 
