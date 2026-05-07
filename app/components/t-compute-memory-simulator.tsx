@@ -601,7 +601,7 @@ export function TComputeMemorySimulator() {
         <div className={styles.chart}>
           {chartReady ? (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 12, right: 16, left: 0, bottom: 16 }}>
+            <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis
                 dataKey="B"
@@ -637,7 +637,11 @@ export function TComputeMemorySimulator() {
                   padding: '6px 10px',
                 }}
               />
-              <Legend wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
+              <Legend
+                verticalAlign="top"
+                align="right"
+                wrapperStyle={{ fontSize: 11, paddingBottom: 12 }}
+              />
               <ReferenceLine
                 x={safeB}
                 stroke="#94a3b8"
