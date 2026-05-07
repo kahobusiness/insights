@@ -28,7 +28,6 @@ const GLOW = {
 } as const
 
 const DEFAULTS = {
-  desc: '使用更适合观察 KV cache 影响的中等规格推理卡参数。这里故意降低带宽与总参数量，让 L 与 b 对 T_memory 的影响更加明显。',
   B: 128,
   BMax: 2048,
   NActive: 8e9,
@@ -38,6 +37,169 @@ const DEFAULTS = {
   L: 8192,
   bytesPerToken: 2,
 } as const
+
+type Lang = 'zh' | 'en'
+
+interface LocaleMessages {
+  desc: string
+  controls: {
+    currentB: { label: string; helper: string }
+    maxB: { label: string; helper: string }
+    nActive: { label: string; helper: string }
+    compute: { label: string; helper: string }
+    nTotal: { label: string; helper: string }
+    bw: { label: string; helper: string }
+    seqLen: { label: string; helper: string }
+    bytesPerToken: { label: string; helper: string }
+  }
+  cards: {
+    bottleneckLabel: string
+    tComputeLabel: (b: number) => string
+    tMemoryLabel: (b: number) => string
+    estimatedLatencyLabel: string
+    memoryWeightLabel: string
+    memoryKVLabel: string
+    memorySlopeLabel: string
+    notes: {
+      tCompute: string
+      tMemory: string
+      latency: string
+      memoryWeight: string
+      memoryKV: (share: string) => string
+      memorySlope: string
+      crossoverHas: (bStar: string, total: string) => string
+      crossoverNone: (total: string) => string
+    }
+  }
+  bottleneckValue: { compute: string; memory: string }
+  panels: {
+    chartCheatTitle: string
+    chartCheatBody: string
+    paramSummaryTitle: string
+    paramSummary: (p: {
+      NActive: string
+      C: string
+      NTotal: string
+      BW: string
+      L: string
+      bytesPerToken: number
+    }) => string
+    ratioNote: (ratio: string, share: string) => string
+  }
+  axis: { x: string; y: string }
+}
+
+const MESSAGES: Record<Lang, LocaleMessages> = {
+  zh: {
+    desc: '使用更适合观察 KV cache 影响的中等规格推理卡参数。这里故意降低带宽与总参数量，让 L 与 b 对 T_memory 的影响更加明显。',
+    controls: {
+      currentB: { label: '当前 B', helper: '当前 batch size，标记图上竖线' },
+      maxB: { label: 'B 最大值', helper: '横轴范围，常用 512 / 2048 / 4096' },
+      nActive: { label: 'N_active', helper: '每 token 激活的参数量。MoE 通常更小' },
+      compute: { label: 'C', helper: '有效计算吞吐' },
+      nTotal: { label: 'N_total', helper: '需要从内存读取的总参数 / 数据规模' },
+      bw: { label: 'BW', helper: '有效内存带宽' },
+      seqLen: { label: 'L', helper: '序列长度 / KV 长度，最大 1M token' },
+      bytesPerToken: { label: 'b', helper: '每元素字节数：FP16≈2，FP8≈1，FP32≈4' },
+    },
+    cards: {
+      bottleneckLabel: 'Bottleneck',
+      tComputeLabel: (b) => `T_compute @ B=${b}`,
+      tMemoryLabel: (b) => `T_memory @ B=${b}`,
+      estimatedLatencyLabel: 'Estimated Latency',
+      memoryWeightLabel: 'Memory weight term',
+      memoryKVLabel: 'Memory KV term',
+      memorySlopeLabel: 'Memory slope',
+      notes: {
+        tCompute: 'B × N_active / C',
+        tMemory: 'weight + KV',
+        latency: 'max(T_compute, T_memory)',
+        memoryWeight: 'N_total / BW，决定截距',
+        memoryKV: (share) => `B×L×b/BW，占 ${share}%`,
+        memorySlope: '每加 1 个 B 的 T_memory 增量',
+        crossoverHas: (bStar, total) =>
+          `交点 B* ≈ ${bStar} · Estimated Latency ${total}`,
+        crossoverNone: (total) => `当前范围内没有交点 · Estimated Latency ${total}`,
+      },
+    },
+    bottleneckValue: { compute: 'Compute-bound', memory: 'Memory-bound' },
+    panels: {
+      chartCheatTitle: '读图小抄',
+      chartCheatBody:
+        'T_compute 的斜率是 N_active / C；T_memory 的斜率是 L × b / BW，截距是 N_total / BW。在超高带宽和超大参数量下，KV 项通常远小于权重读取项，所以调 L 和 b 不容易让总 T_memory 斜率明显变化。',
+      paramSummaryTitle: '当前参数速览',
+      paramSummary: (p) =>
+        `N_active=${p.NActive}，C=${p.C} ops/s，N_total=${p.NTotal}，BW=${p.BW} B/s，L=${p.L}，b=${p.bytesPerToken}B。`,
+      ratioNote: (ratio, share) =>
+        `Compute / Memory 比值：${ratio}。KV 项占比：${share}%。继续提高 L、提高 b、降低 BW，都能明显拉高 T_memory 的斜率。`,
+    },
+    axis: { x: 'Batch size B', y: 'Time (ms)' },
+  },
+  en: {
+    desc: 'Mid-range inference-GPU defaults tuned to make KV-cache effects easy to see — bandwidth and total params are intentionally lower so L and b move T_memory visibly.',
+    controls: {
+      currentB: {
+        label: 'Current B',
+        helper: 'Current batch size — marked as a vertical line on the chart',
+      },
+      maxB: {
+        label: 'Max B',
+        helper: 'X-axis range. Common values: 512 / 2048 / 4096',
+      },
+      nActive: {
+        label: 'N_active',
+        helper: 'Parameters activated per token. MoE models are typically smaller',
+      },
+      compute: { label: 'C', helper: 'Effective compute throughput' },
+      nTotal: {
+        label: 'N_total',
+        helper: 'Total params (or data) that must be read from memory',
+      },
+      bw: { label: 'BW', helper: 'Effective memory bandwidth' },
+      seqLen: {
+        label: 'L',
+        helper: 'Sequence / KV length, up to 1M tokens',
+      },
+      bytesPerToken: {
+        label: 'b',
+        helper: 'Bytes per element: FP16≈2, FP8≈1, FP32≈4',
+      },
+    },
+    cards: {
+      bottleneckLabel: 'Bottleneck',
+      tComputeLabel: (b) => `T_compute @ B=${b}`,
+      tMemoryLabel: (b) => `T_memory @ B=${b}`,
+      estimatedLatencyLabel: 'Estimated Latency',
+      memoryWeightLabel: 'Memory weight term',
+      memoryKVLabel: 'Memory KV term',
+      memorySlopeLabel: 'Memory slope',
+      notes: {
+        tCompute: 'B × N_active / C',
+        tMemory: 'weight + KV',
+        latency: 'max(T_compute, T_memory)',
+        memoryWeight: 'N_total / BW — sets the intercept',
+        memoryKV: (share) => `B×L×b/BW, ${share}% of total`,
+        memorySlope: 'T_memory increase per +1 B',
+        crossoverHas: (bStar, total) =>
+          `Crossover B* ≈ ${bStar} · Estimated Latency ${total}`,
+        crossoverNone: (total) =>
+          `No crossover in the current range · Estimated Latency ${total}`,
+      },
+    },
+    bottleneckValue: { compute: 'Compute-bound', memory: 'Memory-bound' },
+    panels: {
+      chartCheatTitle: 'Reading the chart',
+      chartCheatBody:
+        'T_compute slope is N_active / C; T_memory slope is L × b / BW with intercept N_total / BW. With very high bandwidth and large param counts, the KV term is usually dwarfed by the weight-read term, so tweaking L and b will barely move the total T_memory slope.',
+      paramSummaryTitle: 'Current parameters',
+      paramSummary: (p) =>
+        `N_active=${p.NActive}, C=${p.C} ops/s, N_total=${p.NTotal}, BW=${p.BW} B/s, L=${p.L}, b=${p.bytesPerToken}B.`,
+      ratioNote: (ratio, share) =>
+        `Compute / Memory ratio: ${ratio}. KV share: ${share}%. Increasing L, increasing b, or lowering BW will all visibly steepen T_memory.`,
+    },
+    axis: { x: 'Batch size B', y: 'Time (ms)' },
+  },
+}
 
 interface MetricsInput {
   B: number
@@ -57,7 +219,7 @@ interface Metrics {
   total: number
   kvShare: number
   memorySlope: number
-  bottleneck: 'Compute-bound' | 'Memory-bound'
+  bottleneck: 'compute' | 'memory'
   ratio: number
 }
 
@@ -162,7 +324,7 @@ function calcMetrics({ B, NActive, C, NTotal, BW, L, bytesPerToken }: MetricsInp
     total,
     kvShare: T_memory === 0 ? 0 : memoryKV / T_memory,
     memorySlope: (L * bytesPerToken) / BW,
-    bottleneck: T_compute > T_memory ? 'Compute-bound' : 'Memory-bound',
+    bottleneck: T_compute > T_memory ? 'compute' : 'memory',
     ratio: T_memory === 0 ? Infinity : T_compute / T_memory,
   }
 }
@@ -419,7 +581,13 @@ function useSimulator() {
   }
 }
 
-export function TComputeMemorySimulator() {
+interface TComputeMemorySimulatorProps {
+  /** UI language for labels, helpers, and notes. Defaults to `zh`. */
+  lang?: Lang
+}
+
+export function TComputeMemorySimulator({ lang = 'zh' }: TComputeMemorySimulatorProps = {}) {
+  const t = MESSAGES[lang]
   const sim = useSimulator()
   const [chartReady, setChartReady] = useState(false)
   useEffect(() => setChartReady(true), [])
@@ -446,6 +614,16 @@ export function TComputeMemorySimulator() {
     setBytesPerToken,
   } = sim
 
+  const bottleneckText =
+    current.bottleneck === 'compute'
+      ? t.bottleneckValue.compute
+      : t.bottleneckValue.memory
+  const totalMs = formatMs(current.total)
+  const bottleneckNote = intersection
+    ? t.cards.notes.crossoverHas(formatCompact(intersection), totalMs)
+    : t.cards.notes.crossoverNone(totalMs)
+  const sharePct = (current.kvShare * 100).toFixed(2)
+
   return (
     <div className={styles.root}>
       <div className={styles.stack}>
@@ -453,26 +631,26 @@ export function TComputeMemorySimulator() {
           <div className={styles.header}>
             <h3 className={styles.title}>T_compute / T_memory Batch Size Simulator</h3>
             <p className={styles.subtitle}>
-              T_compute = B × N_active / C，T_memory = N_total / BW + B × L × b / BW
+              T_compute = B × N_active / C, T_memory = N_total / BW + B × L × b / BW
             </p>
-            <div className={styles.desc}>{DEFAULTS.desc}</div>
+            <div className={styles.desc}>{t.desc}</div>
           </div>
         </div>
 
         <div className={styles.controls}>
           <LinearControl
-            label="当前 B"
+            label={t.controls.currentB.label}
             value={safeB}
             setValue={setB}
             min={1}
             max={BMax}
             step={1}
             accentColor={COLORS.compute}
-            helper="当前 batch size，标记图上竖线"
+            helper={t.controls.currentB.helper}
           />
 
           <LinearControl
-            label="B 最大值"
+            label={t.controls.maxB.label}
             value={BMax}
             setValue={(value) => {
               const next = clamp(value, 128, 8192)
@@ -483,231 +661,228 @@ export function TComputeMemorySimulator() {
             max={8192}
             step={128}
             accentColor={COLORS.compute}
-            helper="横轴范围，常用 512 / 2048 / 4096"
+            helper={t.controls.maxB.helper}
           />
 
           <LogControl
             accentColor={COLORS.compute}
-            label="N_active"
+            label={t.controls.nActive.label}
             value={NActive}
             setValue={setNActive}
             min={1e6}
             max={500e9}
             unit="params"
-            helper="每 token 激活的参数量。MoE 通常更小"
+            helper={t.controls.nActive.helper}
           />
 
           <LogControl
             accentColor={COLORS.compute}
-            label="C"
+            label={t.controls.compute.label}
             value={C}
             setValue={setC}
             min={1e10}
             max={5e15}
             unit="ops/s"
-            helper="有效计算吞吐"
+            helper={t.controls.compute.helper}
           />
 
           <LogControl
             accentColor={COLORS.memory}
-            label="N_total"
+            label={t.controls.nTotal.label}
             value={NTotal}
             setValue={setNTotal}
             min={1e6}
             max={1e12}
             unit="params"
-            helper="需要从内存读取的总参数 / 数据规模"
+            helper={t.controls.nTotal.helper}
           />
 
           <LogControl
             accentColor={COLORS.memory}
-            label="BW"
+            label={t.controls.bw.label}
             value={BW}
             setValue={setBW}
             min={1e9}
             max={1e13}
             unit="B/s"
-            helper="有效内存带宽"
+            helper={t.controls.bw.helper}
           />
 
           <LinearControl
             accentColor={COLORS.kv}
-            label="L"
+            label={t.controls.seqLen.label}
             value={L}
             setValue={setL}
             min={128}
             max={1048576}
             step={1024}
             unit="tok"
-            helper="序列长度 / KV 长度，最大 1M token"
+            helper={t.controls.seqLen.helper}
           />
 
           <LinearControl
             accentColor={COLORS.kv}
-            label="b"
+            label={t.controls.bytesPerToken.label}
             value={bytesPerToken}
             setValue={setBytesPerToken}
             min={1}
             max={8}
             step={1}
             unit="B"
-            helper="每元素字节数：FP16≈2，FP8≈1，FP32≈4"
+            helper={t.controls.bytesPerToken.helper}
           />
         </div>
 
         <div className={styles.statGrid}>
           <StatCard
             className={styles.statSpanFull}
-            label="Bottleneck"
-            value={current.bottleneck}
-            note={
-              intersection
-                ? `交点 B* ≈ ${formatCompact(intersection)} · Estimated Latency ${formatMs(current.total)}`
-                : `当前范围内没有交点 · Estimated Latency ${formatMs(current.total)}`
-            }
+            label={t.cards.bottleneckLabel}
+            value={bottleneckText}
+            note={bottleneckNote}
           />
           <StatCard
-            label={`T_compute @ B=${safeB}`}
+            label={t.cards.tComputeLabel(safeB)}
             value={formatMs(current.T_compute)}
-            note="B × N_active / C"
+            note={t.cards.notes.tCompute}
           />
           <StatCard
-            label={`T_memory @ B=${safeB}`}
+            label={t.cards.tMemoryLabel(safeB)}
             value={formatMs(current.T_memory)}
-            note="weight + KV"
+            note={t.cards.notes.tMemory}
           />
           <StatCard
-            label="Estimated Latency"
+            label={t.cards.estimatedLatencyLabel}
             value={formatMs(current.total)}
-            note="max(T_compute, T_memory)"
+            note={t.cards.notes.latency}
           />
           <StatCard
-            label="Memory weight term"
+            label={t.cards.memoryWeightLabel}
             value={formatMs(current.memoryWeight)}
-            note="N_total / BW，决定截距"
+            note={t.cards.notes.memoryWeight}
           />
           <StatCard
-            label="Memory KV term"
+            label={t.cards.memoryKVLabel}
             value={formatMs(current.memoryKV)}
-            note={`B×L×b/BW，占 ${(current.kvShare * 100).toFixed(2)}%`}
+            note={t.cards.notes.memoryKV(sharePct)}
           />
           <StatCard
-            label="Memory slope"
+            label={t.cards.memorySlopeLabel}
             value={formatMs(current.memorySlope)}
-            note="每加 1 个 B 的 T_memory 增量"
+            note={t.cards.notes.memorySlope}
           />
         </div>
 
         <div className={styles.chart}>
           {chartReady ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis
-                dataKey="B"
-                tick={{ fontSize: 10, fill: '#64748b' }}
-                label={{
-                  value: 'Batch size B',
-                  position: 'insideBottom',
-                  offset: -8,
-                  style: { fill: '#475569', fontSize: 11 },
-                }}
-              />
-              <YAxis
-                domain={[0, yMax]}
-                tick={{ fontSize: 10, fill: '#64748b' }}
-                tickFormatter={(value: number) => formatMs(value, false)}
-                width={56}
-                label={{
-                  value: 'Time (ms)',
-                  angle: -90,
-                  position: 'insideLeft',
-                  offset: 12,
-                  style: { fill: '#475569', fontSize: 11, textAnchor: 'middle' },
-                }}
-              />
-              <Tooltip
-                formatter={(value) => formatMs(Number(value))}
-                labelFormatter={(value) => `B = ${value}`}
-                contentStyle={{
-                  borderRadius: 10,
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 4px 14px rgba(15,23,42,0.12)',
-                  fontSize: 11,
-                  padding: '6px 10px',
-                }}
-              />
-              <Legend
-                verticalAlign="top"
-                align="right"
-                wrapperStyle={{ fontSize: 11, paddingBottom: 12 }}
-              />
-              <ReferenceLine
-                x={safeB}
-                stroke="#94a3b8"
-                strokeDasharray="4 4"
-                label={{ value: `B=${safeB}`, fill: '#475569', fontSize: 10 }}
-              />
-              {intersection ? (
-                <ReferenceLine
-                  x={intersection}
-                  stroke="#f59e0b"
-                  strokeDasharray="5 5"
-                  label={{ value: 'B*', fill: '#b45309', fontSize: 10 }}
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis
+                  dataKey="B"
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  label={{
+                    value: t.axis.x,
+                    position: 'insideBottom',
+                    offset: -8,
+                    style: { fill: '#475569', fontSize: 11 },
+                  }}
                 />
-              ) : null}
-              <Line
-                type="monotone"
-                dataKey="T_compute"
-                stroke={COLORS.compute}
-                dot={false}
-                strokeWidth={2.5}
-                style={{ filter: `drop-shadow(0 0 6px ${GLOW.compute})` }}
-                name="T_compute"
-              />
-              <Line
-                type="monotone"
-                dataKey="T_memory"
-                stroke={COLORS.memory}
-                dot={false}
-                strokeWidth={2.5}
-                style={{ filter: `drop-shadow(0 0 6px ${GLOW.memory})` }}
-                name="T_memory"
-              />
-              <Line
-                type="monotone"
-                dataKey="memoryKV"
-                stroke={COLORS.kv}
-                dot={false}
-                strokeWidth={2}
-                style={{ filter: `drop-shadow(0 0 5px ${GLOW.kv})` }}
-                strokeDasharray="4 4"
-                name="KV part only"
-              />
-            </LineChart>
-          </ResponsiveContainer>
+                <YAxis
+                  domain={[0, yMax]}
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  tickFormatter={(value: number) => formatMs(value, false)}
+                  width={56}
+                  label={{
+                    value: t.axis.y,
+                    angle: -90,
+                    position: 'insideLeft',
+                    offset: 12,
+                    style: { fill: '#475569', fontSize: 11, textAnchor: 'middle' },
+                  }}
+                />
+                <Tooltip
+                  formatter={(value) => formatMs(Number(value))}
+                  labelFormatter={(value) => `B = ${value}`}
+                  contentStyle={{
+                    borderRadius: 10,
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 4px 14px rgba(15,23,42,0.12)',
+                    fontSize: 11,
+                    padding: '6px 10px',
+                  }}
+                />
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  wrapperStyle={{ fontSize: 11, paddingBottom: 12 }}
+                />
+                <ReferenceLine
+                  x={safeB}
+                  stroke="#94a3b8"
+                  strokeDasharray="4 4"
+                  label={{ value: `B=${safeB}`, fill: '#475569', fontSize: 10 }}
+                />
+                {intersection ? (
+                  <ReferenceLine
+                    x={intersection}
+                    stroke="#f59e0b"
+                    strokeDasharray="5 5"
+                    label={{ value: 'B*', fill: '#b45309', fontSize: 10 }}
+                  />
+                ) : null}
+                <Line
+                  type="monotone"
+                  dataKey="T_compute"
+                  stroke={COLORS.compute}
+                  dot={false}
+                  strokeWidth={2.5}
+                  style={{ filter: `drop-shadow(0 0 6px ${GLOW.compute})` }}
+                  name="T_compute"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="T_memory"
+                  stroke={COLORS.memory}
+                  dot={false}
+                  strokeWidth={2.5}
+                  style={{ filter: `drop-shadow(0 0 6px ${GLOW.memory})` }}
+                  name="T_memory"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="memoryKV"
+                  stroke={COLORS.kv}
+                  dot={false}
+                  strokeWidth={2}
+                  style={{ filter: `drop-shadow(0 0 5px ${GLOW.kv})` }}
+                  strokeDasharray="4 4"
+                  name="KV part only"
+                />
+              </LineChart>
+            </ResponsiveContainer>
           ) : null}
         </div>
 
         <div className={styles.notesGrid}>
           <div className={styles.note}>
-            <div className={styles.noteTitle}>读图小抄</div>
-            <p>
-              T_compute 的斜率是 N_active / C；T_memory 的斜率是 L × b / BW，截距是 N_total / BW。
-              在超高带宽和超大参数量下，KV 项通常远小于权重读取项，所以调 L 和 b 不容易让总 T_memory 斜率明显变化。
-            </p>
+            <div className={styles.noteTitle}>{t.panels.chartCheatTitle}</div>
+            <p>{t.panels.chartCheatBody}</p>
           </div>
 
           <div className={styles.note}>
-            <div className={styles.noteTitle}>当前参数速览</div>
+            <div className={styles.noteTitle}>{t.panels.paramSummaryTitle}</div>
             <p>
-              N_active={formatCompact(NActive)}，C={formatCompact(C)} ops/s，N_total=
-              {formatCompact(NTotal)}，BW={formatCompact(BW)} B/s，L={formatCompact(L)}，b=
-              {bytesPerToken}B。
+              {t.panels.paramSummary({
+                NActive: formatCompact(NActive),
+                C: formatCompact(C),
+                NTotal: formatCompact(NTotal),
+                BW: formatCompact(BW),
+                L: formatCompact(L),
+                bytesPerToken,
+              })}
             </p>
             <p className={styles.noteSub}>
-              Compute / Memory 比值：{formatCompact(current.ratio)}。KV 项占比：
-              {(current.kvShare * 100).toFixed(2)}%。继续提高 L、提高 b、降低 BW，都能明显拉高 T_memory 的斜率。
+              {t.panels.ratioNote(formatCompact(current.ratio), sharePct)}
             </p>
           </div>
         </div>
