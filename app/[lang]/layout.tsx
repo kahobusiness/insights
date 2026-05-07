@@ -10,6 +10,7 @@ import type { Locale } from '../../i18n-config'
 
 // Required for theme styles, previously was imported under the hood
 import 'nextra-theme-docs/style.css'
+import 'katex/dist/katex.min.css'
 
 interface LayoutProps {
   children: ReactNode
