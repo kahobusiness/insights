@@ -20,13 +20,25 @@ interface LayoutProps {
 }
 
 export const metadata: Metadata = {
-  // ... your metadata API
-  // https://nextjs.org/docs/app/building-your-application/optimizing/metadata
+  metadataBase: new URL('https://insights.kaho.io'),
   title: {
     default: 'Insights',
     template: '%s | Insights'
   },
-  description: 'A collection of knowledge and experience about product design.'
+  description: 'A collection of knowledge and experience about product design.',
+  openGraph: {
+    type: 'website',
+    siteName: 'Insights',
+    images: [{ url: '/preview.png', width: 1200, height: 630, alt: 'Insights' }]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: ['/preview.png']
+  },
+  robots: {
+    index: true,
+    follow: true
+  }
 }
 
 export default async function RootLayout({ children, params }: LayoutProps) {
