@@ -112,9 +112,9 @@ $$
 
 Each user has their own KV "personal notebook," **non-amortizable**.
 
-- Notebook size per token: denoted as **`b`** (lowercase b, bytes per token, **don't confuse with the uppercase B for batch**)
+- **Bytes per element** in the notebook: denoted as **`b`** (lowercase, **don't confuse with the uppercase B for batch**). It's set by the numeric precision: FP16/BF16 ≈ 2 bytes, FP8 ≈ 1 byte, FP32 ≈ 4 bytes — lower precision means each entry is cheaper to store
 - Conversation length per user: denoted as **`L`** (context length)
-- Total KV size for B users: `B × L × b`
+- Total KV size for B users: proportional to `B × L × b` (treating the per-token element count as a constant — order-of-magnitude simplification that doesn't change the chart's shape)
 
 $$
 T_{\text{move-KV}} = \frac{B \times L \times b}{BW}
@@ -352,7 +352,7 @@ Below is an interactive simulator. Drag `L`, `b`, `BW`, `N_active` and watch how
 | `L` | context length | **user behavior** |
 | `N_total` | total model parameters | model design |
 | `N_active` | parameters activated per token | model design (sparsity) |
-| `b` | KV size per token | model architecture |
+| `b` | bytes per KV element (FP16≈2 / FP8≈1 / FP32≈4) | numeric precision |
 | `C` | effective compute speed (≈ FLOPS / 2) | **hardware constant** |
 | `BW` | memory bandwidth | **hardware constant** |
 | `C/BW` | ≈ 300, the hardware scale | **hardware constant** |
