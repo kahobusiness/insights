@@ -8,6 +8,6 @@ export default {
   },
   "annotation-reply": "💬 Annotation Reply",
   "dictionary": "📚 Dictionary",
-  "LLM-Learning-0": "✏️ Relearning LLMs 01: How Inference Works, Speed, and Cost",
-  "LLM-Learning-1": "✏️ Relearning LLMs 02: Writing Inference as Equations"
+  "LLM-Learning-1": "✏️ Relearning LLMs 01: How Inference Works, Speed, and Cost",
+  "LLM-Learning-2": "✏️ Relearning LLMs 02: Writing Inference as Equations"
 }

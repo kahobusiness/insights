@@ -1,387 +1,214 @@
 import { Callout } from 'nextra/components'
-import { TComputeMemorySimulator } from '@app/components/t-compute-memory-simulator'
 
-# ✏️ Relearning LLMs 02: Writing Inference as Equations
+# ✏️ Relearning LLMs 01: How Inference Works, Inference Speed, and Inference Cost — Starting with "Moving Stuff vs. Computing Stuff"
 
 <Callout type="info" emoji="📖">
 
-A non-technical explainer. After reading, you'll understand: why every modern LLM inference service runs batch sizes in the "thousands" range, why this number isn't an empirical guess but a physical conclusion derived from hardware specs, and why long conversations push that sweet spot further to the right.
+A non-technical explainer. After reading, you'll understand: why ChatGPT spits out characters one at a time, why it can serve millions of users simultaneously, why ultra-long context suddenly costs more, and why no amount of money can make it "answer instantly."
 
 </Callout>
 
-<Callout type="info" emoji="🧭">
+## I. First, Build a Mental Picture
 
-**Recap**: in the previous post, [How Inference Works, Inference Speed, and Inference Cost — Starting with "Moving Stuff vs. Computing Stuff"](./LLM-Learning-0.mdx), we built the core intuition — inference time = move time + compute time, whichever is slower wins; batching amortizes the cost of moving parameters but cannot amortize KV cache. In this post we'll pick up the pen and **translate those intuitions into equations**, to see exactly what GPU engineers draw on whiteboards every day.
+When you press Enter in ChatGPT, what's actually happening inside the machine?
 
-</Callout>
+To answer that, we first need to meet three characters: **parameters**, **VRAM**, and **compute units**.
 
-## I. Naming "Move" and "Compute"
+### 1. Parameters: A Model Is Really Just a Pile of Numbers
 
-Let's give names to the two things we kept repeating in the last post:
+You may have heard things like "GPT-5 has hundreds of billions of parameters" or "DeepSeek is a 700B model." **Parameters** sound profound, but physically they're quite mundane — just **a pile of floating-point numbers** arranged into many matrices.
 
-- **Time spent moving stuff** → call it `T_memory`
-- **Time spent computing stuff** → call it `T_compute`
+A 700B (700-billion-parameter) model, at FP8 precision (1 byte per parameter), comes out to roughly **700 GB**.
 
-So how long does it actually take to generate one token?
+You can think of it as a giant cookbook with 700 billion rules. But you can't flip through this cookbook casually — it has to be **placed somewhere the chef can flip through fast** before any cooking can happen.
 
-$$
-T \geq \max(T_{memory},\ T_{compute})
-$$
+### 2. VRAM (HBM): The "Workbench" Where the Chef Can Flip Through Fast
 
-It's max, **not a sum**. This detail matters a lot — Section VI is dedicated to it. For now, just remember: **whichever is slower wins**.
+That "place where you can flip through fast" is the **GPU's VRAM (HBM)**.
 
-> 🔑 **This is roofline analysis.** The name sounds academic; in essence it's just the line above. The whole story of inference performance analysis starts here.
+> 🔑 **Key fact 1**: At runtime, all parameters must sit in VRAM.
 > 
+
+A single H100 GPU only has 80 GB of VRAM, nowhere near enough for a 700 GB model. So in reality you need **many GPUs stitched together** — that's where terms like "rack" and "cluster" come from.
+
+### 3. Compute Units: The Workers Who Actually Do the Work
+
+Inside the GPU there's also a swarm of **compute units** that do multiplications and additions. You can picture the whole GPU as a factory:
+
+- **Compute units = workers**: blazingly fast
+- **VRAM = warehouse**: stores 700 GB of parameters
+- **Conveyor belt (memory bandwidth)**: hauls parameters from the warehouse to the workers
+
+The awkward truth about modern GPUs is right here: **the workers are absurdly fast, but the conveyor belt from the warehouse to the workers isn't fast enough**.
 
 ---
 
-## II. Writing Out T_compute
+## II. To Generate One Character, What Actually Happens?
 
-Recall: **the work to compute, divided by worker speed, equals compute time.**
+Suppose you ask the model: "How's the weather today?" And it answers, "Sunny today."
 
-### Worker speed
+The model **doesn't think up all those words at once**; it spits them out one at a time:
 
-How many multiplications per second can a GPU do? That number is called **FLOPS** (floating-point operations per second). H100 is around `2 × 10¹⁵`, i.e. 2 quadrillion multiplications per second. **It's a hardware constant** — fixed at purchase, software can't change it.
+```
+Step 1: Sees "How's the weather today?"           → outputs "Sun"
+Step 2: Sees "How's the weather today? Sun"       → outputs "ny"
+Step 3: Sees "How's the weather today? Sunny"     → outputs " to"
+...
+```
 
-### Workload
+This "depend on the previous token, then generate the next" approach is called **autoregressive generation**.
 
-How many multiplications need doing? Two things determine that:
+And to generate **each token**, the model's entire parameter set has to be **read in full**.
 
-- **batch size** (how many users served at once): each extra user adds another batch of compute. Denote this as **`B`**.
-- **multiplications per user per token**: proportional to "how many parameters actually participate in the computation."
-
-The second variable needs unpacking, because it pulls out a key concept.
-
-### A new concept: active parameters vs. total parameters
-
-Most modern LLMs use the **MoE (Mixture of Experts)** architecture: **even though the total parameter count is 700B, only a small subset of parameters actually participates per token generated**.
-
-Analogy: you have a 700-page cookbook at home, but tonight you're only making tomato-egg stir-fry, so you only flip 37 of those pages.
-
-- **Total parameters `N_total`**: total pages in the cookbook (700)
-- **Active parameters `N_active`**: pages actually flipped tonight (37)
-
-For example DeepSeek V3: `N_total = 671B`, `N_active = 37B`.
-
-> 🔑 **Why split the two? Because they map to different costs:**
-> - **Compute cost** depends on `N_active` (only the pages you flipped open)
-> - **Move cost** depends on `N_total` (the whole cookbook has to sit in VRAM, and gets read in full each time)
+> 🔑 **Key fact 2**: Every output token requires "moving" all parameters once.
 > 
 
-This is the elegance of MoE — **trading sparse activation for cheap compute, but the moving cost isn't reduced**. This will become crucial in Section V.
-
-### Writing T_compute
-
-Each token does roughly `2 × N_active` multiplications (the factor of 2 comes from the math, don't worry about it), so when batch=B:
-
-$$
-T_{compute} = \frac{B \times N_{active}}{C}
-$$
-
-where `C = FLOPS / 2`, which you can read as "effective worker speed."
-
-> 🔑 **Intuition**: more users → more compute; more active params → more compute per user; faster workers → less time.
-> 
+Output 100 tokens, and you have to move 700 GB of parameters 100 times. The cost of this dominates everything.
 
 ---
 
-## III. Writing Out T_memory
+## III. So Why Is It Slow? — A Counterintuitive Fact
 
-The previous post said: two things get moved — **model parameters + KV cache**.
+You might assume the model is slow because **computing is slow**.
 
-### Moving parameters
+**It isn't.** What's actually slow is **moving parameters from VRAM to the compute units**.
 
-No matter how big the batch, **the entire cookbook has to be read once** (every token uses every layer).
-
-- How much to move: `N_total`
-- Conveyor belt speed: **memory bandwidth**, denoted as **`BW`**
-
-H100's BW ≈ 3 TB/s, **also a hardware constant**.
+Some numbers for intuition: an H100's memory bandwidth is around **3 TB/s**, which sounds like a lot, but moving 700 GB of parameters once takes at minimum:
 
 $$
-T_{\text{move-params}} = \frac{N_{total}}{BW}
+\frac{700 \text{ GB}}{3 \text{ TB/s}} \approx 0.23 \text{ s}
 $$
 
-<Callout type="info" emoji="💡">
+That's **230 milliseconds** — the physical floor for "running a 700B model on a single H100" per generated token. Roughly **4 tokens/second**.
 
-**Note: there's no B in this term.** No matter how many users, the time to move parameters is the same — that's the fundamental reason batching can amortize parameter movement.
+> 🔑 **Key fact 3**: LLM inference is usually bottlenecked not by **compute**, but by **memory bandwidth**.
+> 
 
-</Callout>
+This state has a specific name: **memory-bound** (limited by memory bandwidth). Its counterpart is **compute-bound** (limited by computation). The whole story of inference optimization is about tugging back and forth between these two.
 
-### Moving the KV cache
+---
 
-Each user has their own KV "personal notebook," **non-amortizable**.
+## IV. Batch: Letting Multiple Users Share One "Move"
 
-- **Bytes per element** in the notebook: denoted as **`b`** (lowercase, **don't confuse with the uppercase B for batch**). It's set by the numeric precision: FP16/BF16 ≈ 2 bytes, FP8 ≈ 1 byte, FP32 ≈ 4 bytes — lower precision means each entry is cheaper to store
-- Conversation length per user: denoted as **`L`** (context length)
-- Total KV size for B users: proportional to `B × L × b` (treating the per-token element count as a constant — order-of-magnitude simplification that doesn't change the chart's shape)
+If every output token requires moving the parameters once, what's **the most wasteful thing**?
 
-$$
-T_{\text{move-KV}} = \frac{B \times L \times b}{BW}
-$$
+Alice and Bob are both using ChatGPT. If the machine first computes a token for Alice (move parameters once), then computes a token for Bob (move parameters again), then 700 GB of parameters got moved **twice**.
+
+But if **Alice and Bob share one move** — load the parameters once, then compute the next token for both at the same time — you only move once.
+
+This is the core motivation behind **batching**:
+
+> 🔑 **The essence of batch**: let one "parameter move" be shared by as many users as possible.
+> 
+
+This also directly explains a phenomenon you may have wondered about: **why ChatGPT can serve so many people at once, with everyone feeling roughly the same speed?** Because everyone is sharing the same parameter move.
 
 <Callout type="warning" emoji="⚠️">
 
-**This term has B** — bigger batch means more KV to move, **non-amortizable**. This difference decides everything.
+Note: batch only amortizes across "the same generation step from different users" — it **cannot amortize across different tokens of the same user**. Because tokens for the same user must be serial: token N depends on token N-1.
 
 </Callout>
 
-### Combining the move parts
+### The Ceiling of Batching
 
-$$
-T_{memory} = \underbrace{\frac{N_{total}}{BW}}_{\text{move-params}} + \underbrace{\frac{B \times L \times b}{BW}}_{\text{move-KV}}
-$$
+Batch size can't be infinitely large. Back to the factory metaphor:
 
-It's a **sum** here, because both use the same conveyor belt — one belt can't move two things at once. This will matter again in Section VI.
+- Small batch: workers finish quickly and **wait for the next batch of materials** → bottleneck is the **conveyor belt** (memory-bound)
+- Large batch: materials pile up and **workers can't keep up** → bottleneck is the **workers** (compute-bound)
+
+There's a **sweet spot** in the middle: the workers finish just before the next batch of materials arrives. Around this point, system efficiency peaks. For modern GPUs, this value sits somewhere around `300 × sparsity`.
+
+> 🔑 **The core tension of inference optimization**: keep the conveyor belt and workers as balanced as possible — neither side waiting on the other.
+> 
 
 ---
 
-## IV. One Picture for Everything
+## V. KV Cache: Each User's "Personal Notebook"
 
-Now we have two functions of time vs. batch size. Horizontal axis is B, vertical axis is time.
+There's a hidden problem we haven't solved yet.
 
-### T_compute: a line through the origin
+When the model computes Alice's 51st token, it needs to "see" the first 50 tokens. Bob just started, so he sees nothing. **How does the model "see" Alice's previous 50 tokens?**
 
-```
-T_compute
-   │           ╱
-   │         ╱
-   │       ╱
-   │     ╱
-   │   ╱
-   │ ╱
-   └───────────► B
-   0
-```
+The dumb way: feed those 50 tokens through again. But if Alice has already chatted for 10,000 tokens, re-running the previous 10,000 every time you generate a new one is **exponential waste**.
 
-### T_memory: a line with an intercept
+The engineering answer is **KV cache**:
 
-```
-T_memory
-   │              ╱
-   │            ╱
-   │          ╱     ← slope = L × b / BW (KV part)
-   │        ╱
-   │      ╱
-   │    ╱
-   │  ╱
-   │╱  ← y-intercept = N_total / BW (params part)
-   │
-   └───────────► B
-   0
-```
+> 🔑 **The KV cache is the model's internal notebook of "tokens already read."**
+> 
 
-### Actual time: take the upper one
+A metaphor: you're reading a very long novel and taking notes as you go. By page 1000 —
 
-Drawn together, T is their max — **whichever line is on top wins**:
+- **No cache**: every page flip means re-reading all previous 999 pages → insane
+- **With cache**: you've already condensed pages 1–999 into notes, just glance at the notes → normal
 
-```
-time
-   │                 ╱  ← T_compute (B × N_active/C)
-   │                ╱     through origin
-   │               ╱
-   │              ╱
-   │             ╱  ╱  ← T_memory (N_total/BW + B×L×b/BW)
-   │            ╱ ╱      meets y-axis at N_total/BW
-   │           ╱╱
-   │          ╳   ← crossover = sweet spot
-   │        ╱╱
-   │     ╱  ╱
-   │   ╱   ╱
-   │ ╱    ╱
-   │    ╱
-   │   ╱
-   │ ╱
-   └──────────────────────► B
-        crossover
-```
+To generate each new token, the model only needs to: **read its own historical notes → compute the new token → append the new token to the notes**.
 
-### Three regions, physical meaning
+### The Critical Property of KV Cache: Private, Non-Sharable
 
-| Region | Dominator | State | Meaning |
+This is the most important point in the whole story:
+
+> 🔑 **Each user's KV cache is private and can't be shared across the batch.**
+> 
+
+Alice's notes are about Alice's conversation; they have nothing to do with Bob. So reading Alice's notes only serves **Alice alone** — adding more users won't amortize the cost.
+
+This means:
+
+| Item | Relation to batch | Relation to context length | Can it be amortized by batch? |
 | --- | --- | --- | --- |
-| **Left (small B)** | T_memory | memory-bound | belt waiting on workers → more batch is a free lunch, latency barely changes |
-| **Crossover** | T_memory = T_compute | perfect balance | belt and worker speeds match, peak efficiency |
-| **Right (large B)** | T_compute | compute-bound | workers can't keep up → more batch doesn't help, latency rises linearly |
+| **Move model parameters** | Fixed | Unchanged | **Yes** ✅ |
+| **Move KV cache** | Linear growth | Linear growth | **No** ❌ |
+| **Compute** | Linear growth | Almost unchanged | (this is the work itself) |
 
-> 🔑 **The core goal of inference optimization is to pin the system near the crossover.** That's why every inference service does batching, continuous batching, dynamic scheduling, etc. — all to keep B at the sweet spot.
-> 
+Understand this table and you've understood 80% of LLM inference.
 
 ---
 
-## V. Solving for the Sweet Spot: Where the Mysterious 300 Comes From
+## VI. Using This Intuition to Explain Three Real Phenomena
 
-The sweet spot is where the two lines cross, i.e. `T_memory = T_compute`.
+### Phenomenon 1: Why Does Ultra-Long Context Suddenly Cost More?
 
-To keep the algebra clean, **simplify one step first**: assume the context isn't too long and the KV term is negligible compared to the parameter term (we'll come back to check this assumption shortly). That is:
+Google Gemini's API price jumps 50% past 200K context. Why?
 
-$$
-T_{memory} \approx \frac{N_{total}}{BW}
-$$
+- Short context (a few thousand tokens): KV notes are tiny, the main cost is moving parameters, fully amortized by batch → cheap
+- Past a critical point (≈ 200K): KV-move time **starts to exceed** parameter-move time → the system flips from weight-bound to **KV-bound**, and KV cost can't be amortized → price must rise
 
-Set the two sides equal:
+200K isn't a number pulled out of thin air — it's a **physically computed critical point**.
 
-$$
-\frac{N_{total}}{BW} = \frac{B \times N_{active}}{C}
-$$
+### Phenomenon 2: Why Are Output Tokens Several Times More Expensive Than Input Tokens?
 
-Solve for B:
+- Processing input: the entire input can be **computed in parallel in one shot**, workers fully utilized, compute-bound, cheap
+- Generating output: must spit out **one token at a time**, every token requires moving the parameters + own KV, memory-bound, expensive
 
-$$
-B = \underbrace{\frac{N_{total}}{N_{active}}}_{\text{model side}} \times \underbrace{\frac{C}{BW}}_{\text{hardware side}}
-$$
+### Phenomenon 3: Why Can No Amount of Money Buy "Instant Answers"?
 
-> 🔑 **The beautiful thing**: the formula **splits perfectly into two halves** — the left depends only on the model, the right only on the hardware. The two worlds don't interfere.
-> 
+Even if you reserve the entire GPU for yourself alone, **the model parameters still have to be moved from VRAM to the compute units**. The speed of that is locked by physics (HBM bandwidth), and **money can't bypass it**.
 
-### The model term: inverse of sparsity
+So "100× more money for 100× more speed" is impossible. Things like Claude's FastMode work by spreading the same batch across **more GPUs**, giving an effectively higher bandwidth → faster for individual users; but past a certain point, the inter-GPU communication itself takes time, and the physical wall is still there.
 
-`N_total / N_active` is "total cookbook / pages flipped tonight" — i.e. **the inverse of sparsity**.
+---
 
-- Dense model: every parameter used, `N_total = N_active`, ratio = **1**
-- DeepSeek V3: `671B / 37B` ≈ **18**
-- Sparser MoEs: can reach **30+**
+## VII. One-Picture Summary
 
-### The hardware term: the mysterious 300
+<Callout type="info" emoji="🗺️">
 
-`C / BW`: worker speed divided by belt speed. Plug in H100's numbers (`C ≈ 10¹⁵`, `BW ≈ 3 × 10¹²`), after unit conversion:
+**Inference = "moving stuff" + "computing stuff"**
 
-$$
-\frac{C}{BW} \approx 300
-$$
+What's being moved:
 
-That's the mysterious **300** engineers talk about. It's a **physical constant of contemporary GPUs** — A100, H100, B100 all have this ratio between 200 and 400.
+- **Model parameters** (large, fixed, amortizable by batch)
+- **KV cache** (per-user private, scales with users and context length, **non-amortizable**)
 
-> 🔑 **Why is this ratio so large?** Over the last decade, GPU compute has grown much faster than memory bandwidth. Compute went up tens of fold, bandwidth only a few — the ratio stretched out to ~300. This is the physical root cause of "modern GPUs being memory-bound."
-> 
+Time per token ≈ max(move time, compute time)
 
-### Final result
-
-<Callout type="info" emoji="🎯">
-Putting it together, the sweet-spot formula (when KV is negligible):
-
-$$
-B_{\text{optimal}} \approx 300 \times \frac{N_{total}}{N_{active}}
-$$
-
-The left is a hardware constant (≈ 300), the right is the inverse of model sparsity.
+The core of optimization: keep the conveyor belt and workers balanced — neither side waiting on the other.
 
 </Callout>
 
-Plug in DeepSeek V3:
-
-$$
-B_{\text{optimal}} \approx 300 \times 18 \approx 5400
-$$
-
-That's why every major inference service runs batches in the "thousands" range — **it's not an empirical number, it's a physical conclusion derived from hardware specs**.
-
 ---
 
-## VI. Two Counterintuitive Details
+## VIII. A Few Questions to Chew On
 
-There are two places in this framework that are surprising at first but click once you see them.
-
-### Detail 1: Why T = max(move, compute), not T = move + compute?
-
-The answer hides the core idea of GPU design —
-
-> 🔑 **Inside a GPU, the moving circuitry and the compute circuitry are two independent pieces of hardware that can work in parallel.**
-> 
-
-Analogy: in a factory, **conveyor-belt workers** (moving circuitry) and **assembly workers** (compute circuitry) are two different teams that can work simultaneously — while the belt is moving the next batch of materials, the assemblers are processing the previous one.
-
-```
-Case A: slow move, fast compute (memory-bound)
-  move:    ████████████████████  (20ms)
-  compute: ████  (4ms, then idle)
-  total:   20ms ← move wins
-
-Case B: fast move, slow compute (compute-bound)
-  move:    ████  (4ms, then idle)
-  compute: ████████████████████  (20ms)
-  total:   20ms ← compute wins
-```
-
-The two workers **overlap** rather than relay, so it's max not sum. **All modern GPUs/TPUs/AI accelerators do this kind of overlap** — that's one of the core reasons they're fast.
-
-### Detail 2: But why is T_memory itself a sum?
-
-You might immediately spot a contradiction: above we said T = max, then why is `T_memory = T_move-params + T_move-KV` not also written as max?
-
-The answer is simple:
-
-> 🔑 **Rule: same resource → sum; different resources → max.**
-> 
-
-- Inside T_memory (move params + move KV): **the same conveyor belt** (HBM bandwidth), can't run in parallel → **sum**
-- T_memory vs T_compute: **two different pieces of hardware** (belt vs workers), can run in parallel → **max**
-
-Once you internalize this rule, the entire inference performance analysis logic becomes solid.
-
----
-
-## VII. Re-checking: What About Long Context?
-
-In Section V we cheated — we threw away the KV term. What happens if a user holds a **really long conversation** (say, analyzing a 200K-token document) and KV grows too large to ignore?
-
-Geometrically:
-
-- The KV term makes T_memory's **slope steeper**
-- T_compute is unchanged
-- The two lines' **crossover shifts to the right**
-
-> 🔑 **Conclusion**: long-context scenarios **need a larger batch** to reach balance.
-> 
-
-This also explains a real phenomenon: **services handling long documents/long conversations rely more heavily on user volume to operate**. KV pressure shifts the sweet spot rightward, requiring more concurrent users to fill the GPU. Without enough users, machines wobble in the inefficient region — that's why long-context APIs are both expensive and hard to operate.
-
-Going further: at some critical context length, KV-move time **fully overtakes** parameter-move time, and the system flips from "weight-bound" to "**KV-bound**." This is the physical root of Gemini's 50% price hike past 200K context — the threshold isn't arbitrary, it's computed.
-
-Below is an interactive simulator. Drag `L`, `b`, `BW`, `N_active` and watch how the crossover B\* between T_compute and T_memory shifts:
-
-<TComputeMemorySimulator />
-
----
-
-## VIII. Wrapping Up with One Table
-
-| Symbol | Meaning | Determined by |
-| --- | --- | --- |
-| `B` | batch size, concurrent users | **scheduling policy** |
-| `L` | context length | **user behavior** |
-| `N_total` | total model parameters | model design |
-| `N_active` | parameters activated per token | model design (sparsity) |
-| `b` | bytes per KV element (FP16≈2 / FP8≈1 / FP32≈4) | numeric precision |
-| `C` | effective compute speed (≈ FLOPS / 2) | **hardware constant** |
-| `BW` | memory bandwidth | **hardware constant** |
-| `C/BW` | ≈ 300, the hardware scale | **hardware constant** |
-
-Core equation:
-
-$$
-\boxed{\ T = \max\left(\frac{N_{total}}{BW} + \frac{B \cdot L \cdot b}{BW},\ \frac{B \cdot N_{active}}{C}\right)\ }
-$$
-
-Sweet spot (when KV is negligible):
-
-$$
-\boxed{\ B_{\text{optimal}} \approx 300 \times \frac{N_{total}}{N_{active}}\ }
-$$
-
----
-
-## IX. A Few Questions to Chew On
-
-1. If a company claims a "new algorithm" makes inference 10× faster, what should you ask? Hint: did they change `N_active`, `b`, or `C/BW`?
-2. What's the optimal batch for a dense model (`N_total = N_active`)? Why do dense models suffer more in long-context scenarios?
-3. If a future GPU 10×s `BW` while keeping `C` fixed, what does `C/BW` become? How does the sweet spot move? Which model class benefits the most?
-4. If a service has only a few users but every user holds super-long conversations, where does its batch get stuck? What happens to its margin?
-
----
-
-<Callout type="info" emoji="🚀">
-
-**Up next**: we can compute latency now, but **a latency chart isn't a cost chart** — why do whiteboard interviews always draw two? Why is non-batched economics 1000× worse? Plus the gorgeous metaphor: "a train departs every 20 ms" — once you get it, you can explain exactly how to size a backend service's concurrent capacity.
-
-</Callout>
+1. If a company claims its "inference service is 10× faster than others," what tactics might it be using? Which are real, and which just swap batching for dedicated capacity?
+2. Why does an MoE (sparse-expert) model actually push the optimal batch *smaller* at inference time? Hint: think about the word "sparsity."
+3. If HBM bandwidth grows 10× in the future, what happens to LLM API prices? Which cost component will dominate the rewrite?
