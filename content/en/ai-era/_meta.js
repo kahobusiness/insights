@@ -8,6 +8,7 @@ export default {
   },
   "annotation-reply": "💬 Annotation Reply",
   "dictionary": "📚 Dictionary",
-  "LLM-Learning-1": "✏️ Relearning LLMs 01: How Inference Works, Speed, and Cost",
-  "LLM-Learning-2": "✏️ Relearning LLMs 02: Writing Inference as Equations"
+  "LLM-Learning-1": "✏️ The Math Behind LLM Pricing 01: How Inference Actually Works",
+  "LLM-Learning-2": "✏️ The Math Behind LLM Pricing 02: Writing Inference as Equations",
+  "LLM-Learning-3": "✏️ The Math Behind LLM Pricing 03: From Inference Latency to Inference Cost"
 }

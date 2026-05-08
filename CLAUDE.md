@@ -122,6 +122,29 @@ pnpm start    # Start production server
 - 列出具体行号与问题类型（EMPTY_ALT / GENERIC_ANCHOR）
 - 建议改写为描述图片内容或链接目的的文本
 
+### 检查 6: 文章 timestamp 是否需要更新
+
+**背景**:
+站点底部显示的「最后更新于 xxx」取自每篇文章 `metadata.timestamp` 字段（手动维护，不再由 git 自动注入）。这个时间是给读者看的「内容代表更新日期」，应该只在文章内容**实质性更新**时才往后调，避免 SEO 改一行字、修一个错别字也让所有文章看起来像刚翻新过。
+
+**触发条件**: 本次 commit 在 `content/en/` 或 `content/zh/` 下新增或修改 `.mdx` 文件
+
+**判断规则**:
+- ✅ **应该更新 timestamp**：新增文章、重写章节、补充新内容、修复事实错误、推翻论证、加入新比喻或新数据；中英文版应同步更新到同一日期
+- ❌ **不应该更新 timestamp**：批量改 `metadata.description`（SEO）、统一术语大小写、修错别字、调标点、只改一两个翻译腔短语、改图片 alt、改链接锚文本、纯格式化（如 prettier）、文件改名／重新编号
+- ⚖️ **边界情况**：如果一次改动既包含实质内容、又包含批量小修，按"是否值得让读者重新看一眼"判断；倾向更新
+
+**检查步骤**:
+1. 通过 `git diff --cached` 看本次每个 mdx 的实际改动
+2. 对每个文件按上面规则判断是否属于"实质内容更新"
+3. 对应该更新的文件，确认 `metadata.timestamp` 已被改到今天的日期（格式：`'YYYY-MM-DD'`）
+4. 对不应更新的文件，确认 timestamp 保持原值
+5. **新增 mdx 必须含 `timestamp` 字段**，否则 frontmatter 检查不通过
+
+**若不一致**:
+- 列出"应该更新但未更新"和"不应更新但已更新"的文件
+- 询问用户每篇文章是否需要调整 timestamp，再继续 commit
+
 ### 检查结果处理
 
 | 检查项 | 通过 | 未通过 |
@@ -131,5 +154,6 @@ pnpm start    # Start production server
 | logs.mdx | 继续 | 提示并建议日志内容 |
 | SEO description | 继续 | 提示并建议补充 metadata.description |
 | 图片 alt / 链接锚文本 | 继续 | 列出问题并建议改写 |
+| timestamp 是否应更新 | 继续 | 列出建议、与用户确认每篇取值 |
 
 **执行时机**: 用户请求 commit 时，先执行以上检查，全部通过或用户确认处理完问题后，再执行 commit 操作。

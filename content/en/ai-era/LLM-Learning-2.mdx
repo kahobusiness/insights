@@ -2,20 +2,21 @@ import { Callout } from 'nextra/components'
 import { TComputeMemorySimulator } from '@app/components/t-compute-memory-simulator'
 
 export const metadata = {
-  description: 'Inference intuition turned into equations — roofline analysis, T_compute / T_memory, the mysterious "300", and a physically-derived optimal batch size. Includes an interactive simulator.'
+  description: 'Inference intuition turned into equations — roofline analysis, T_compute / T_memory, the mysterious "300", and a physically-derived optimal batch size. Includes an interactive simulator.',
+  timestamp: '2026-05-08'
 }
 
-# ✏️ Relearning LLMs 02: Writing Inference as Equations
+# ✏️ The Math Behind LLM Pricing 02: Writing Inference as Equations
 
 <Callout type="info" emoji="📖">
 
-A non-technical explainer. After reading, you'll understand: why every modern LLM inference service runs batch sizes in the "thousands" range, why this number isn't an empirical guess but a physical conclusion derived from hardware specs, and why long conversations push that sweet spot further to the right.
+Last post we just got "a feel" for how LLM inference works at the hardware level. This time, let's pick up the pen and **turn those intuitions into equations** — and you'll see why every modern LLM inference service runs batch sizes squarely in the "thousands" range, and why long conversations push that optimal value even larger. These numbers aren't engineers' rules of thumb; they fall straight out of the hardware specs.
 
 </Callout>
 
 <Callout type="info" emoji="🧭">
 
-**Recap**: in the previous post, [How Inference Works, Inference Speed, and Inference Cost — Starting with "Moving Stuff vs. Computing Stuff"](./LLM-Learning-1.mdx), we built the core intuition — inference time = move time + compute time, whichever is slower wins; batching amortizes the cost of moving parameters but cannot amortize KV cache. In this post we'll pick up the pen and **translate those intuitions into equations**, to see exactly what GPU engineers draw on whiteboards every day.
+**Recap**: in the previous post, [How Inference Actually Works — Starting with "Moving Stuff vs. Computing Stuff"](./LLM-Learning-1.mdx), we built the core intuition: inference time = move time + compute time, whichever is slower wins; batching amortizes the cost of moving parameters, but it cannot amortize the KV cache.
 
 </Callout>
 
@@ -34,7 +35,7 @@ $$
 
 It's max, **not a sum**. This detail matters a lot — Section VI is dedicated to it. For now, just remember: **whichever is slower wins**.
 
-> 🔑 **This is roofline analysis.** The name sounds academic; in essence it's just the line above. The whole story of inference performance analysis starts here.
+> 🔑 **This is roofline analysis.** The name sounds academic; in essence it's just the line above. All of inference performance analysis starts from this one equation.
 > 
 
 ---
@@ -67,16 +68,22 @@ Analogy: you have a 700-page cookbook at home, but tonight you're only making to
 
 For example DeepSeek V3: `N_total = 671B`, `N_active = 37B`.
 
+<Callout type="info" emoji="📎">
+
+**A quick technical aside**: MoE's sparse activation only happens in the **FFN (feed-forward) layers** — the attention layers' Q/K/V/O projections still participate fully for every token. So `N_active` isn't "the whole model scaled down by some ratio"; it's "the full attention layers + only the experts the router selects in each FFN." The 37B figure DeepSeek V3 reports already accounts for this.
+
+</Callout>
+
 > 🔑 **Why split the two? Because they map to different costs:**
 > - **Compute cost** depends on `N_active` (only the pages you flipped open)
 > - **Move cost** depends on `N_total` (the whole cookbook has to sit in VRAM, and gets read in full each time)
 > 
 
-This is the elegance of MoE — **trading sparse activation for cheap compute, but the moving cost isn't reduced**. This will become crucial in Section V.
+That's the elegance of MoE — **you trade sparse activation for cheaper compute, but the moving cost stays the same**. This becomes crucial in Section V.
 
 ### Writing T_compute
 
-Each token does roughly `2 × N_active` multiplications (the factor of 2 comes from the math, don't worry about it), so when batch=B:
+Each token does roughly `2 × N_active` floating-point operations (each weight contributes one multiply + one add, which counts as 2 FLOPs), so when batch=B:
 
 $$
 T_{compute} = \frac{B \times N_{active}}{C}
@@ -116,9 +123,9 @@ $$
 
 Each user has their own KV "personal notebook," **non-amortizable**.
 
-- **Bytes per element** in the notebook: denoted as **`b`** (lowercase, **don't confuse with the uppercase B for batch**). It's set by the numeric precision: FP16/BF16 ≈ 2 bytes, FP8 ≈ 1 byte, FP32 ≈ 4 bytes — lower precision means each entry is cheaper to store
+- **Bytes per token in the KV cache**: denoted as **`b`** (lowercase, **don't confuse with the uppercase B for batch**). In practice `b = 2 × num_layers × num_kv_heads × head_dim × bytes_per_element` — every token stores one K and one V at every layer. For a typical large model (tens of layers, dozens of KV heads), `b` lands somewhere in the **tens to hundreds of KB per token** range. Lower numeric precision (FP16 → FP8) and aggressive KV-head sharing (GQA / MLA) both pull `b` down
 - Conversation length per user: denoted as **`L`** (context length)
-- Total KV size for B users: proportional to `B × L × b` (treating the per-token element count as a constant — order-of-magnitude simplification that doesn't change the chart's shape)
+- Total KV size for B users: proportional to `B × L × b`
 
 $$
 T_{\text{move-KV}} = \frac{B \times L \times b}{BW}
@@ -144,7 +151,7 @@ It's a **sum** here, because both use the same conveyor belt — one belt can't 
 
 Now we have two functions of time vs. batch size. Horizontal axis is B, vertical axis is time.
 
-### T_compute: a line through the origin
+### T_compute: a line that starts at zero
 
 ```
 T_compute
@@ -158,7 +165,7 @@ T_compute
    0
 ```
 
-### T_memory: a line with an intercept
+### T_memory: a line that starts at a positive height
 
 ```
 T_memory
@@ -182,7 +189,7 @@ Drawn together, T is their max — **whichever line is on top wins**:
 ```
 time
    │                 ╱  ← T_compute (B × N_active/C)
-   │                ╱     through origin
+   │                ╱     starts at zero
    │               ╱
    │              ╱
    │             ╱  ╱  ← T_memory (N_total/BW + B×L×b/BW)
@@ -235,7 +242,7 @@ $$
 B = \underbrace{\frac{N_{total}}{N_{active}}}_{\text{model side}} \times \underbrace{\frac{C}{BW}}_{\text{hardware side}}
 $$
 
-> 🔑 **The beautiful thing**: the formula **splits perfectly into two halves** — the left depends only on the model, the right only on the hardware. The two worlds don't interfere.
+> 🔑 **And here's the elegant part**: the formula **falls cleanly into two halves** — the left depends only on the model, the right only on the hardware. The two worlds don't interfere.
 > 
 
 ### The model term: inverse of sparsity
@@ -278,7 +285,7 @@ $$
 B_{\text{optimal}} \approx 300 \times 18 \approx 5400
 $$
 
-That's why every major inference service runs batches in the "thousands" range — **it's not an empirical number, it's a physical conclusion derived from hardware specs**.
+That's why every major inference service runs batches in the "thousands" range — **it's not engineers' rule of thumb; it's a physical conclusion that falls out of the hardware specs**.
 
 ---
 
@@ -340,7 +347,7 @@ Geometrically:
 
 This also explains a real phenomenon: **services handling long documents/long conversations rely more heavily on user volume to operate**. KV pressure shifts the sweet spot rightward, requiring more concurrent users to fill the GPU. Without enough users, machines wobble in the inefficient region — that's why long-context APIs are both expensive and hard to operate.
 
-Going further: at some critical context length, KV-move time **fully overtakes** parameter-move time, and the system flips from "weight-bound" to "**KV-bound**." This is the physical root of Gemini's 50% price hike past 200K context — the threshold isn't arbitrary, it's computed.
+Going further: at some critical context length, KV-move time **fully overtakes** parameter-move time, and the system flips from "weight-bound" to "**KV-bound**." This is the physical root of the tier pricing Gemini 1.5 Pro historically applied past long-context thresholds — the threshold isn't arbitrary, it's computed.
 
 Below is an interactive simulator. Drag `L`, `b`, `BW`, `N_active` and watch how the crossover B\* between T_compute and T_memory shifts:
 
@@ -356,7 +363,7 @@ Below is an interactive simulator. Drag `L`, `b`, `BW`, `N_active` and watch how
 | `L` | context length | **user behavior** |
 | `N_total` | total model parameters | model design |
 | `N_active` | parameters activated per token | model design (sparsity) |
-| `b` | bytes per KV element (FP16≈2 / FP8≈1 / FP32≈4) | numeric precision |
+| `b` | **bytes per token** in the KV cache (= 2 × num_layers × num_kv_heads × head_dim × bytes_per_element) | model architecture + numeric precision |
 | `C` | effective compute speed (≈ FLOPS / 2) | **hardware constant** |
 | `BW` | memory bandwidth | **hardware constant** |
 | `C/BW` | ≈ 300, the hardware scale | **hardware constant** |
@@ -386,6 +393,6 @@ $$
 
 <Callout type="info" emoji="🚀">
 
-**Up next**: we can compute latency now, but **a latency chart isn't a cost chart** — why do whiteboard interviews always draw two? Why is non-batched economics 1000× worse? Plus the gorgeous metaphor: "a train departs every 20 ms" — once you get it, you can explain exactly how to size a backend service's concurrent capacity.
+**Up next**: we can compute latency now, but **a latency chart isn't a cost chart** — same equations, different Y-axis, completely different story. Next post we switch to the operator's perspective: why does running without batching cost thousands of times more? Where do AI services' famous scale economies actually come from? And why does "expensive + fast" work, while "cheap + slow" runs straight into a physical wall?
 
 </Callout>
