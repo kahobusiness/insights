@@ -1,26 +1,26 @@
 import { Callout } from 'nextra/components'
 
 export const metadata = {
-  description: 'From the latency chart to the cost chart — splitting per-token cost into "amortizable parameter movement + non-amortizable KV + non-amortizable compute." Geometrically explains why non-batched economics is 5400× worse, where AI scale economies come from, and why "cheap + slow" is physically impossible.'
+  description: 'From the latency chart to the cost chart — splitting per-token cost into "amortizable parameter movement + non-amortizable KV + non-amortizable compute." Geometrically shows why running without batching is thousands of times worse, where AI scale economies actually come from, and why "cheap + slow" is physically impossible.'
 }
 
-# ✏️ Relearning LLMs 03: From Inference Latency to Inference Cost
+# ✏️ The Math Behind LLM Pricing 03: From Inference Latency to Inference Cost
 
 <Callout type="info" emoji="📖">
 
-A non-technical explainer. After reading, you'll understand why operating costs without batching are thousands of times higher than at the sweet spot, why AI services have powerful scale economies, why aggregator layers like OpenRouter make business sense, and why "expensive + fast" is feasible while "cheap + slow" is physically impossible.
+Last post we wrote inference as equations and solved for the latency-optimal "sweet spot." This post, let's look at the same equations from a different angle — switch from the user's perspective to the operator's. Same underlying formulas; the Y-axis changes, and the whole story changes with it. By the end, you'll understand why running without batching costs thousands of times more than at the sweet spot, where AI services' famous scale economies actually come from, what the real business logic of third-party inference providers is, and why "expensive + fast" is doable while "cheap + slow" hits a physical wall.
 
 </Callout>
 
 <Callout type="info" emoji="🧭">
 
-**Recap**: in the previous post, [Writing Inference as Equations](./LLM-Learning-2.mdx), we solved for the latency-optimal batch size: "sweet spot ≈ 300 × inverse sparsity." But that chart answers a **user-side** question — "how long do I wait?" In this post we switch perspectives to the **operator side** — "how much do I spend per token produced?" Same underlying equations, but the Y-axis changes, and the whole story changes with it.
+**Recap**: in the previous post, [Writing Inference as Equations](./LLM-Learning-2.mdx), we derived "sweet spot ≈ 300 × inverse sparsity" — the latency-optimal batch size. But that chart answers a **user-side** question — "how long do I wait?" This post switches to the **operator side** — "how much do I spend per token produced?"
 
 </Callout>
 
-## I. Latency vs. Cost: Two Independent Concerns
+## I. Latency vs. Cost: Two Different Things
 
-First, a basic intuition: latency and cost are **two different perspectives**, even though they share the same underlying equations.
+Let's separate two things first: latency and cost look at the same inference process, **but from completely different angles**.
 
 ### Latency (the chart from the last post)
 
@@ -34,7 +34,7 @@ First, a basic intuition: latency and cost are **two different perspectives**, e
 - I care about: **how much does each token cost me to produce**?
 - Y-axis = ?
 
-Let's figure out what the Y-axis should be.
+So what should the Y-axis actually be? Let's think it through.
 
 ---
 
@@ -60,7 +60,7 @@ But operators don't care about "cost per inference" — they care about "**cost 
 
 So how many tokens did this inference produce?
 
-> 🔑 **Key insight**: one "forward pass" (reading all parameters once + computing once) **produces B tokens** — every user in the batch receives one new token.
+> 🔑 **Here's the key**: one "forward pass" (moving all parameters once + computing once) **produces B tokens** — every user in the batch gets one new token.
 > 
 
 So:
@@ -86,7 +86,7 @@ $$
 T_{memory} = \frac{N_{total}}{BW} + \frac{B \times L \times b}{BW}, \quad T_{compute} = \frac{B \times N_{active}}{C}
 $$
 
-Cost per token = `T/B`. Divide every term by B, and something magical happens:
+Cost per token = `T/B`. Divide every term by B, and the three pieces split into surprisingly distinct shapes:
 
 ### T_compute / B: a compute constant
 
@@ -147,7 +147,7 @@ cost
   0
 ```
 
-> 🔑 **As B → 0, this term → infinity** — a single user shoulders all the parameter-movement cost alone, with zero amortization, and ends up insanely expensive. That's why "no batching" doesn't make economic sense.
+> 🔑 **The closer B gets to 0, the more outrageous this term becomes** — a single user shoulders all the parameter-movement cost alone, with zero amortization, and ends up insanely expensive. That's why "running without batching" simply doesn't make economic sense.
 > 
 
 ### Term 2: move-KV / B (constant, the KV line)
@@ -255,7 +255,9 @@ $$
 
 For DeepSeek V3: `18 × 300 ≈ 5400×`.
 
-> 🔑 **That's the precise origin of the "1000× difference" — actually 5400×.** Non-batched economics simply don't work; this isn't engineering laziness, it's physical hard-stop.
+> 🔑 **That's where the "1000× difference" actually comes from — it's 5400×.** Running without batching just doesn't pencil out; this isn't engineering laziness, it's physics.
+> 
+> Of course nobody actually runs at B=1 in production — continuous batching, request queueing, and other mechanisms almost always pull B up. The 5400× is a **theoretical upper bound**; its real meaning isn't "you'd really lose this much," it's: **batching isn't a performance tweak, it's an economic necessity.**
 > 
 
 ### Q2: Why do AI services have such strong scale economies?
@@ -264,23 +266,28 @@ Picture the cost curve as a ladder:
 
 - **Big players (OpenAI / Anthropic)**: plenty of users, batch always pinned at the sweet spot → per-user cost near the floor
 - **Small players**: not enough users to reach the sweet spot, e.g. batch maxes at 500 while optimal is 5000 → **stuck mid-way down the hyperbola**
-- **Dedicated mode**: one enterprise customer monopolizes a GPU → stuck at the leftmost edge, exponentially high cost
+- **Dedicated mode**: one enterprise customer monopolizes a GPU → stuck at the leftmost edge, costs scaling as 1/B
 
 > 🔑 **"User volume directly converts to margin" is a structural property of AI services** — as long as you're still on the hyperbola, every additional user is decreasing marginal cost. That's why big providers have a structural cost advantage over small ones — **small providers can't fill batches, and pay a permanent per-user cost premium**.
 > 
 
-### Q3: What's the business logic of an aggregator like OpenRouter?
+### Q3: What's the business logic of third-party inference providers?
 
-> 📌 **Essence**: bundle multiple small customers' requests into one big batch — combining loads each customer alone couldn't fill, into a batch big enough to hit the sweet spot. Their margin is the difference batching unlocks.
+For shops like Together AI, Fireworks, DeepInfra, and other third-party inference providers, the business model is essentially monetizing the curve above:
+
+> 📌 **The essence**: bundle many small customers' traffic into one big batch — combining loads no single customer could fill into a batch big enough to hit the sweet spot. The provider's margin is the difference batching unlocks.
 > 
 
-Note that aggregation has a ceiling: **different models can't share a batch**, so an aggregator's effective batch is still constrained by the model distribution it serves.
+> 📎 **Quick clarification**: aggregator API gateways like OpenRouter **don't run inference themselves** — they route requests to upstream providers and take a billing cut. The actual batch pooling happens at the upstream inference providers. OpenRouter's value is more about a unified interface and model selection, not batch economics.
+> 
+
+Aggregation has a ceiling either way: **different models can't share a batch**, so an inference provider's effective batch is still constrained by the model distribution it serves.
 
 ---
 
-## VII. Back to the FastMode and SlowMode Mystery
+## VII. Back to the "Expensive + Fast" vs. "Cheap + Slow" Mystery
 
-The first post posed a question: can you get "100× price for 100× speed," or "100× slower for 100× cheaper"? Now you can answer it with the chart yourself.
+The first post asked a question: can you get "100× price for 100× speed," or "100× slower for 100× cheaper"? Now we can answer it with the chart ourselves.
 
 ### Overlay the latency chart and the cost chart
 
@@ -311,22 +318,22 @@ T                                Cost/token
 The operator faces a clear choice:
 
 - **B = sweet spot**: cost near floor ✅, latency near floor ✅, **perfect**
-- **B > sweet spot**: cost barely drops, latency rises linearly
-- **B < sweet spot**: latency unchanged (still at physical floor), cost explodes — **pure loss**
+- **B > sweet spot**: cost barely drops further, but latency rises linearly
+- **B < sweet spot**: latency unchanged (still at physical floor), cost scales as 1/B — **pure loss**
 
-> 🔑 **The rational operating point is the sweet spot.** It's not "agonizing trade-off between user experience and cost" — **both are simultaneously optimal at the same point**. This is one of the most elegant properties of LLM inference economics.
+> 🔑 **A rational operator should pin Batch at the sweet spot.** This isn't "an agonizing trade-off between user experience and cost" — **both are simultaneously optimal at the same point**. This is one of the most elegant properties of LLM inference economics.
 > 
 
-### What FastMode actually is
+### What "fast tiers" are actually doing
 
-**FastMode** (e.g. 6× price for 2.5× speed) does this: it lets you take up a bigger share of a batch slot, dragging the system from the sweet spot toward "smaller B."
+The "fast tiers" various providers offer (some charge a few times the price for two-or-three-times the speed) are doing something simple: they let you take up a bigger share of the batch, dragging the system from the sweet spot toward "smaller B."
 
-- Normal mode: you share a machine with 5000 others
-- FastMode: you "occupy 6 user slots," effectively shrinking batch → moving leftward on the latency chart
-- But the latency chart's left side is flat (physical floor), so **speed only goes up by a finite multiple**
-- Meanwhile the cost curve gets pushed onto the hyperbola segment, costs explode → hence 6× the price
+- Normal mode: you share a machine with thousands of other users
+- Fast tier: you "occupy N user slots," effectively shrinking batch → moving leftward on the latency chart
+- But the latency chart's left side is flat (you've already hit the physical floor), so **speed only goes up by a bounded multiple**
+- Meanwhile the cost curve gets pushed onto the hyperbola segment, costs surge → hence the multi-x price tag
 
-> 🔑 **Why can't you get "100× price for 100× speed"?** Because the latency floor — parameter-movement time — is a **physical wall**. The most FastMode can do is pull you from the compute-bound region back to the memory-bound region, hitting that latency floor — no amount of money breaks the wall.
+> 🔑 **Why can't you get "100× price for 100× speed"?** Because the latency floor — parameter-movement time — is a **physical wall**. The most a fast tier can do is pull you from the compute-bound region back to the memory-bound region, hitting that latency floor — no amount of money breaks the wall.
 > 
 
 ### What about "cheap + slow"?
@@ -375,6 +382,6 @@ $$
 
 <Callout type="info" emoji="🚀">
 
-**Up next**: we keep mentioning a villain in the background — **the KV cache**. The next post tackles it head-on: what exactly is that mysterious `b` (bytes per token), why do different models differ so much, what problems do GQA / MLA / cross-layer sharing each solve? The most beautiful part: we'll **reverse-engineer per-token bytes from Gemini's public 50% price hike at 200K context** — any AI API's pricing structure is like an X-ray, letting you see internal architecture from the outside.
+**Up next**: that "troublemaker" we've been hinting at in the background — **the KV cache** — finally gets unpacked head-on. What exactly is that mysterious `b` (bytes per token)? Why do different models differ so wildly? What problem does each of GQA, MLA, and cross-layer sharing actually solve? The most fun part: we'll **reverse-engineer per-token bytes from Gemini 1.5 Pro's historical long-context tier pricing** — any AI API's pricing structure works like an X-ray, letting you see the internal architecture from the outside.
 
 </Callout>
