@@ -43,7 +43,7 @@ So what should the Y-axis actually be? Let's think it through.
 
 ### Where does the money go?
 
-Operating an inference service, what you pay for is **"GPU rental time."** An H100 is roughly $2/hour. So the total cost over a span of time:
+Operating an inference service, what you pay for is **"GPU rental time."** An H100 is roughly \$2/hour. So the total cost over a span of time:
 
 $$
 \text{Total cost} = \text{GPU price} \times \text{duration}
@@ -374,7 +374,7 @@ $$
 
 ## IX. A Few Questions to Chew On
 
-1. A provider quotes you a GPT-4 class model at $0.5/1M tokens (output). You estimate the compute floor corresponds to roughly $0.3/1M tokens. Where on the cost curve is this provider? If their user volume suddenly drops 50%, what happens?
+1. A provider quotes you a GPT-4 class model at \$0.5/1M tokens (output). You estimate the compute floor corresponds to roughly \$0.3/1M tokens. Where on the cost curve is this provider? If their user volume suddenly drops 50%, what happens?
 2. If the KV horizontal line **rises above** the compute line, what changes geometrically? Does the sweet spot still exist? What does the cost floor become? When would this happen?
 3. Provider A serves only "short conversations + high frequency" users (small KV + big B). Provider B serves "very long conversations + low frequency" (big KV + small B). How do their cost curves differ? Which is more fragile?
 4. If a future GPU 10×s `BW` while keeping `C` fixed (a more balanced piece of hardware), how does the cost curve change shape? Where does the sweet spot move? What does "non-batched is X× worse" become?
