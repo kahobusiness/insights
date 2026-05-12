@@ -1,0 +1,449 @@
+import { Callout } from 'nextra/components'
+
+export const metadata = {
+  description: 'Cracking open the KV cache — what those bytes actually contain, what GQA / MLA / cross-layer sharing each solve, and a reverse-engineering of Gemini\'s internal architecture from its public long-context pricing. Plus a three-way framework for telling apart "faster compute" vs "amortization fix" vs "hardware shift" innovations.',
+  publishedAt: '2026-05-12'
+}
+
+# ✏️ The Math Behind LLM Pricing 04: Cracking Open the KV Cache, the Villain
+
+<Callout type="info" emoji="📖">
+
+So far, the KV cache has appeared in our equations as two innocent-looking symbols: `L` (context length) and `b` (bytes per token). We've said it "can't be amortized," but we haven't actually opened it up. This time, we crack it open: what those tens of KB per token actually contain, what GQA / MLA / cross-layer sharing each solve, and — the fun part — **reverse-engineering Gemini's internal architecture from its public long-context pricing**. At the end, we step back and hand you a three-way framework — "faster compute" vs "amortization fix" vs "hardware shift" — so you can classify any AI architecture innovation you read about.
+
+</Callout>
+
+<Callout type="important" emoji="🧭">
+
+**Recap**: in the previous post, [From Inference Latency to Inference Cost](./LLM-Learning-3.mdx), we switched to the operator's view and saw what the same equations say when the Y-axis becomes "cost per token." But the KV cache villain only ever appeared as symbols — never opened up. This post fixes that.
+
+</Callout>
+
+## I. What's Actually Inside the KV Cache?
+
+Recall the first post's metaphor: the KV cache is "the model's notebook on what it's already read." But what exactly is in each entry? Let's open it up.
+
+### How the Model "Sees" History
+
+The core mechanism inside a Transformer is **attention**. Every token **fed into the model** takes its own **Q (Query)** vector and "looks at" the prior context — it dot-products against every historical token's **K** for similarity, then weighted-averages their **V**s by those similarity scores. The result is that token's "hidden state" at its position, which is then used for one thing: **predict the next token**.
+
+<Callout type="warning" emoji="⚠️">
+
+**The easy-to-trip-on point**: every token is **first predicted out**, and only on the **next round, when it gets fed back into the model**, does it compute its own Q/K/V. The actual flow:
+
+1. Feed the full context into the model → compute the hidden state at the last position
+2. The hidden state predicts a new token
+3. At this moment the new token is just a freshly sampled id — **it has no Q/K/V yet**
+4. On the **next** round, the new token is fed back into the model as input; only then are its Q/K/V computed: K/V is written into the cache, Q is used to attend all prior Ks, producing the next hidden state and **predicting yet another token**
+
+</Callout>
+
+**Putting it on a full timeline** — suppose the prompt is "Roses are red," and the model goes on to generate " violets are blue,":
+
+```
+prefill:
+input: "Roses" "are" "red" ","
+write to cache: K/V for "Roses" / "are" / "red" / ","
+compute Q at "," position, get hidden state, predict: " violets"
+⬇️
+decode step 1:
+input: " violets"
+write to cache: K/V for " violets"
+compute Q at " violets" position, get hidden state, predict: " are"
+⬇️
+decode step 2:
+input: " are"
+write to cache: K/V for " are"
+compute Q at " are" position, get hidden state, predict: " blue"
+⬇️
+decode step 3:
+input: " blue"
+write to cache: K/V for " blue"
+compute Q at " blue" position, get hidden state, predict: ","
+```
+
+Every step follows the same pattern: **current input token → compute its own Q/K/V → write K/V into the cache → use its Q to pull from the prior context for a hidden state → predict the next token**.
+
+> 🔑 K and V are the token's two **long-term-stored** roles — K is "the fingerprint future tokens search me by", V is "the payload pulled out once I'm matched". Q is computed fresh each step and immediately discarded. That's where the name **KV cache** comes from — only K and V are cached.
+> 
+
+### What's Inside K and V?
+
+K and V aren't text labels — they're **vectors with hundreds of dimensions**, where each dimension records the token's value on some semantic feature ("is it a noun?", "is it time-related?", "does it expect a noun after it?" etc.). The English descriptions below are just to help you see what each vector "holds"; the real computation is dot products between numbers.
+
+When the model is about to predict the next word in "The cat sat on the `___`", the cache roughly holds:
+
+- **"on"**
+  - K (the "fingerprint") = "I'm a preposition / I expect a noun after me / I indicate location or a surface"
+  - V (the "payload") = "the noun after me names where the action lands / I anchor a positional relationship"
+- **"sat"**
+  - K = "I'm a verb, past tense / I describe a sitting action"
+  - V = "an action of resting on something / completed in a specific location"
+- **"cat"** / **"The"** / **"the"**
+  - K = "noun, animal, subject" / "determiner" / "determiner"
+  - V = "the entity performing the action" / "marker of definiteness" / "marker of definiteness"
+
+Now it's **the last already-present token, "the"**, that performs attention. It computes its own Q (roughly: "I'm a determiner; the noun I'm introducing should fit a sit-on-able surface following 'on'"), then two steps:
+
+1. **"the"'s Q gets dot-producted with each K**: "on" matches strongest, "sat" moderately, the earlier tokens weakly
+2. **Weighted-average over all Vs by those similarities**: "on"'s V is pulled most heavily
+
+This produces the hidden state at "the"'s position → the model uses it to predict the next word ("mat", "floor", "couch", or similar).
+
+> 🔑 The Q at work throughout is **"the"'s**, **not the new word's** — the new word hasn't been born yet (and has no Q/K/V). This is the concrete instantiation of the ⚠️ flow above.
+> 
+
+### How Heavy Is a Single "Note"?
+
+Not just one K/V. The model has many **layers**, each with its own attention mechanism; each layer in turn has many **attention heads**. So the KV cache for a single token is really:
+
+```
+bytes per token = layers × KV heads × head_dim × 2 (one each for K and V) × bytes_per_element
+```
+
+Plug in the numbers for Llama 3 70B:
+
+- 80 layers
+- 8 KV heads (after GQA)
+- 128 dim per head
+- FP8 → 1 byte
+
+$$
+b = 80 \times 8 \times 128 \times 2 \times 1 = 163{,}840 \text{ bytes} \approx 160 \text{ KB}
+$$
+
+> 🔑 **Each token's notebook is on the order of 160 KB**. A 100K context = 16 GB of KV. **That's a beast.**
+> 
+
+This is why we kept saying in the last post that "KV dominates cost" — it's not the abstract "can't be amortized," it's **literally tens of GB of data that has to be moved from VRAM every time you generate one more token**.
+
+---
+
+## II. Four Ways to Shrink the KV
+
+The formula again:
+
+```
+b = layers × KV heads × head_dim × 2 × bytes_per_element
+```
+
+Each of these five knobs has been turned by some researcher. Let's look at the four most mainstream paths.
+
+### Path 1: Fewer KV Heads (GQA)
+
+Originally everyone used **MHA (Multi-Head Attention)**: as many K heads and V heads as Q heads, with an independent K/V for each.
+
+People then noticed waste: **multiple Q heads can actually share a single K/V**. This is **GQA (Grouped Query Attention)**.
+
+In Llama 3, for example: 32 Q heads but only 8 KV heads — every 4 Q heads share one set of K/V. **KV size drops 4×, with almost no quality loss.**
+
+> 🔑 **GQA is now the de-facto standard in every mainstream model** — Llama, Mistral, Qwen, Claude all use it.
+> 
+
+### Path 2: Cross-Layer KV Sharing (Character.AI / Gemma Style)
+
+A more aggressive idea: **share KV across layers**.
+
+If every two of 80 layers share one set of KV → effective layer count = 40 → KV size drops another 2×.
+
+> 🔑 Character.AI takes this to the extreme — their "global context" shares **one set of KV across all layers** (only the occasional "local" layers use independent KV). They go this aggressive because chatbot users carry very long conversation histories, and only ruthless KV compression keeps the unit economics alive.
+> 
+
+### Path 3: MLA (Multi-head Latent Attention, DeepSeek's Move)
+
+DeepSeek's innovation. **Don't store K and V directly** — store a **compressed latent vector** and decompress on demand.
+
+Analogy: don't store the raw image, store the JPEG; decode when needed.
+
+> 🔑 **MLA shrinks KV to roughly 1/4 of GQA's size**, with almost no quality loss. This is the key reason DeepSeek V3 can serve very long contexts with extremely tight KV.
+> 
+
+### Path 4: Sparse Attention (Look at Less of the History)
+
+The first three paths all shrink "bytes per token in KV." Sparse attention takes a different path: **the new token doesn't look at every historical token, just a subset**.
+
+If the sparsity pattern is chosen well, KV-move cost drops from `O(L)` to `O(√L)`.
+
+> 🔑 **Trade-off**: the model can miss key information from far back. So it's lossy in quality, only usable when "most long-range info isn't critical."
+> 
+
+### Four Paths, Compared
+
+| Technique | KV reduction | Quality cost | In the wild |
+| --- | --- | --- | --- |
+| GQA | 4–8× | Near zero | Almost every mainstream model |
+| Cross-layer sharing | 2–N× | Small to moderate | Character.AI, Gemma |
+| MLA | ~4× | Near zero | DeepSeek family |
+| Sparse attention | √L improvement | Moderate | A few experimental deployments |
+
+---
+
+## III. Reverse-Engineering Architecture from API Pricing — The Pretty Part
+
+You now have every prerequisite. Let's use Gemini as the case study.
+
+### The Public Clue
+
+Historically Gemini 1.5 Pro applied tier pricing past long-context thresholds (typically 128K / 200K, doubling the unit price).
+
+**Why tier the pricing at all?** Gemini's operators want to guarantee that **no matter how long the context, every segment stays profitable**. The cost structure is different in the two regions (KV-dominated vs compute-dominated), so the price has to be different too.
+
+> 🔑 **The location of the kink reveals the shape of the underlying cost curve** — it's exactly the moment when the KV term catches up to the compute term. We can use this to reverse-engineer the architecture.
+> 
+
+### Solving for the Kink
+
+At the kink, KV-move time equals compute time (assuming batch is large enough that the parameter term is negligible):
+
+$$
+\frac{L \times b}{BW} = \frac{N_{active}}{C}
+$$
+
+### Solve for b
+
+$$
+b = \frac{N_{active}}{L} \times \frac{BW}{C} = \frac{N_{active}}{L} \times \frac{1}{300}
+$$
+
+Plug in L = 200K (the kink), and estimate N_active ≈ 100B (a reasonable guess for Gemini-scale models):
+
+$$
+b \approx \frac{100 \times 10^9}{200 \times 10^3} \times \frac{1}{300} = \frac{500{,}000}{300} \approx 1{,}667 \text{ bytes} \approx 2 \text{ KB / token}
+$$
+
+> 🔑 **We get ~2 KB / token** — that's how many KV bytes each Gemini token actually carries.
+> 
+
+### What Does ~2 KB Tell Us?
+
+Use Section II's "four paths" knowledge in reverse:
+
+```
+b = layers × KV heads × head_dim × 2 × bytes_per_element
+2000 ≈ layers × 8 × 128 × 2 × 1
+```
+
+Solving: **effective layers ≈ 1**.
+
+> 🔑 **Which means Gemini almost certainly uses cross-layer KV sharing (Character.AI style)** — all layers share one set of KV, collapsing the effective layer count to 1.
+> 
+
+### What We Just Did
+
+> 🔑 **From a single piece of Google's public API pricing (the 200K kink), we reverse-engineered that Gemini's internal architecture uses cross-layer KV sharing.** That's the punchline of this whole toolkit — **any AI company's pricing page is indirect intelligence about their internal architecture.**
+> 
+
+---
+
+## IV. One More Time: Reverse-Engineering Decode Bottleneck from Input/Output Pricing
+
+A second reverse-engineering: most providers price output tokens at roughly 5× input tokens. What does that tell us?
+
+### Prefill vs Decode
+
+- **Prefill (processing input)**: ingests N tokens at once and **computes their KV in parallel**
+- **Decode (generating output)**: produces only 1 token at a time, but **re-reads all historical KV every time**
+
+The critical difference:
+
+| Stage | Compute work | Memory reads |
+| --- | --- | --- |
+| Prefill of N tokens | N × N_active | Move parameters 1× |
+| Decode of N tokens | N × N_active | Move parameters N× + Move KV N× |
+
+**Same compute, but decode reads memory N+ times as much.**
+
+### Per-Token Cost
+
+- Prefill: cost amortized across N tokens (one move serves N tokens)
+- Decode: each token requires its own move
+
+> 🔑 **Prefill is compute-bound; decode is memory-bound.** Same hardware, same model — just different workload shapes, and the economics flip.
+> 
+
+### What a 5× Gap Implies
+
+If a provider's input/output price gap is 5×, that means **decode's actual cost is about 5× prefill's**.
+
+Back to roofline: **the time ratio between the two stages is about 5:1**. Which means:
+
+> 🔑 **In decode, memory time is about 5× compute time** — i.e. the GPU workers spend 80% of their time waiting on data.
+> 
+
+That's the precise meaning of "decode is severely memory-bound" — not a vague "memory is slow," but specifically **5× slow**.
+
+### Read Every Pricing Number Like an X-Ray
+
+Trained by these two reverse-engineerings, you can now read several things off any provider's pricing page:
+
+1. **Is there long-context tier pricing?**
+    - Yes → the provider applies some long-context optimization (GQA / cross-layer / MLA), and the kink position reveals their `b`
+    - No → either they don't care about long-context cost (maybe an offline batch service), or compression is so aggressive that the kink never appears
+2. **How wide is the input/output gap?**
+    - 5–10× → standard decode-bound
+    - Very narrow (< 2×) → likely a prefill-heavy workload (batch document processing)
+    - Very wide (> 10×) → likely very aggressive decode optimization (MLA, speculative decoding), or hardware with a high `C/BW` ratio
+3. **How big is the cache-hit discount?**
+    - 5–10× cheaper → high-frequency prefixes pinned in HBM
+    - Tens of × cheaper → pushed down to DDR/Flash (slower but cheaper storage tier)
+
+> 🔑 **Every pricing number is a concrete consequence of an internal architecture choice.**
+> 
+
+---
+
+## V. Stepping Back: What Is an Architecture Innovation Actually Changing?
+
+You may have noticed by now that **every innovation we've discussed is ultimately about lowering cost** — GQA, MLA, cross-layer sharing, sparse attention, MoE, quantization… all of them.
+
+So what's the actual difference between them? Why call one "faster compute" and another "amortization fix"?
+
+Let's step back and classify all AI architecture innovations under a single framework. Recall the core equation:
+
+$$
+T = \max\left(\underbrace{\frac{N_{total}}{BW} + \frac{B \times L \times b}{BW}}_{\text{memory term}},\ \underbrace{\frac{B \times N_{active}}{C}}_{\text{compute term}}\right)
+$$
+
+Every innovation eventually moves some variable in this equation. **But moving different variables produces fundamentally different shapes of cost reduction** — that's the basis for classification.
+
+### Path 1: Change the "Workload" — Cut Compute Time Directly
+
+**Examples**: sparser MoE, pruning, quantization, speculative decoding.
+
+**Mechanism**: shrink `N_active`, or shrink the effective amount of compute.
+
+**Geometric effect**: the `T_compute` line **slides down as a whole**, and the sweet spot moves with it.
+
+**Properties**:
+
+- Cost reduction holds **across all batch sizes and all context lengths**
+- Usually comes with **some quality cost** (whatever you pruned, quantized, or skipped, the model was originally doing for a reason)
+- This is the "**faster compute**" type — you genuinely reduced the work the machine has to do
+
+> 🔑 **Tell-tale sign**: **there's a quality cost**, and it scales with how aggressive you go.
+> 
+
+### Path 2: Change the "Amortization Structure" — Keep the Batch Economy from Breaking
+
+**Examples**: GQA, MLA, cross-layer KV sharing.
+
+**Mechanism**: shrink `b` (KV bytes / token).
+
+**Geometric effect**: **the sweet spot position doesn't move**, but whether you can reach it in long-context regimes does.
+
+**Properties**:
+
+- In short-context scenarios these innovations are **almost invisible** (the KV term was dominated by the compute term anyway)
+- In long-context regimes the payoff **scales sharply**
+- Quality cost is usually **near zero** (you're changing how KV is represented, not what the model does)
+
+> 🔑 **Tell-tale sign**: **near-zero quality cost, but the value only shows up in a specific workload (long context)**.
+> 
+
+### Path 3: Change the "Hardware Constants" — Push the Physical Wall Back
+
+**Examples**: bigger scale-up domains, faster HBM, FP8 / FP4, more GPU interconnect.
+
+**Mechanism**: grow `C`, or grow `BW`.
+
+**Geometric effect**: the whole chart **rescales in both axes** — sweet spot moves, cost floor drops, latency floor drops, everything shifts.
+
+**Properties**:
+
+- No quality cost (pure hardware)
+- But requires **rebuilding the hardware** (expensive, slow, supply-chain dependent)
+
+> 🔑 **Tell-tale sign**: **no quality cost, but the cost and time investment is enormous.**
+> 
+
+### Sorting Recent Innovations into the Table
+
+| Innovation | What changes | Path | Tell-tale evidence |
+| --- | --- | --- | --- |
+| MoE (sparse experts) | `N_active` shrinks | 1: faster compute | Compute drops overall, mild quality cost |
+| GQA | `b` shrinks | 2: amortization fix | Imperceptible at short context, shines at long |
+| MLA | `b` shrinks | 2: amortization fix | Same as above |
+| Cross-layer KV sharing | `b` shrinks | 2: amortization fix | Same as above |
+| Sparse attention | Effective `L` shrinks (√L) | 1 + 2: combo | Moderate quality cost |
+| FP8 / FP4 quantization | Effective `BW` grows | 3: hardware constants | Whole chart rescales, possibly tiny quality cost |
+| Speculative decoding | Effective `N_active` shrinks | 1: faster compute | Decode speedup, no quality cost but a failure rate |
+| Flash Attention | Optimizes intermediate-tensor I/O | Close to 3 | Better read order, huge HBM bandwidth savings |
+| Blackwell big scale-up | `BW` grows | 3: hardware constants | Whole chart rescales, no quality cost |
+
+> 🔑 Real innovations often blend paths. This three-way classification isn't a rigid frame — it's an **analytical lens**.
+> 
+
+### Why Does This Distinction Matter?
+
+Back to the original question: "If they all lower cost, why classify them at all?"
+
+> 🔑 **Because different paths apply to different scenarios and combine differently.**
+> 
+
+**Scenario 1: You want to save on long-context agent workloads**
+
+- ✅ Path 2 (MLA, GQA) → these literally save you
+- ⚠️ Path 1 (MoE) → helps, but can't substitute for Path 2 (MoE doesn't address the KV term)
+- ⚠️ Path 3 (switch to Blackwell) → effective but expensive
+
+**Scenario 2: You want to cut costs on a simple chatbot**
+
+- ⚠️ Path 2 → near useless (short-context KV doesn't dominate)
+- ✅ Path 1 (MoE, quantization) → directly lowers cost
+- ✅ Path 3 → effective
+
+**Scenario 3: You're evaluating a provider's long-term sustainability**
+
+- Look at the **shape** of their pricing (long-context kink? input/output gap?)
+- The shape tells you **which paths** they relied on
+- That in turn tells you whether they can survive the next quality-competition cycle — a provider sustained purely by Path 1 (aggressive quantization) tends to crack when quality competition heats up
+
+### A Deeper Observation
+
+You might ask: "Why does every innovation lately seem to be about cost?"
+
+> 🔑 **AI inference has moved past the "go faster" era and into the "fix the unit economics" era.**
+> 
+> In the GPT-2 days, the question was "can it run?"; in the GPT-3 days, "can it run fast?"; post-GPT-4, every player asks "**how few dollars per million tokens makes this profitable?**"
+> 
+
+So "every innovation is about lowering cost" isn't an illusion — it's the **current reality of the field**. Classifying them isn't to deny that, but to see clearly **who is using which path**.
+
+---
+
+## VI. One Recap Box
+
+<Callout type="info" emoji="🗺️">
+
+**KV cache in one line**: each token carries tens to hundreds of KB of notes, scaling linearly with batch and context length, and **can't be amortized by batching**.
+
+**Four ways to shrink it**: GQA / cross-layer sharing / MLA / sparse attention.
+
+**The reverse-engineering trick**: the **shape** of a pricing page (kink position, price gap) is indirect intelligence on internal architecture.
+
+**Three-way classification of innovations**:
+
+- **"Faster compute"** = change the *workload* variable
+- **"Amortization fix"** = change the *amortization structure* so some term doesn't explode
+- **"Hardware shift"** = push the physical wall back
+
+All three reduce cost, but via fundamentally different geometric paths. Being able to tell them apart is real engineering taste.
+
+</Callout>
+
+---
+
+## VII. A Few Questions to Chew On
+
+1. A provider quotes: input \$0.5 / 1M tokens, output \$5.0 / 1M tokens (10× gap), no long-context tier pricing. What can you infer about their internal workload mix and hardware configuration? What kind of application is this provider well-suited for?
+2. MLA aggressively compresses `b` (KV bytes per token). Going back to the sweet-spot formula `B = 300 × (N_total / N_active)` from Post 2 — **does MLA change where the sweet spot sits? Why or why not?** Follow-up: if MLA doesn't move the sweet spot, where does its real value lie?
+3. Two providers offer 70B models at roughly the same price, but one has an input/output gap of 3× and the other 8×. Could they be running the same model? If so, how do their hardware configurations (`C/BW` ratios) differ?
+4. Flash Attention strictly doesn't fit any of the three paths above (it optimizes the read/write order of intermediate tensors). If you had to classify it, which path would you assign it to, and why?
+
+---
+
+<Callout type="info" emoji="🚀">
+
+**Up next**: so far we've stayed **inside a single GPU**. The next post leaves one machine and enters the **multi-GPU cluster** world — what each of the three parallelisms (expert / pipeline / tensor) is actually slicing, what it means that NVLink is 8× faster than InfiniBand, why MoE strongly prefers "within one rack," why Blackwell pushes scale-up from 8 to 72, and the most important question of all: **why model scale was stuck at 1T for so many years before it finally started moving again.**
+
+</Callout>
