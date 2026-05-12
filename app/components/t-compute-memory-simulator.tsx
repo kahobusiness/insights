@@ -29,13 +29,13 @@ const GLOW = {
 
 const DEFAULTS = {
   B: 128,
-  BMax: 2048,
-  NActive: 8e9,
-  C: 8e13,
-  NTotal: 12e9,
-  BW: 2e11,
-  L: 8192,
-  bytesPerToken: 2,
+  BMax: 8192,
+  NActive: 37e9,
+  C: 1e15,
+  NTotal: 671e9,
+  BW: 4.8e12,
+  L: 1024,
+  bytesPerToken: 71680,
 } as const
 
 type Lang = 'zh' | 'en'
@@ -82,7 +82,7 @@ interface LocaleMessages {
       NTotal: string
       BW: string
       L: string
-      bytesPerToken: number
+      bytesPerToken: string
     }) => string
     ratioNote: (ratio: string, share: string) => string
   }
@@ -91,7 +91,7 @@ interface LocaleMessages {
 
 const MESSAGES: Record<Lang, LocaleMessages> = {
   zh: {
-    desc: '使用更适合观察 KV cache 影响的中等规格推理卡参数。这里故意降低带宽与总参数量，让 L 与 b 对 T_memory 的影响更加明显。',
+    desc: '默认参数：DeepSeek V3（671B 总参数 / 37B 激活，MLA 把每 token KV 压到 ~70 KB）跑在 H200 上（4.8 TB/s HBM3e、FP8 等效算力 ~1 PFLOPS），上下文长度 1K（单轮 query 量级）。这套配置下甜蜜点 B* ≈ 6400 清晰可见。把 L 拖到 8K 看长上下文场景——你会看到甜蜜点从右边滑出 BMax 之外，进入 KV 主导工况；换硬件或多卡并发都救不回来，因为 C/BW 这个硬件常数（≈ 300）跨代变化非常慢。',
     controls: {
       currentB: { label: '当前 B', helper: '当前 batch size，标记图上竖线' },
       maxB: { label: 'B 最大值', helper: '横轴范围，常用 512 / 2048 / 4096' },
@@ -99,8 +99,8 @@ const MESSAGES: Record<Lang, LocaleMessages> = {
       compute: { label: 'C', helper: '有效计算吞吐' },
       nTotal: { label: 'N_total', helper: '需要从内存读取的总参数 / 数据规模' },
       bw: { label: 'BW', helper: '有效内存带宽' },
-      seqLen: { label: 'L', helper: '序列长度 / KV 长度，最大 1M token' },
-      bytesPerToken: { label: 'b', helper: '每元素字节数：FP16≈2，FP8≈1，FP32≈4' },
+      seqLen: { label: 'L', helper: '序列长度均值 / KV 长度均值，最大 1M token' },
+      bytesPerToken: { label: 'b', helper: '每 token 在 KV cache 里占的总字节数（= 2 × 层数 × KV heads × head_dim × 元素字节数），典型 4 KB ~ 数百 KB' },
     },
     cards: {
       bottleneckLabel: 'Bottleneck',
@@ -126,17 +126,17 @@ const MESSAGES: Record<Lang, LocaleMessages> = {
     panels: {
       chartCheatTitle: '读图小抄',
       chartCheatBody:
-        'T_compute 的斜率是 N_active / C；T_memory 的斜率是 L × b / BW，截距是 N_total / BW。在超高带宽和超大参数量下，KV 项通常远小于权重读取项，所以调 L 和 b 不容易让总 T_memory 斜率明显变化。',
+        'T_compute 的斜率是 N_active / C；T_memory 的斜率是 L × b / BW，截距是 N_total / BW。b 是每 token 在 KV cache 里占的总字节数（已经把层数、KV 头数、head_dim 都乘进去了，落在几 KB ~ 几百 KB 量级），所以调 L 或调 b 都会立刻让 T_memory 斜率明显变化。',
       paramSummaryTitle: '当前参数速览',
       paramSummary: (p) =>
-        `N_active=${p.NActive}，C=${p.C} ops/s，N_total=${p.NTotal}，BW=${p.BW} B/s，L=${p.L}，b=${p.bytesPerToken}B。`,
+        `N_active=${p.NActive}，C=${p.C} ops/s，N_total=${p.NTotal}，BW=${p.BW} B/s，L=${p.L}，b=${p.bytesPerToken} B/token。`,
       ratioNote: (ratio, share) =>
         `Compute / Memory 比值：${ratio}。KV 项占比：${share}%。继续提高 L、提高 b、降低 BW，都能明显拉高 T_memory 的斜率。`,
     },
     axis: { x: 'Batch size B', y: 'Time (ms)' },
   },
   en: {
-    desc: 'Mid-range inference-GPU defaults tuned to make KV-cache effects easy to see — bandwidth and total params are intentionally lower so L and b move T_memory visibly.',
+    desc: 'Defaults: DeepSeek V3 (671B total / 37B active, MLA brings KV down to ~70 KB / token) on H200 (4.8 TB/s HBM3e, ~1 PFLOPS effective FP8), with a 1K context (single-turn-query scale). The sweet spot sits at B* ≈ 6400, clearly visible. Drag L up to 8K to enter the long-context regime — you\'ll see the sweet spot slide off the right edge into KV-dominated land. Bigger GPUs or multi-GPU parallelism don\'t save you, because the C/BW ratio (~300) barely changes across hardware generations.',
     controls: {
       currentB: {
         label: 'Current B',
@@ -158,11 +158,11 @@ const MESSAGES: Record<Lang, LocaleMessages> = {
       bw: { label: 'BW', helper: 'Effective memory bandwidth' },
       seqLen: {
         label: 'L',
-        helper: 'Sequence / KV length, up to 1M tokens',
+        helper: 'Average sequence / KV length per user in the batch, up to 1M tokens',
       },
       bytesPerToken: {
         label: 'b',
-        helper: 'Bytes per element: FP16≈2, FP8≈1, FP32≈4',
+        helper: 'Total KV bytes per token (= 2 × layers × KV heads × head_dim × bytes_per_element); typically 4 KB ~ several hundred KB',
       },
     },
     cards: {
@@ -190,10 +190,10 @@ const MESSAGES: Record<Lang, LocaleMessages> = {
     panels: {
       chartCheatTitle: 'Reading the chart',
       chartCheatBody:
-        'T_compute slope is N_active / C; T_memory slope is L × b / BW with intercept N_total / BW. With very high bandwidth and large param counts, the KV term is usually dwarfed by the weight-read term, so tweaking L and b will barely move the total T_memory slope.',
+        'T_compute slope is N_active / C; T_memory slope is L × b / BW, intercept N_total / BW. b is the total KV bytes per token — it already bakes in layers, KV heads, and head_dim, landing in the few-KB to few-hundred-KB range — so raising L or raising b will immediately steepen T_memory visibly.',
       paramSummaryTitle: 'Current parameters',
       paramSummary: (p) =>
-        `N_active=${p.NActive}, C=${p.C} ops/s, N_total=${p.NTotal}, BW=${p.BW} B/s, L=${p.L}, b=${p.bytesPerToken}B.`,
+        `N_active=${p.NActive}, C=${p.C} ops/s, N_total=${p.NTotal}, BW=${p.BW} B/s, L=${p.L}, b=${p.bytesPerToken} B/token.`,
       ratioNote: (ratio, share) =>
         `Compute / Memory ratio: ${ratio}. KV share: ${share}%. Increasing L, increasing b, or lowering BW will all visibly steepen T_memory.`,
     },
@@ -716,19 +716,18 @@ export function TComputeMemorySimulator({ lang = 'zh' }: TComputeMemorySimulator
             min={128}
             max={1048576}
             step={1024}
-            unit="tok"
+            unit="token"
             helper={t.controls.seqLen.helper}
           />
 
-          <LinearControl
+          <LogControl
             accentColor={COLORS.kv}
             label={t.controls.bytesPerToken.label}
             value={bytesPerToken}
             setValue={setBytesPerToken}
-            min={1}
-            max={8}
-            step={1}
-            unit="B"
+            min={1024}
+            max={1048576}
+            unit="B/token"
             helper={t.controls.bytesPerToken.helper}
           />
         </div>
@@ -878,7 +877,7 @@ export function TComputeMemorySimulator({ lang = 'zh' }: TComputeMemorySimulator
                 NTotal: formatCompact(NTotal),
                 BW: formatCompact(BW),
                 L: formatCompact(L),
-                bytesPerToken,
+                bytesPerToken: formatCompact(bytesPerToken),
               })}
             </p>
             <p className={styles.noteSub}>
