@@ -1,11 +1,50 @@
 .root {
+  /* Light theme variables (defaults). Dark theme overrides below. */
+  --sim-bg-gradient: linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f0f9ff 100%);
+  --sim-text-strong: #0f172a;
+  --sim-text-label: #1e293b;
+  --sim-text-body: #334155;
+  --sim-text-muted: #475569;
+  --sim-text-tertiary: #64748b;
+  --sim-text-faint: #94a3b8;
+  --sim-card-bg: rgba(255, 255, 255, 0.92);
+  --sim-border: #e2e8f0;
+  --sim-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --sim-slider-track: #e2e8f0;
+  --sim-slider-thumb-bg: #ffffff;
+  --sim-slider-thumb-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+  --sim-input-bg: #ffffff;
+  --sim-input-border: #cbd5e1;
+  --sim-input-focus-border: #818cf8;
+  --sim-input-focus-ring: rgba(199, 210, 254, 0.55);
+
   border-radius: 1.25rem;
   padding: 1rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f0f9ff 100%);
-  color: #0f172a;
+  background: var(--sim-bg-gradient);
+  color: var(--sim-text-strong);
   font-size: 14px;
   line-height: 1.5;
   container-type: inline-size;
+}
+
+:global(html.dark) .root {
+  --sim-bg-gradient: linear-gradient(135deg, #0a0f1c 0%, #15172e 50%, #061826 100%);
+  --sim-text-strong: #f1f5f9;
+  --sim-text-label: #e2e8f0;
+  --sim-text-body: #cbd5e1;
+  --sim-text-muted: #cbd5e1;
+  --sim-text-tertiary: #94a3b8;
+  --sim-text-faint: #64748b;
+  --sim-card-bg: rgba(15, 23, 42, 0.7);
+  --sim-border: #334155;
+  --sim-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sim-slider-track: #334155;
+  --sim-slider-thumb-bg: #1e293b;
+  --sim-slider-thumb-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  --sim-input-bg: #1e293b;
+  --sim-input-border: #475569;
+  --sim-input-focus-border: #a5b4fc;
+  --sim-input-focus-ring: rgba(129, 140, 248, 0.35);
 }
 
 @media (min-width: 480px) {
@@ -29,9 +68,9 @@
 
 .panel {
   border-radius: 1rem;
-  border: 1px solid #e2e8f0;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--sim-border);
+  background: var(--sim-card-bg);
+  box-shadow: var(--sim-shadow);
   padding: 1rem;
 }
 
@@ -53,7 +92,7 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   margin: 0;
-  color: #0f172a;
+  color: var(--sim-text-strong);
 }
 
 @media (min-width: 480px) {
@@ -65,13 +104,13 @@
 .subtitle {
   margin: 0;
   font-size: 0.8125rem;
-  color: #475569;
+  color: var(--sim-text-muted);
   line-height: 1.6;
 }
 
 .desc {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--sim-text-tertiary);
   line-height: 1.6;
 }
 
@@ -84,9 +123,9 @@
 
 .controlPanel {
   border-radius: 0.875rem;
-  border: 1px solid #e2e8f0;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--sim-border);
+  background: var(--sim-card-bg);
+  box-shadow: var(--sim-shadow);
   padding: 0.75rem 0.875rem;
   min-width: 0;
   container-type: inline-size;
@@ -117,14 +156,14 @@
 .controlLabel {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--sim-text-label);
 }
 
 .controlHelper {
   margin-top: 0.25rem;
   font-size: 0.7rem;
   line-height: 1.5;
-  color: #64748b;
+  color: var(--sim-text-tertiary);
 }
 
 .controlInputRow {
@@ -138,14 +177,14 @@
   height: 1.875rem;
   width: 5rem;
   border-radius: 0.5rem;
-  border: 1px solid #cbd5e1;
-  background: white;
+  border: 1px solid var(--sim-input-border);
+  background: var(--sim-input-bg);
   padding: 0 0.5rem;
   text-align: right;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
   font-size: 0.8125rem;
   outline: none;
-  color: #0f172a;
+  color: var(--sim-text-strong);
   -moz-appearance: textfield;
 }
 
@@ -156,13 +195,13 @@
 }
 
 .numberInput:focus {
-  border-color: #818cf8;
-  box-shadow: 0 0 0 2px rgba(199, 210, 254, 0.55);
+  border-color: var(--sim-input-focus-border);
+  box-shadow: 0 0 0 2px var(--sim-input-focus-ring);
 }
 
 .unit {
   font-size: 0.7rem;
-  color: #64748b;
+  color: var(--sim-text-tertiary);
   white-space: nowrap;
 }
 
@@ -181,7 +220,7 @@
 .slider::-webkit-slider-runnable-track {
   height: 8px;
   border-radius: 999px;
-  background: #e2e8f0;
+  background: var(--sim-slider-track);
 }
 
 .slider::-webkit-slider-thumb {
@@ -190,10 +229,10 @@
   width: 22px;
   height: 22px;
   border-radius: 999px;
-  background: #ffffff;
+  background: var(--sim-slider-thumb-bg);
   border: 2px solid currentColor;
   margin-top: -7px;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+  box-shadow: var(--sim-slider-thumb-shadow);
   transition: transform 120ms ease;
 }
 
@@ -204,16 +243,16 @@
 .slider::-moz-range-track {
   height: 8px;
   border-radius: 999px;
-  background: #e2e8f0;
+  background: var(--sim-slider-track);
 }
 
 .slider::-moz-range-thumb {
   width: 22px;
   height: 22px;
   border-radius: 999px;
-  background: #ffffff;
+  background: var(--sim-slider-thumb-bg);
   border: 2px solid currentColor;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+  box-shadow: var(--sim-slider-thumb-shadow);
 }
 
 .sliderLabels {
@@ -221,7 +260,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.7rem;
-  color: #94a3b8;
+  color: var(--sim-text-faint);
 }
 
 /* Stats: a single grid; Bottleneck spans the full row, the other 6 cards
@@ -238,9 +277,9 @@
 
 .statCard {
   border-radius: 0.875rem;
-  border: 1px solid #e2e8f0;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--sim-border);
+  background: var(--sim-card-bg);
+  box-shadow: var(--sim-shadow);
   padding: 0.875rem 1rem;
   min-width: 0;
 }
@@ -249,7 +288,7 @@
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #64748b;
+  color: var(--sim-text-tertiary);
   word-break: break-word;
 }
 
@@ -257,7 +296,7 @@
   margin-top: 0.375rem;
   font-size: 1.125rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--sim-text-strong);
   font-variant-numeric: tabular-nums;
   word-break: break-word;
   line-height: 1.3;
@@ -272,7 +311,7 @@
 .statNote {
   margin-top: 0.25rem;
   font-size: 0.7rem;
-  color: #64748b;
+  color: var(--sim-text-tertiary);
   line-height: 1.5;
   word-break: break-word;
 }
@@ -280,9 +319,9 @@
 /* Chart: shorter on phone, taller on desktop. */
 .chart {
   border-radius: 1rem;
-  border: 1px solid #e2e8f0;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--sim-border);
+  background: var(--sim-card-bg);
+  box-shadow: var(--sim-shadow);
   padding: 0.75rem 0.5rem 0.5rem;
   height: 320px;
 }
@@ -309,13 +348,13 @@
 
 .note {
   border-radius: 0.875rem;
-  border: 1px solid #e2e8f0;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--sim-border);
+  background: var(--sim-card-bg);
+  box-shadow: var(--sim-shadow);
   padding: 0.875rem 1rem;
   font-size: 0.8125rem;
   line-height: 1.65;
-  color: #334155;
+  color: var(--sim-text-body);
 }
 
 .note p {
@@ -325,12 +364,12 @@
 
 .noteTitle {
   font-weight: 600;
-  color: #0f172a;
+  color: var(--sim-text-strong);
   font-size: 0.875rem;
 }
 
 .noteSub {
   margin-top: 0.4rem;
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--sim-text-tertiary);
 }

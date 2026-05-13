@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
+import { useTheme } from 'nextra-theme-docs'
 import {
   CartesianGrid,
   Legend,
@@ -14,6 +15,34 @@ import {
 } from 'recharts'
 
 import styles from './t-compute-memory-simulator.module.css'
+
+const LIGHT_CHART_THEME = {
+  grid: '#e2e8f0',
+  tickFill: '#64748b',
+  labelFill: '#475569',
+  tooltipBg: '#ffffff',
+  tooltipBorder: '#e2e8f0',
+  tooltipShadow: '0 4px 14px rgba(15,23,42,0.12)',
+  tooltipText: '#0f172a',
+  refLineStroke: '#94a3b8',
+  refLineLabel: '#475569',
+  bStarStroke: '#f59e0b',
+  bStarLabel: '#b45309',
+} as const
+
+const DARK_CHART_THEME = {
+  grid: '#334155',
+  tickFill: '#94a3b8',
+  labelFill: '#cbd5e1',
+  tooltipBg: '#1e293b',
+  tooltipBorder: '#334155',
+  tooltipShadow: '0 4px 14px rgba(0,0,0,0.4)',
+  tooltipText: '#f1f5f9',
+  refLineStroke: '#64748b',
+  refLineLabel: '#cbd5e1',
+  bStarStroke: '#fbbf24',
+  bStarLabel: '#fcd34d',
+} as const
 
 const COLORS = {
   compute: '#6366F1',
@@ -591,6 +620,12 @@ export function TComputeMemorySimulator({ lang = 'zh' }: TComputeMemorySimulator
   const sim = useSimulator()
   const [chartReady, setChartReady] = useState(false)
   useEffect(() => setChartReady(true), [])
+
+  // next-themes is undefined during SSR; treat as light until mounted to
+  // avoid hydration mismatch, then switch to whatever theme is resolved.
+  const { resolvedTheme } = useTheme()
+  const chartTheme =
+    chartReady && resolvedTheme === 'dark' ? DARK_CHART_THEME : LIGHT_CHART_THEME
   const {
     safeB,
     BMax,
@@ -775,20 +810,20 @@ export function TComputeMemorySimulator({ lang = 'zh' }: TComputeMemorySimulator
           {chartReady ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
                 <XAxis
                   dataKey="B"
-                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  tick={{ fontSize: 10, fill: chartTheme.tickFill }}
                   label={{
                     value: t.axis.x,
                     position: 'insideBottom',
                     offset: -8,
-                    style: { fill: '#475569', fontSize: 11 },
+                    style: { fill: chartTheme.labelFill, fontSize: 11 },
                   }}
                 />
                 <YAxis
                   domain={[0, yMax]}
-                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  tick={{ fontSize: 10, fill: chartTheme.tickFill }}
                   tickFormatter={(value: number) => formatMs(value, false)}
                   width={56}
                   label={{
@@ -796,7 +831,7 @@ export function TComputeMemorySimulator({ lang = 'zh' }: TComputeMemorySimulator
                     angle: -90,
                     position: 'insideLeft',
                     offset: 12,
-                    style: { fill: '#475569', fontSize: 11, textAnchor: 'middle' },
+                    style: { fill: chartTheme.labelFill, fontSize: 11, textAnchor: 'middle' },
                   }}
                 />
                 <Tooltip
@@ -804,29 +839,37 @@ export function TComputeMemorySimulator({ lang = 'zh' }: TComputeMemorySimulator
                   labelFormatter={(value) => `B = ${value}`}
                   contentStyle={{
                     borderRadius: 10,
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 4px 14px rgba(15,23,42,0.12)',
+                    background: chartTheme.tooltipBg,
+                    border: `1px solid ${chartTheme.tooltipBorder}`,
+                    boxShadow: chartTheme.tooltipShadow,
+                    color: chartTheme.tooltipText,
                     fontSize: 11,
                     padding: '6px 10px',
                   }}
+                  labelStyle={{ color: chartTheme.tooltipText }}
+                  itemStyle={{ color: chartTheme.tooltipText }}
                 />
                 <Legend
                   verticalAlign="top"
                   align="right"
-                  wrapperStyle={{ fontSize: 11, paddingBottom: 12 }}
+                  wrapperStyle={{
+                    fontSize: 11,
+                    paddingBottom: 12,
+                    color: chartTheme.labelFill,
+                  }}
                 />
                 <ReferenceLine
                   x={safeB}
-                  stroke="#94a3b8"
+                  stroke={chartTheme.refLineStroke}
                   strokeDasharray="4 4"
-                  label={{ value: `B=${safeB}`, fill: '#475569', fontSize: 10 }}
+                  label={{ value: `B=${safeB}`, fill: chartTheme.refLineLabel, fontSize: 10 }}
                 />
                 {intersection ? (
                   <ReferenceLine
                     x={intersection}
-                    stroke="#f59e0b"
+                    stroke={chartTheme.bStarStroke}
                     strokeDasharray="5 5"
-                    label={{ value: 'B*', fill: '#b45309', fontSize: 10 }}
+                    label={{ value: 'B*', fill: chartTheme.bStarLabel, fontSize: 10 }}
                   />
                 ) : null}
                 <Line
