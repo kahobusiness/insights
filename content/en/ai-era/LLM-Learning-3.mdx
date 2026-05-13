@@ -1,8 +1,9 @@
 import { Callout } from 'nextra/components'
+import { CostBatchSimulator } from '@app/components/cost-batch-simulator'
 
 export const metadata = {
   description: 'From the latency chart to the cost chart — splitting per-token cost into "amortizable parameter movement + non-amortizable KV + non-amortizable compute." Geometrically shows why running without batching is thousands of times worse, where AI scale economies actually come from, and why "cheap + slow" is physically impossible.',
-  publishedAt: '2026-05-08'
+  publishedAt: '2026-05-13'
 }
 
 # ✏️ The Math Behind LLM Pricing 03: From Inference Latency to Inference Cost
@@ -227,6 +228,10 @@ $$
 
 > 🔑 **This is the physical lower bound on per-token cost.** It's "the cost of each user's share of compute, with workers running at full speed" — no batch size can reduce it further, because the compute work is per-user-specific and batching can't help.
 > 
+
+Flip the Y-axis on the previous post's simulator from "latency" to "cost per token" and you get the chart below — three reference lines (hyperbola, KV, compute) plus a bold total-cost curve. Drag B small and watch the total cost spike; drag it toward the sweet spot and the curve visibly flattens; push B very large and the curve pins itself onto the compute floor.
+
+<CostBatchSimulator lang="en" />
 
 ---
 
