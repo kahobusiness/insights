@@ -1,8 +1,9 @@
 import { Callout } from 'nextra/components'
+import { CostBatchSimulator } from '@app/components/cost-batch-simulator'
 
 export const metadata = {
   description: '从延迟图到成本图：把每 token 成本拆成「可摊销的搬参数 + 摊不掉的 KV + 摊不掉的算力」，几何上看清不 batch 为什么差 5400 倍、规模经济从哪里来、为什么「便宜+慢」物理上不可行。',
-  publishedAt: '2026-05-08'
+  publishedAt: '2026-05-13'
 }
 
 # ✏️ LLM 定价的数学原理 03：从推理耗时到推理成本
@@ -227,6 +228,10 @@ $$
 
 > 🔑 **这是单 token 成本的物理下限**。它的意思是「工人全速干活时，每个用户那份工作的成本」——再大的 Batch 也省不了，因为算的工作量是每个用户独有的，Batch 帮不上忙。
 > 
+
+把第二篇那个模拟器的 Y 轴换成「每 token 成本」就得到下面这张图——三条参考线（双曲、KV、算力）+ 一条加粗的总成本曲线，正好对应上面三个区域。拖滑杆把 B 调小，你会看到总成本一路飙升；拖到甜蜜点附近，曲线明显平缓下来；继续拖到 B 极大，曲线就钉在算力下界不动了。
+
+<CostBatchSimulator />
 
 ---
 
