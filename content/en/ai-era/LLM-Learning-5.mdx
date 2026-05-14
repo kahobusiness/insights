@@ -1,0 +1,343 @@
+import { Callout } from 'nextra/components'
+
+export const metadata = {
+  description: "The first four posts stayed inside a single GPU. This one goes out to the cluster — how models are sliced (pipeline / expert / tensor), what a rack actually is, why MoE strongly prefers a single rack, why scale-up solves bandwidth rather than capacity, and why 1T-scale models only became economically feasible with Blackwell.",
+  publishedAt: '2026-05-14'
+}
+
+# ✏️ The Math Behind LLM Pricing 05: From One GPU to a Cluster — Parallelism and Interconnect
+
+<Callout type="info" emoji="📖">
+
+So far we've been analyzing what happens **inside a single GPU** — what gets moved, what gets computed, who waits for whom. But in reality, frontier models **don't fit on one GPU**: a 700B model at FP8 is 700 GB, while an H100 holds only 80 GB — **you need at least 9 GPUs just to hold one whole model**. The moment we go multi-GPU, a whole new set of questions opens up: how do these GPUs cooperate? Who owns what? How do they pass messages between each other? This post is about that new dimension.
+
+</Callout>
+
+<Callout type="important" emoji="🧭">
+
+**Recap**: in [Cracking Open the KV Cache](./LLM-Learning-4.mdx) we opened up the KV cache and sorted every architecture innovation into three buckets: "faster compute," "amortization fix," and "hardware shift." The "bigger scale-up domains" we discuss here are squarely in the third bucket — push the physical wall back. But the specific problem they solve isn't what your intuition probably thinks.
+
+</Callout>
+
+## I. Why Slice a Model at All?
+
+Three reasons a model might need to be split:
+
+### Reason 1: It doesn't fit
+
+700B model ÷ 80 GB per H100 = **must split**. Physical necessity.
+
+### Reason 2: You want it to run faster
+
+Even if it does fit, **parallelizing across GPUs speeds things up**. Eight GPUs working in parallel, each doing 1/8 of the work.
+
+### Reason 3: You want it to run cheaply (unit economics)
+
+Recall the sweet spot from Post 02: `B = 300 × inverse sparsity`. To hit that batch size you need enough memory to hold the KV cache for all those concurrent users. **A single 80 GB GPU can't hold the KV for 5000 users** — so you need more GPUs simply to provide enough aggregate memory.
+
+---
+
+## II. Three Axes to Slice a Model
+
+A model has several "axes" you can cut along. Think of it as a building:
+
+- **Horizontal cuts**: split by layers. Layers 1–20 on GPU A, layers 21–40 on GPU B → **pipeline parallelism**
+- **Vertical cuts**: split within a layer. Different heads / different experts of the same layer on different GPUs → **tensor parallelism / expert parallelism**
+- **Replicate**: multiple full copies of the model, each serving a different batch → **data parallelism**
+
+> 🔑 **In production LLM inference, only two of these are mainstream**: **expert parallelism** and **pipeline parallelism**. Tensor parallelism has high communication overhead and is mostly used in training; data parallelism doesn't apply to large-model inference anymore (a single copy doesn't fit). Let's walk through the two that do.
+> 
+
+---
+
+## III. Expert Parallelism — the MoE Default
+
+Recall from Post 04: MoE models have **many experts** (DeepSeek V3 has 256), and each token only activates a few of them.
+
+> 🔑 **The key insight**: **different experts can live on different GPUs**.
+> 
+
+```
+GPU 0:  Expert 0, Expert 1, Expert 2, Expert 3
+GPU 1:  Expert 4, Expert 5, Expert 6, Expert 7
+GPU 2:  Expert 8, Expert 9, Expert 10, Expert 11
+...
+GPU 63: Expert 252, Expert 253, Expert 254, Expert 255
+```
+
+That's expert parallelism. Each GPU holds **only a subset of the experts**, dramatically reducing the per-GPU memory pressure.
+
+### But it introduces a new problem: communication
+
+A token comes in; the router decides "send to Expert 5 + Expert 100 + Expert 200." Those three experts live on three different GPUs. **The token has to be shipped to all three GPUs**, computed, then collected back.
+
+> 🔑 **This introduces "communication cost"** — a dimension we hadn't considered before.
+> 
+
+What's worse: **each token can route to any handful of experts**. So **any GPU might need to talk to any other GPU**. This pattern has a name:
+
+> **All-to-all communication** (everyone to everyone)
+> 
+
+---
+
+## IV. What a Rack Actually Is — the Physical Reality of the Network
+
+To understand why all-to-all is a big deal, you need to know how the hardware is physically organized.
+
+### Physical structure
+
+In a data center, GPUs aren't scattered around — they live in **racks**:
+
+- A rack is **a metal frame several meters tall, a meter or two wide**
+- It holds roughly **64–72 GPUs** (72 in Blackwell)
+- The size limits are **power, weight, cooling**
+
+### Two networks
+
+GPUs have two separate interconnect systems:
+
+**Scale-up network (within the rack — e.g. NVLink)**
+
+- Connects every GPU inside one rack
+- **Extremely high bandwidth** (~1.8 TB/s unidirectional on NVLink 5)
+- Any pair of GPUs reaches each other in **two hops** through an NV Switch
+
+**Scale-out network (between racks — e.g. InfiniBand)**
+
+- Connects different racks
+- Bandwidth roughly **8× lower**
+- Cross-rack traffic has to detour and queue
+
+> 🔑 **That 8× gap is a critical number** — it directly determines which communication patterns can happen inside a rack and which can't.
+> 
+
+### A diagram
+
+```
+┌─────────── Rack 0 (64 GPUs) ──────────┐
+│                                       │
+│  GPU0──┐                              │
+│  GPU1──┤                              │
+│  GPU2──┼──[ NV Switch at center ]──GPU63│
+│  ...   │     ←─ scale-up network      │
+│  GPU63─┘     all-to-all, very fast    │
+│        │                              │
+└────────┼──────────────────────────────┘
+         │
+         │ ←─ scale-out network
+         │     8× slower
+         │
+┌────────┼──────────────────────────────┐
+│  Rack 1 (another 64 GPUs)             │
+└───────────────────────────────────────┘
+```
+
+### Why not just cram all GPUs into one rack?
+
+The answer is surprisingly physical: **the cables don't fit**.
+
+- An NV Switch sits in the middle of the rack
+- Every GPU has to run a cable to the central switch
+- 64 GPUs = 64 dense cable runs
+- Want to double? **Cable density doubles too**
+- Real limits: connector density, bend radius, mechanical rigidity, airflow for cooling
+
+> 🔑 **The physical ceiling on scale-up isn't a "chip technology" problem — it's a mechanical-engineering problem**.
+> 
+
+---
+
+## V. Why MoE "Fits Perfectly" Inside One Rack
+
+Put expert parallelism and racks together.
+
+MoE needs all-to-all communication — any GPU might send to any GPU.
+
+- **Inside one rack**: ✅ everyone is on the fast network; perfect match
+- **Across racks**: ❌ the 8× slower scale-out network becomes the bottleneck
+
+> 🔑 **Conclusion**: **MoE inference should ideally live entirely within a single rack**.
+> 
+
+DeepSeek V3 has 256 experts; a Blackwell rack has 72 GPUs — doesn't divide evenly, so simplify to 64, **4 experts per GPU**. That's the standard whiteboard layout engineers draw.
+
+### A constraint falls out
+
+This means: **the capacity of one rack sets a ceiling on how large a MoE model can be**.
+
+- Blackwell rack: 72 × 192 GB ≈ **13.8 TB total memory**
+- That's the ceiling on a MoE model's **total parameter count** — the limit of what one rack can hold
+
+> 🔑 **This explains why frontier models only recently broke the 1T-parameter line** — Hopper racks couldn't hold them; Blackwell racks can. **It wasn't that nobody wanted to build them — they didn't fit.**
+> 
+
+---
+
+## VI. Pipeline Parallelism — Crossing Racks
+
+What if the model is so big that even one rack can't hold it? Or you want to use multiple racks to raise throughput?
+
+That's when you reach for **pipeline parallelism**: **slice by layers**.
+
+```
+Rack 0: layers  1–20
+Rack 1: layers 21–40
+Rack 2: layers 41–60
+Rack 3: layers 61–80
+```
+
+A token traverses the full pipeline, passing through 4 racks.
+
+### Why pipeline fits cross-rack so well
+
+Because **its communication pattern is fundamentally different from MoE**:
+
+- MoE: **all-to-all** (any GPU to any GPU)
+- Pipeline: **point-to-point** (rack N hands its output to rack N+1)
+
+> 🔑 **Point-to-point has much lower bandwidth requirements** — and it only happens at rack boundaries, not on every token like MoE's all-to-all.
+> 
+
+Concretely: rack 0 finishes its layers and only needs to send the token's intermediate representation (a few KB) to rack 1. That payload is tiny enough that the 8×-slower scale-out network handles it comfortably.
+
+### The cost of pipeline: bubble
+
+But pipeline has a **fatal-looking problem**.
+
+Picture the pipeline rack 0 → rack 1 → rack 2 → rack 3:
+
+```
+Time 1: rack 0 processes token 1; racks 1/2/3 sit idle
+Time 2: rack 1 processes token 1, rack 0 processes token 2; racks 2/3 idle
+Time 3: rack 2 processes token 1, rack 1 processes token 2, rack 0 processes token 3; rack 3 idle
+Time 4: every rack is busy ✅
+```
+
+> 🔑 **The first three time steps have idle GPUs** — this is the **pipeline bubble**.
+> 
+
+### Defusing the bubble: micro-batches
+
+Run multiple batches through the pipeline **like a train** — once the queue is full, every rack is busy at the same time:
+
+```
+time →
+rack 0:  B0 B1 B2 B3 B4 B5 ...
+rack 1:     B0 B1 B2 B3 B4 ...
+rack 2:        B0 B1 B2 B3 ...
+rack 3:           B0 B1 B2 ...
+                  ↑
+                from here on, every rack is fully loaded
+```
+
+> 🔑 **That's the "train" diagram engineers love drawing** — staggered micro-batches fill in the pipeline. The train's departure interval is around 20 ms (the per-rack token compute time); every rack departs in lockstep, amortizing away the bubble.
+> 
+
+---
+
+## VII. Scale-Up Actually Solves Bandwidth, Not Capacity
+
+Now we can make sense of a counterintuitive line you'll hear from inference engineers:
+
+> **"Scale-up doesn't really solve capacity — capacity is solved by pipeline. Scale-up solves bandwidth."**
+> 
+
+### What does that mean?
+
+Back to the choices:
+
+**Problem: model too big for one rack**
+
+- Option A: build a bigger rack (grow scale-up)
+- Option B: use pipeline across multiple racks
+
+**Which one solves "doesn't fit"?**
+
+> 🔑 **Option B solves it cleanly.** Pipeline lets you slice the model by layers across multiple racks; the capacity bottleneck goes away. **So "doesn't fit" is *not* the real motivation for growing scale-up.**
+> 
+
+### Then what does growing scale-up solve?
+
+Back to inference's fundamental bottleneck: **time spent moving parameters**.
+
+$$
+T_{\text{param-move}} = \frac{N_{total}}{\text{total bandwidth}}
+$$
+
+If you slice the model across **64 GPUs** (one Blackwell rack), all 64 GPUs **move their share of parameters in parallel** → total bandwidth = 64 × per-GPU BW.
+
+If you slice across **8 GPUs** (a Hopper-era NVLink domain), only 8 GPUs work in parallel → total bandwidth = 8 × per-GPU BW.
+
+> 🔑 **Bigger scale-up → more GPUs moving parameters in parallel → larger effective BW → shorter T_memory → lower latency floor and better batch unit economics**.
+> 
+
+### Why pipeline can't solve bandwidth
+
+Because **pipeline stages are serial** — rack 0 finishes before rack 1 starts. Pipeline gives you **more aggregate memory capacity**, but **it doesn't make param-moves faster** (at any instant, only one rack is working on any given token).
+
+> 🔑 **One table to remember**:
+> 
+> | Resource | Solved by |
+> | --- | --- |
+> | **Memory capacity** (holding a big model) | Pipeline |
+> | **Memory bandwidth** (making param-moves fast) | **Scale-up domain size** |
+> 
+> **That's the real reason NVIDIA keeps growing rack size** — not to hold bigger models, but to make today's models run fast enough that batch unit economics close.
+> 
+
+---
+
+## VIII. Stitching It Together — Why 1T Models Only Showed Up Recently
+
+You can now answer a question yourself. GPT-4 (2023) was rumored at 1.8T parameters, but **for nearly two years model sizes seemed stuck**, and didn't really move until 2025. Why?
+
+### The pieces
+
+1. **Max MoE model size = total parameters one rack can hold** (because you don't want cross-rack all-to-all)
+2. **Hopper era**: 8-GPU NVLink domain = 8 × 80 GB = 640 GB — holds ~500B, but batch unit economics are tight
+3. **Blackwell era**: 72-GPU rack = 72 × 192 GB ≈ 14 TB — holds 1–2T models *and* can batch to a real sweet spot
+4. **Bigger scale-up = bigger effective bandwidth = inference economics actually close**
+
+> 🔑 **Conclusion**: **1T+ models aren't "newly trainable" — they're "newly economically inferenceable."**
+> 
+
+Training can lean on more elaborate parallelism strategies to make do; but **inference is latency-sensitive and cost-sensitive, and needs a large enough scale-up domain for the economics to work**. So frontier model size waited for Blackwell to roll out before pushing up.
+
+> 📌 **Picking a model / provider**: **model size, training era, and hardware generation are coupled**. A 1T model trained pre-2024 running on Hopper clusters may simply not be economical — "it runs" but unit cost stays high. The same model on Blackwell can be 3–5× cheaper. **This is the lens for sanity-checking a new model provider's quoted price** — its hardware generation pins down its cost floor.
+> 
+
+---
+
+## IX. One Recap Box
+
+<Callout type="info" emoji="🗺️">
+
+**Key facts from this post**:
+
+- Models can be sliced **by layers** (pipeline) or **by width** (expert / tensor)
+- A **rack** is the physical unit: 64–72 GPUs, all-to-all-connected by a scale-up network like NVLink
+- **Scale-up (NVLink) is ~8× faster than scale-out (InfiniBand)**; the limit is mechanical engineering (cable density)
+- **MoE needs all-to-all → prefers to live inside one rack**
+- **Pipeline needs only point-to-point → handles cross-rack fine**; micro-batches (the "train") amortize away the bubble
+- **Scale-up really solves bandwidth, not capacity** — capacity is what pipeline is for
+- **1T models aren't newly trainable, they're newly economically inferenceable** — which is why they waited for Blackwell
+
+</Callout>
+
+---
+
+## X. A Few Questions to Chew On
+
+1. A startup claims it built a **256-GPU scale-up domain** (well beyond Blackwell's 72) using proprietary interconnect, positioned for "very large MoE models." Does the positioning make sense **technically**? **Commercially** — who's actually the customer?
+2. Companies like OpenAI / Anthropic have their own consumer apps (ChatGPT / Claude.ai) and massive user volumes. Independent inference providers (Together AI / Fireworks etc.) mainly serve API customers. **Why can the big labs run 1T+ models while independent providers tend to stick to 70B–200B "mid-scale" models?** Hint: combine Post 03's scale economies with this post's rack economics.
+3. Suppose NVLink's physical ceiling were broken tomorrow and a single rack could hold 200 GPUs. **Which class of model would benefit most immediately**? 1T dense models? 5T MoE? Something else? Why?
+4. Pipeline parallelism addresses capacity bottlenecks; bigger scale-up addresses bandwidth bottlenecks. A 70B dense model on a single Blackwell rack — which is its primary bottleneck? What if you move it to 8-GPU Hopper instead?
+
+---
+
+<Callout type="info" emoji="🚀">
+
+**Up next**: so far every post has been about deploying one model. The next one steps back from "one model" to look at an AI company's **whole compute ledger** — how pretraining, RL, and inference balance against each other, where the mysterious "6ND" formula comes from, why GPT-5-class models are roughly **100× over-trained relative to Chinchilla optimal**, and what that means for the industry. The algebra density steps up a notch, but the tools from the first five posts are everything you'll need.
+
+</Callout>

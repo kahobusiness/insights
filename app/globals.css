@@ -1,0 +1,21 @@
+/* Give the article's main heading some breathing room below it. Nextra's
+   default H1 has mt-2 with no bottom margin, so the H1 sits flush against
+   the first paragraph or Callout — this makes long opening Callouts feel
+   especially crowded. */
+article h1:first-of-type {
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  article h1:first-of-type {
+    margin-bottom: 2.5rem;
+  }
+}
+
+/* Strip the gray underline Nextra puts under every H2 section heading
+   (its default class set includes x:border-b). We rely on the existing
+   margin-top above each heading to mark the section break instead. */
+article h2 {
+  border-bottom-width: 0;
+  padding-bottom: 0;
+}
