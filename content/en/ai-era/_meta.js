@@ -11,5 +11,6 @@ export default {
   "LLM-Learning-1": "✏️ The Math Behind LLM Pricing 01: How Inference Actually Works",
   "LLM-Learning-2": "✏️ The Math Behind LLM Pricing 02: Writing Inference as Equations",
   "LLM-Learning-3": "✏️ The Math Behind LLM Pricing 03: From Inference Latency to Inference Cost",
-  "LLM-Learning-4": "✏️ The Math Behind LLM Pricing 04: Cracking Open the KV Cache"
+  "LLM-Learning-4": "✏️ The Math Behind LLM Pricing 04: Cracking Open the KV Cache",
+  "LLM-Learning-5": "✏️ The Math Behind LLM Pricing 05: From One GPU to a Cluster"
 }
