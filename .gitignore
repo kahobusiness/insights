@@ -12,3 +12,6 @@ tsconfig.tsbuildinfo
 
 # Vercel
 .vercel
+
+# Local scratch dir (e.g. image-gen drops, throwaway notes)
+tmp/
