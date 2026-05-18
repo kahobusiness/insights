@@ -8,6 +8,8 @@ export const metadata = {
 
 # 01: The First Principle of LLMs: Token Prediction
 
+![Abstract token tiles flowing through a neural network and branching into candidate next tokens](/llm-first-principles/01-next-token-prediction/cover.png)
+
 <Callout type="info" emoji="🧭">
 
 This is the first post in the "Understanding LLMs from First Principles" series. Across the series, we will start from the most fundamental mechanisms of large language models, then gradually expand toward everything built on top of them: tokens, token prediction, why models appear to develop intelligence, pretraining, post-training, tool use, agents, engineering systems, and commercialization. Let's begin with the most basic question: what is the first principle of a large language model?
@@ -45,6 +47,8 @@ predict the next chunk again;
 repeat until the answer is finished.
 ```
 
+![Context tokens enter a model, produce a new token, and loop that token back into the context](/llm-first-principles/01-next-token-prediction/prediction-loop.png)
+
 Sounds like autocomplete, right?
 
 That intuition is not wrong, but it is not enough. Ordinary autocomplete fills in a few common words. A large language model is trained across massive amounts of text, code, papers, web pages, conversations, and mathematical reasoning, until it becomes an extremely complex prediction system.
@@ -76,6 +80,8 @@ I / ate / an / apple / today
 Or, depending on the tokenizer, some words may be split into smaller pieces.
 
 The exact split depends on the tokenizer, the component that turns text into tokens.
+
+![A continuous stream of content split into token tiles of different sizes before entering a model input layer](/llm-first-principles/01-next-token-prediction/tokens.png)
 
 English, Chinese, code, and formulas all go through this process. For example, a piece of code like this:
 
@@ -189,6 +195,8 @@ other: 5%
 
 The real situation is, of course, much more complex. The model is not choosing from only these few options. It calculates a probability for every possible token in its vocabulary.
 
+![A model turns context into many candidate next tokens with different probabilities, from narrow low-temperature sampling to wider high-temperature sampling](/llm-first-principles/01-next-token-prediction/probability-distribution.png)
+
 Then the system chooses one token according to certain rules. After that token is chosen, it is appended back into the context, and the model predicts the next token again.
 
 So generating an answer roughly looks like this:
@@ -244,6 +252,8 @@ When generating the current token, which tokens in the context should matter mos
 You can think of Attention as the model's temporary focusing ability.
 
 It does not look at every word in the context equally. At each step, it reallocates attention: should this step focus on the subject, or on the earlier object? Should it focus on a variable in the code, or on a constraint the user just gave? Should it focus on the beginning of the paragraph, or the last instruction?
+
+![Attention lines of different strengths point from earlier context tokens to the current token being generated](/llm-first-principles/01-next-token-prediction/attention.png)
 
 This is why Transformer can handle long documents, code, multi-turn conversations, and complex prompts. It is not simply mixing all the text together. It is building relationships between pieces of text.
 
@@ -341,6 +351,8 @@ One more point matters.
 The ChatGPT, Claude, Gemini, and Copilot products we use today are usually not bare models directly facing users.
 
 A modern large-language-model product often stacks many layers together:
+
+![A modern AI product system composed of a model, retrieval, tools, safety boundaries, interface, and feedback loop](/llm-first-principles/01-next-token-prediction/system-stack.png)
 
 ```text
 pretrained model
