@@ -8,6 +8,6 @@ export default {
   },
   "annotation-reply": "💬 Annotation Reply",
   "dictionary": "📚 Dictionary",
-  "llm-first-principles": "🧠 LLMs from First Principles",
+  "llm-first-principles": "🌍 LLMs from First Principles",
   "llm-pricing-math": "✏️ The Math Behind LLM Pricing"
 }

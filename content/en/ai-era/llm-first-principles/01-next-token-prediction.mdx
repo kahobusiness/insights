@@ -6,7 +6,7 @@ export const metadata = {
   publishedAt: '2026-05-18'
 }
 
-# 01 The First Principle of LLMs: Predicting the Next Token
+# 01: The First Principle of LLMs: Token Prediction
 
 <Callout type="info" emoji="🧭">
 
@@ -31,7 +31,7 @@ But if we remove the chat interface and look only at the lowest-level mechanism,
 Given everything it has seen so far, predict which token is most likely to come next.
 ```
 
-At its core, the model is doing probability prediction. A simple way to picture it is "word-by-word continuation." This is the central mechanism of a large language model, its first principle.
+At its core, the model is doing "token prediction." This is the first principle of a large language model, the central mechanism of how it works.
 
 For now, you can think of a token as the smallest chunk of content the model treats as a unit. It may be a character, a word, a punctuation mark, a code symbol, or some other piece of text.
 
