@@ -6,6 +6,7 @@ export default {
     title: 'Product Thinking'
   },
   'ai-era': ' AI Era',
+  'llm-first-principles': 'LLMs from First Principles',
   'user': 'User Thinking',
   'commercialization': 'Commercialization',
   'journey': {
