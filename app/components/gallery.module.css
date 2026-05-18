@@ -21,3 +21,74 @@
     break-inside: avoid; /* 防止图片被分割到不同的列 */
     cursor: pointer;
 }
+
+/* LightGallery backdrop 适配浅色 / 深色主题，对齐 Nextra 主题底色。
+   selector 带 html 前缀，确保 specificity 高于 LightGallery 自带的
+   `.lg-backdrop { background-color: #000 }`，否则会被覆盖。 */
+:global(html .lg-backdrop) {
+    background-color: #fff;
+}
+
+:global(html.dark .lg-backdrop) {
+    background-color: #000;
+}
+
+/* 浅色主题下，工具栏图标默认色 (#999) 与悬停色 (#fff) 在白底上几乎不可见，改成深色 */
+:global(.lg-toolbar .lg-icon),
+:global(.lg-counter) {
+    color: #4b5563;
+}
+
+:global(.lg-toolbar .lg-icon:hover),
+:global(.lg-toolbar .lg-icon:focus-visible) {
+    color: #111827;
+}
+
+:global(html.dark .lg-toolbar .lg-icon),
+:global(html.dark .lg-counter) {
+    color: #d1d5db;
+}
+
+:global(html.dark .lg-toolbar .lg-icon:hover),
+:global(html.dark .lg-toolbar .lg-icon:focus-visible) {
+    color: #fff;
+}
+
+/* 图片下方的说明文字 / 错误提示，默认色 (#eee / #999) 在浅底不可见 */
+:global(html .lg-sub-html),
+:global(html .lg-error-msg) {
+    color: #4b5563;
+}
+
+:global(html.dark .lg-sub-html) {
+    color: #eee;
+}
+
+:global(html.dark .lg-error-msg) {
+    color: #999;
+}
+
+/* 浅色主题下，左右翻页箭头默认是黑色半透明 + 灰色图标，在浅底上很突兀；
+   反过来做成浅色半透明 + 深灰图标。深色主题保留 LightGallery 自带样式。
+   selector 带 html 前缀提高 specificity，避免被自带样式覆盖。 */
+:global(html .lg-next),
+:global(html .lg-prev) {
+    background-color: rgba(255, 255, 255, 0.45);
+    color: #4b5563;
+}
+
+:global(html .lg-next:hover:not(.disabled)),
+:global(html .lg-prev:hover:not(.disabled)) {
+    color: #111827;
+}
+
+:global(html.dark .lg-next),
+:global(html.dark .lg-prev) {
+    background-color: rgba(0, 0, 0, 0.45);
+    color: #d1d5db;
+}
+
+:global(html.dark .lg-next:hover:not(.disabled)),
+:global(html.dark .lg-prev:hover:not(.disabled)) {
+    color: #fff;
+}

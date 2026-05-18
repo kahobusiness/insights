@@ -1,0 +1,110 @@
+export const metadata = {
+  title: 'Series Outline: Understanding LLMs from First Principles',
+  description: 'A hidden writing memo for the series on understanding large language models from next-token prediction, covering the narrative arc and future topics.',
+  publishedAt: '2026-05-18'
+}
+
+# Series Outline: Understanding LLMs from First Principles
+
+This is a hidden writing memo for the series. Readers do not need to see it first, but every future post should draw from the same backbone.
+
+## Main Thread
+
+The whole series follows this chain:
+
+```text
+Token
+↓
+Next Token Prediction
+↓
+Language Distribution Modeling
+↓
+World Knowledge Compression
+↓
+Emergent Reasoning
+↓
+Instruction Following
+↓
+Tool Use / RAG
+↓
+Agent
+↓
+AI Native Product
+↓
+Autonomous Task Delivery
+```
+
+In plain language:
+
+> The bottom layer of an LLM is prediction, the deeper layer is compression, the middle layer is reasoning, the upper layer is tools, the product layer is tasks, and the future shape is agents.
+
+## Working Definition
+
+A large language model is a probabilistic intelligence system that learns language distributions by predicting token sequences, then expresses knowledge, reasoning, planning, and task-execution abilities through scale, alignment, context engineering, and tool use.
+
+## Post Template
+
+Each post should roughly follow this rhythm:
+
+```text
+1. An intuitive question
+2. A first-principles explanation
+3. The technical mechanism
+4. Common misconceptions
+5. Product / engineering implications
+6. A one-sentence summary
+```
+
+This keeps the series from becoming either an encyclopedia or pure conceptual writing. Each post should start with a real confusion, return to the underlying mechanism, and then show what it means for products or engineering systems.
+
+## Main Series
+
+```text
+01 The First Principle of LLMs: Predicting the Next Token
+02 Token and Embedding: How Language Becomes Numbers
+03 Transformer and Attention: How Models See Context
+04 Language as Compression of the World: Why Prediction Can Become Intelligence
+05 Pretraining, Fine-tuning, and Alignment: From Continuation Machine to Assistant
+06 Scaling Laws and Emergence: Why Scale Changes Capability Boundaries
+07 Inference and Generation: Temperature, Context Windows, and Token-by-Token Output
+08 The Nature of Hallucination: Why Models Confidently Make Things Up
+09 RAG: Attaching Traceable Knowledge to Models
+10 Tool Use: Moving from Saying to Doing
+11 Agents: From Chatbots to Task-Execution Systems
+12 LLM Engineering: KV Cache, Inference Cost, and Deployment
+13 AI Native Product Design: Making Probabilistic Systems Feel Reliable
+14 Commercialization and the Future: From SaaS to Outcome as a Service
+```
+
+## Advanced Topic Pool
+
+After the main series, these topics can become deeper follow-ups:
+
+```text
+Mixture-of-Experts models
+Long-context engineering
+Deep dive into KV cache
+Prompt injection
+Agent evaluation
+Multi-agent orchestration
+AI cost optimization
+Workflow agents
+On-device models
+Multimodal models
+Model routing
+From prompt to workflow
+```
+
+## Writing Principles
+
+1. Do not mystify LLMs. Explain them first as probabilistic models, then explain why probabilistic systems can exhibit complex capabilities.
+2. Do not reduce LLMs to "fancy autocomplete." Next-token prediction is the surface objective; the important part is the world structure the model is forced to learn.
+3. Do not equate "understanding" with human experience. Here, understanding means high-dimensional modeling of symbolic relationships, task patterns, and regularities in the world.
+4. Do not attribute product capability to the raw model alone. Modern LLM products are systems made of models, data, compute, alignment, RAG, tools, and agent frameworks.
+5. Keep the writing accessible to non-specialists while preserving the technical skeleton.
+
+## Core Sentence for Post 01
+
+The first post should make this sentence feel obvious:
+
+> An LLM is not "looking up answers." Given a context, it computes a probability distribution over the next token; once that prediction system is forced to compress enough human language, it is also forced to learn structure behind the language.
