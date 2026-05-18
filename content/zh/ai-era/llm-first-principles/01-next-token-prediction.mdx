@@ -8,6 +8,8 @@ export const metadata = {
 
 # 01：LLM 的第一性原理：token 预测
 
+![抽象 token 方块穿过神经网络并分叉成候选下一个 token 的封面图](/llm-first-principles/01-next-token-prediction/cover.png)
+
 <Callout type="info" emoji="🧭">
 
 这是「用第一性原理理解大模型」系列的第 1 篇。我们将运用「第一性原理」，理解 LLM 最根本性的机制，并逐步拓展出与之相关的一切：什么是 Token？Token 如何被预测？为什么模型会涌现出「智力」？预训练、后训练、Tool Use、Agent 与工程化、商业化。希望本系列内容能让你有所收获。那么事不宜迟，我们先从最根本的问题开始：什么是大模型的第一性原理？
@@ -79,6 +81,8 @@ export const metadata = {
 ```
 
 具体怎么切，取决于模型使用的 tokenizer，也就是分词器。
+
+![一条连续内容被分割成不同大小 token 方块并进入模型输入层的示意图](/llm-first-principles/01-next-token-prediction/tokens.png)
 
 英文、代码、公式也一样。比如一段代码：
 
@@ -192,6 +196,8 @@ f(上下文) = 下一个 token 的概率分布
 
 真实情况当然更复杂。模型不是只在这几个词里选，而是在整个词表里给每个可能的 token 都算一个概率。
 
+![模型从上下文计算出多个候选 token 概率，并在低温到高温之间呈现不同采样范围的示意图](/llm-first-principles/01-next-token-prediction/probability-distribution.png)
+
 然后，系统会根据一定的规则选出一个 token。选完以后，把它接回原来的上下文里，再继续预测下一个。
 
 因此生成一段回答，大概就是这个过程：
@@ -247,6 +253,8 @@ Transformer 之所以重要，很大一部分原因就在这里。它里面的 A
 你可以把 Attention 想成模型的「临时聚焦能力」。
 
 它不是把上下文里的每个词都平均看一遍，而是在每一步都重新分配注意力：这一步更该看主语，还是看前面的对象？更该看代码里的变量，还是看用户刚才提出的限制？更该看这段话的开头，还是看最后一句要求？
+
+![不同强度的注意力连线从上下文 token 指向当前 token，表示模型在生成时选择重点参考位置的示意图](/llm-first-principles/01-next-token-prediction/attention.png)
 
 这就是为什么 Transformer 能处理长文、代码、多轮对话和复杂提示词。它不是简单地把所有文字混在一起，而是在文字之间建立联系。
 
@@ -344,6 +352,8 @@ Transformer 之所以重要，很大一部分原因就在这里。它里面的 A
 我们平时用到的 ChatGPT、Claude、Gemini、Copilot，通常不是一个裸模型直接面对用户。
 
 一个现代大模型产品，往往是很多层东西叠在一起：
+
+![现代 AI 产品由模型、检索、工具、安全边界、界面和反馈循环共同组成的系统示意图](/llm-first-principles/01-next-token-prediction/system-stack.png)
 
 ```text
 预训练模型
