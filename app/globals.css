@@ -19,3 +19,25 @@ article h2 {
   border-bottom-width: 0;
   padding-bottom: 0;
 }
+
+/* Long KaTeX display equations would otherwise stretch wider than the article
+   column on mobile and trigger horizontal page scroll. Confine the overflow to
+   the equation's own container so only the formula scrolls sideways, not the
+   whole page. The vertical padding keeps fraction bars and tall scripts from
+   being clipped by the scroll box. */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-top: 0.25em;
+  padding-bottom: 0.25em;
+}
+
+/* Inline KaTeX can also exceed the line width on narrow viewports (long
+   subscripted expressions, etc.). Scoped to inline-only — `.katex-display`
+   wraps an inner `.katex` whose width we want to keep large so the parent
+   container is what scrolls. */
+:not(.katex-display) > .katex {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
