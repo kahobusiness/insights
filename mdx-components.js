@@ -1,5 +1,6 @@
 import { useMDXComponents as getThemeComponents } from 'nextra-theme-docs'
 import { ImageRow } from '@app/components/image-row'
+import { RecentPosts } from '@app/components/recent-posts'
 
 const themeComponents = getThemeComponents()
 const ThemeWrapper = themeComponents.wrapper
@@ -20,6 +21,7 @@ export function useMDXComponents(components) {
     ...themeComponents,
     wrapper: Wrapper,
     ImageRow,
+    RecentPosts,
     ...components
   }
 }
