@@ -1,6 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 
+import Image from 'next/image'
 import Link from 'next/link'
 
 import styles from './recent-posts.module.css'
@@ -10,6 +11,7 @@ interface Post {
   title: string
   description?: string
   publishedAt: string
+  cover?: { src: string; alt: string }
 }
 
 // Basenames excluded from the listing: nav-hidden pages (mirrors sitemap),
@@ -34,6 +36,15 @@ function readField(src: string, key: string): string | undefined {
 
 function hasNoindex(src: string): boolean {
   return /robots\s*:\s*\{\s*index\s*:\s*false/.test(src)
+}
+
+// First Markdown image in the article body, e.g. `![alt](/path/foo.png)`.
+// We don't try to parse <img> JSX because every post in this codebase uses
+// Markdown image syntax for static covers.
+function readFirstImage(src: string): { src: string; alt: string } | undefined {
+  const m = src.match(/!\[([^\]]*)\]\(([^)\s]+)\)/)
+  if (!m || !m[2]) return undefined
+  return { src: m[2], alt: m[1] ?? '' }
 }
 
 async function collectPosts(locale: string): Promise<Post[]> {
@@ -63,6 +74,7 @@ async function collectPosts(locale: string): Promise<Post[]> {
           title,
           description: readField(src, 'description'),
           publishedAt,
+          cover: readFirstImage(src),
         })
       }
     }
@@ -84,15 +96,27 @@ export async function RecentPosts({ locale, limit = 6 }: RecentPostsProps) {
     <ul className={styles.list}>
       {posts.map((p) => (
         <li key={p.href} className={styles.item}>
-          <div className={styles.row}>
+          <div className={styles.content}>
             <Link href={p.href} className={styles.title}>
               {p.title}
             </Link>
+            {p.description && <p className={styles.desc}>{p.description}</p>}
             <time dateTime={p.publishedAt} className={styles.date}>
               {p.publishedAt}
             </time>
           </div>
-          {p.description && <p className={styles.desc}>{p.description}</p>}
+          {p.cover && (
+            <Link href={p.href} className={styles.coverLink} aria-hidden tabIndex={-1}>
+              <Image
+                src={p.cover.src}
+                alt={p.cover.alt}
+                width={192}
+                height={108}
+                className={styles.cover}
+                sizes="(max-width: 640px) 128px, 192px"
+              />
+            </Link>
+          )}
         </li>
       ))}
     </ul>
