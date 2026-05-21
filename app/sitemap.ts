@@ -3,17 +3,23 @@ import path from 'node:path'
 
 import type { MetadataRoute } from 'next'
 
-import { i18n } from '../i18n-config'
+import { i18n, type Locale } from '../i18n-config'
 
 const SITE = 'https://insights.kaho.io'
 
-// Pages whose route segment matches one of these are excluded from the sitemap
-// (hidden in `_meta.js` via `display: 'hidden'`).
-const HIDDEN_SEGMENTS = new Set(['japan-gallery'])
+// Route segments excluded from the sitemap. These pages are either hidden
+// from nav (`display: 'hidden'` in `_meta.js`) and not meant to be indexed,
+// or carry a `robots: { index: false }` frontmatter — listing them in the
+// sitemap would waste crawl budget.
+const HIDDEN_SEGMENTS = new Set(['japan-gallery', 'series-outline', 'rag-r4'])
 
-async function listMdxRoutes(locale: string): Promise<{ route: string; mtime: Date }[]> {
+function hreflangFor(locale: Locale): string {
+  return locale === 'zh' ? 'zh-CN' : 'en'
+}
+
+async function listMdxPaths(locale: Locale): Promise<Map<string, Date>> {
   const root = path.join(process.cwd(), 'content', locale)
-  const out: { route: string; mtime: Date }[] = []
+  const out = new Map<string, Date>()
 
   async function walk(dir: string, prefix: string) {
     const entries = await readdir(dir, { withFileTypes: true })
@@ -25,9 +31,9 @@ async function listMdxRoutes(locale: string): Promise<{ route: string; mtime: Da
         const base = entry.name.replace(/\.mdx$/, '')
         const segments = `${prefix}/${base}`.replace(/^\//, '').split('/')
         if (segments.some((s) => HIDDEN_SEGMENTS.has(s))) continue
-        const route = `/${locale}/${segments.join('/')}`
+        const relPath = segments.join('/')
         const { mtime } = await stat(full)
-        out.push({ route, mtime })
+        out.set(relPath, mtime)
       }
     }
   }
@@ -37,16 +43,33 @@ async function listMdxRoutes(locale: string): Promise<{ route: string; mtime: Da
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const entries: MetadataRoute.Sitemap = []
-
+  // Build per-locale maps so each entry can declare hreflang alternates for
+  // the language variants that actually exist on disk.
+  const byLocale = new Map<Locale, Map<string, Date>>()
   for (const locale of i18n.locales) {
-    const routes = await listMdxRoutes(locale)
-    for (const { route, mtime } of routes) {
+    byLocale.set(locale, await listMdxPaths(locale))
+  }
+  const defaultPaths = byLocale.get(i18n.defaultLocale)!
+
+  const entries: MetadataRoute.Sitemap = []
+  for (const locale of i18n.locales) {
+    const paths = byLocale.get(locale)!
+    for (const [relPath, mtime] of paths) {
+      const languages: Record<string, string> = {}
+      for (const alt of i18n.locales) {
+        if (byLocale.get(alt)!.has(relPath)) {
+          languages[hreflangFor(alt)] = `${SITE}/${alt}/${relPath}`
+        }
+      }
+      if (defaultPaths.has(relPath)) {
+        languages['x-default'] = `${SITE}/${i18n.defaultLocale}/${relPath}`
+      }
+
       entries.push({
-        url: `${SITE}${route}`,
+        url: `${SITE}/${locale}/${relPath}`,
         lastModified: mtime,
-        changeFrequency: 'monthly',
-        priority: route.endsWith('/say-hello') ? 1 : 0.7,
+        priority: relPath === 'say-hello' ? 1 : 0.7,
+        alternates: { languages },
       })
     }
   }

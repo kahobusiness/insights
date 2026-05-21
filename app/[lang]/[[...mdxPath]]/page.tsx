@@ -6,6 +6,11 @@ import { i18n, type Locale } from '../../../i18n-config'
 
 const SITE = 'https://insights.kaho.io'
 
+// Top-level slugs that are not blog articles. They render as schema.org
+// WebPage rather than BlogPosting so search engines don't flag them for
+// missing Article-required fields like datePublished.
+const NON_ARTICLE_SLUGS = new Set(['say-hello', 'logs', 'japan-gallery'])
+
 export const generateStaticParams = generateStaticParamsFor('mdxPath')
 
 type PageProps = Readonly<{
@@ -56,25 +61,53 @@ const Page: FC<PageProps> = async (props) => {
 
   const slug = buildPath(params.mdxPath)
   const url = `${SITE}/${params.lang}${slug ? `/${slug}` : ''}`
+  const rootSlug = params.mdxPath?.[0] ?? ''
+  const isArticle = rootSlug !== '' && !NON_ARTICLE_SLUGS.has(rootSlug)
+  const published = (metadata as { publishedAt?: string } | undefined)?.publishedAt
 
-  // BlogPosting JSON-LD so Google can surface the article with rich
-  // metadata (title, description, language). Date fields are intentionally
-  // omitted until articles carry frontmatter dates.
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BlogPosting',
-    headline: metadata?.title ?? 'Insights',
-    description: metadata?.description ?? undefined,
-    inLanguage: hreflangFor(params.lang),
-    url,
-    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
-    image: `${SITE}/preview.png`,
-    publisher: {
-      '@type': 'Organization',
-      name: 'Insights',
-      logo: { '@type': 'ImageObject', url: `${SITE}/favicon.ico` },
+  const publisher = {
+    '@type': 'Organization',
+    name: 'Insights',
+    logo: {
+      '@type': 'ImageObject',
+      url: `${SITE}/preview.png`,
+      width: 1200,
+      height: 630,
     },
   }
+
+  const jsonLd = isArticle
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: metadata?.title ?? 'Insights',
+        description: metadata?.description ?? undefined,
+        inLanguage: hreflangFor(params.lang),
+        url,
+        mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+        image: `${SITE}/preview.png`,
+        ...(published ? { datePublished: published, dateModified: published } : {}),
+        author: {
+          '@type': 'Person',
+          name: 'kaho',
+          url: SITE,
+        },
+        publisher,
+      }
+    : {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: metadata?.title ?? 'Insights',
+        description: metadata?.description ?? undefined,
+        inLanguage: hreflangFor(params.lang),
+        url,
+        isPartOf: {
+          '@type': 'WebSite',
+          name: 'Insights',
+          url: SITE,
+        },
+        publisher,
+      }
 
   return (
     <>
