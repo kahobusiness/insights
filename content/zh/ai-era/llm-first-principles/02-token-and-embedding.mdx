@@ -8,6 +8,8 @@ export const metadata = {
 
 # 02：Token 与 Embedding：语言如何变成模型能处理的数字
 
+![抽象语言符号被切分成 token，再映射成 embedding 向量并进入神经网络的封面图](/llm-first-principles/02-token-and-embedding/cover.png)
+
 <Callout type="info" emoji="🧭">
 
 这是「用第一性原理理解大模型」系列的第 2 篇。上一篇我们讲了大模型的第一性原理：根据已有上下文，预测下一个 token。但 token 是什么？模型是怎么通过 token「看见」语言？人类阅读的载体是字、词和句子，它们如何被转换成模型能处理的数字。本文就从 token 和 embedding 开始，拆开语言进入模型之前发生的第一层转换。
@@ -51,6 +53,8 @@ I like apples
 这些句子对人来说表达了相近意思，但在计算机里，它们最开始只是不同字符组成的文本。模型不能直接处理这些文本，也不能凭空知道这些字符之间有什么关系。
 
 为了让这些字符变得可被「计算」，我们需要把字符变成数字。我们先试试采用最简单的办法 —— 直接给每个字符或词片段进行独立编号，比如：我=01，喜=02，欢=03...，I=06, like=07...,す=16
+
+![抽象字符和词片段被逐个编号后出现碎片化和错位问题的示意图](/llm-first-principles/02-token-and-embedding/naive-numbering.png)
 
 稍微推演下，会发现这么编号，会遇到很多问题：
 
@@ -116,6 +120,8 @@ un / believe / able
 
 不同模型使用的 tokenizer 不同，切法也不完全一样。tokenizer 需要根据模型自身特点来设计：词表大小、训练语料、支持语言、压缩效率和工程成本都会影响 tokenizer 的设计。
 
+![一条连续的抽象文本流被 tokenizer 切分成不同宽度 token 卡片的示意图](/llm-first-principles/02-token-and-embedding/tokenization.png)
+
 这也解释了很多使用大模型时的现象：
 
 1. 同样一句话，在不同语言里消耗的 token 数可能不同。中文、英文、代码、emoji、特殊符号的切分方式不同，所以计费和上下文占用也会不同
@@ -180,6 +186,8 @@ token id → embedding 向量
 
 这些数字不是人手写进去的，也不是词典定义。它们是在训练过程中学出来的。
 
+![彩色 token 先映射成编号，再查表变成高维 embedding 向量并流入神经网络的示意图](/llm-first-principles/02-token-and-embedding/id-to-embedding.png)
+
 一开始，embedding 可能只是随机数字。模型不断做 next token prediction，不断犯错、更新参数。为了更好地预测，模型会逐渐把经常出现在相似语境里的 token 调整到某种「更有用」的位置上。
 
 这里的「位置」不是二维地图上的坐标，而是高维向量空间里的关系。
@@ -216,6 +224,8 @@ question 和 answer 常常构成问答关系。
 也就是说，embedding 不是知识库，不是词典，也不是概念卡片。
 
 它更像是模型开始思考之前的「初始坐标系」：
+
+![高维向量空间中相似 token 聚成不同簇，同一个 token 沿上下文轨迹移动到不同语义位置的示意图](/llm-first-principles/02-token-and-embedding/embedding-space.png)
 
 ```text
 先把每个 token 放到一个可计算的位置上，

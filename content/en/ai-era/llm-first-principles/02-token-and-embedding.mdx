@@ -8,6 +8,8 @@ export const metadata = {
 
 # 02: Token and Embedding: How Language Becomes Numbers
 
+![Abstract language symbols split into tokens, mapped into embedding vectors, and passed into a neural network](/llm-first-principles/02-token-and-embedding/cover.png)
+
 <Callout type="info" emoji="🧭">
 
 This is the second post in the "Understanding LLMs from First Principles" series. In the previous post, we looked at the first principle of LLMs: given the existing context, predict the next token. But what is a token? How does a model "see" language through tokens? Humans read characters, words, and sentences, while the model ultimately processes numbers. This post starts with token and embedding, opening the first conversion layer before language enters the model.
@@ -54,6 +56,8 @@ I like apples
 These sentences are close in meaning to a human reader, but inside a computer they start as different strings of characters. The model cannot directly process those strings, and it does not magically know how the characters relate to one another.
 
 To make these characters computable, we need to turn them into numbers. Let's start with the simplest possible idea: give each character or word fragment its own independent id, such as `我=01`, `喜=02`, `欢=03`, `I=06`, `like=07`, and `す=16`.
+
+![Abstract characters and word fragments receive naive independent ids, then become fragmented and misaligned](/llm-first-principles/02-token-and-embedding/naive-numbering.png)
 
 If we push this idea just a little further, we quickly run into problems:
 
@@ -133,6 +137,8 @@ un / believe / able
 
 Different models use different tokenizers, so the exact split can differ. The reason is practical: vocabulary size, training data, supported languages, compression efficiency, and engineering constraints all shape tokenizer design.
 
+![A continuous abstract text stream split by a tokenizer into token cards of different widths](/llm-first-principles/02-token-and-embedding/tokenization.png)
+
 This explains several things you see when using LLMs.
 
 First, the same meaning can consume different numbers of tokens across languages. Chinese, English, code, emoji, and special symbols are split differently, so they can occupy different amounts of context and cost.
@@ -199,6 +205,8 @@ If a model's embedding dimension is 4096, then every token id maps to a vector c
 
 These numbers are not handwritten by engineers, and they are not dictionary definitions. They are learned during training.
 
+![Colored tokens map to ids, then look up high-dimensional embedding vectors before flowing into a neural network](/llm-first-principles/02-token-and-embedding/id-to-embedding.png)
+
 At the beginning, embeddings may be close to random numbers. The model repeatedly performs next-token prediction, repeatedly makes mistakes, and repeatedly updates its parameters. To predict better, it gradually adjusts tokens that appear in similar contexts toward representations that are useful for the task.
 
 This "position" is not a coordinate on a two-dimensional map. It is a relationship inside a high-dimensional vector space.
@@ -235,6 +243,8 @@ These relationships do not exist inside the embedding as sentences we can direct
 In other words, an embedding is not a knowledge base, a dictionary, or a concept card.
 
 It is closer to the model's initial coordinate system:
+
+![Similar tokens cluster in a high-dimensional vector space while one token moves along context-dependent paths to different semantic regions](/llm-first-principles/02-token-and-embedding/embedding-space.png)
 
 ```text
 First put each token somewhere computable.
