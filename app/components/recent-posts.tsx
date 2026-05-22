@@ -113,7 +113,7 @@ export async function RecentPosts({ locale, limit = 6 }: RecentPostsProps) {
                 width={192}
                 height={108}
                 className={styles.cover}
-                sizes="(max-width: 640px) 128px, 192px"
+                sizes="(max-width: 640px) 90vw, 192px"
               />
             </Link>
           )}
