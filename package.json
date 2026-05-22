@@ -6,7 +6,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@formatjs/intl-localematcher": "0.8.7",
+    "@formatjs/intl-localematcher": "0.8.8",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "katex": "^0.16.46",
@@ -23,8 +23,8 @@
   },
   "devDependencies": {
     "@types/negotiator": "^0.6.4",
-    "@types/node": "^25.7.0",
-    "@types/react": "^19.2.14",
+    "@types/node": "^24.12.4",
+    "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "typescript": "^6.0.3"
   }
