@@ -90,3 +90,30 @@ article h2 {
 html[data-navbar-hidden] .nextra-navbar {
   transform: translateY(-100%);
 }
+
+/* Hide the sidebar's scrollbar when idle, fade it in on hover. macOS uses
+   overlay scrollbars natively, but Windows Chrome shows a permanent thin
+   scrollbar inside .nextra-scrollbar — this gives a consistent feel across
+   platforms. `scrollbar-gutter: stable` is left intact upstream, so the
+   layout doesn't shift when the thumb appears. */
+@media (hover: hover) and (pointer: fine) {
+  .nextra-sidebar .nextra-scrollbar {
+    scrollbar-color: transparent transparent;
+  }
+  .nextra-sidebar:hover .nextra-scrollbar,
+  .nextra-sidebar .nextra-scrollbar:focus-within {
+    scrollbar-color: rgba(128, 128, 128, 0.45) transparent;
+  }
+  .nextra-sidebar .nextra-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  .nextra-sidebar .nextra-scrollbar::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+  .nextra-sidebar:hover .nextra-scrollbar::-webkit-scrollbar-thumb,
+  .nextra-sidebar .nextra-scrollbar:focus-within::-webkit-scrollbar-thumb {
+    background-color: rgba(128, 128, 128, 0.45);
+  }
+}
