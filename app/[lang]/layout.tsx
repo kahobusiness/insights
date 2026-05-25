@@ -4,6 +4,8 @@ import { getPageMap } from 'nextra/page-map'
 import { getDictionary, getDirection } from '../../get-dictionary'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { NavbarAutoHide } from '../components/navbar-auto-hide'
+import { SidebarAutoHide } from '../components/sidebar-auto-hide'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import type { Locale } from '../../i18n-config'
@@ -97,6 +99,8 @@ export default async function RootLayout({ children, params }: LayoutProps) {
           }}
         >
           {children}
+          <NavbarAutoHide />
+          <SidebarAutoHide />
           <Analytics />
           <SpeedInsights />
         </Layout>
