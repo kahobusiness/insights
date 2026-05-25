@@ -41,3 +41,79 @@ article h2 {
   overflow-x: auto;
   overflow-y: hidden;
 }
+
+/* Auto-hide left sidebar on desktop once the reader scrolls past the fold.
+   The sidebar slides left, leaving an 8px sliver as the only visible cue.
+   A separate viewport-fixed hot zone (.nextra-sidebar-hotzone) extends the
+   effective hover area to 32px without altering the silhouette. The hot
+   zone is NOT a child of the sidebar, so it does not travel with the
+   sidebar's transform — that decoupling is what prevents the hover/unhover
+   feedback loop that would otherwise cause jitter at the edge.
+
+   Important: do not set `transition: transform ...` on .nextra-sidebar — the
+   shorthand would override Nextra's own `transition-all`, which makes the
+   w-64↔w-20 width change instantaneous. Nextra's Collapse component then
+   measures child.clientWidth at the wrong moment and locks the menu to the
+   collapsed width. Leaving transition-all in place keeps both transform and
+   width animating, and Collapse measures correctly. */
+.nextra-sidebar-hotzone {
+  display: none;
+}
+@media (min-width: 768px) {
+  html[data-sidebar-hidden] .nextra-sidebar {
+    transform: translateX(calc(-100% + 8px));
+    z-index: 20;
+  }
+  html[data-sidebar-hidden] .nextra-sidebar-hotzone {
+    display: block;
+    position: fixed;
+    left: 0;
+    top: var(--nextra-navbar-height);
+    width: 32px;
+    height: calc(100dvh - var(--nextra-navbar-height));
+    z-index: 21;
+  }
+  html[data-sidebar-hidden] .nextra-sidebar:hover,
+  html[data-sidebar-hidden]:has(.nextra-sidebar-hotzone:hover) .nextra-sidebar {
+    transform: translateX(0);
+  }
+}
+
+/* Direction-aware navbar: hides on scroll-down, reveals on scroll-up, and
+   always reveals near the top. State is driven by data-navbar-hidden on
+   <html>. Translating the sticky header off-screen keeps the layout stable
+   without remeasuring scroll offsets. */
+.nextra-navbar {
+  transition: transform 0.25s ease;
+  will-change: transform;
+}
+html[data-navbar-hidden] .nextra-navbar {
+  transform: translateY(-100%);
+}
+
+/* Hide the sidebar's scrollbar when idle, fade it in on hover. macOS uses
+   overlay scrollbars natively, but Windows Chrome shows a permanent thin
+   scrollbar inside .nextra-scrollbar — this gives a consistent feel across
+   platforms. `scrollbar-gutter: stable` is left intact upstream, so the
+   layout doesn't shift when the thumb appears. */
+@media (hover: hover) and (pointer: fine) {
+  .nextra-sidebar .nextra-scrollbar {
+    scrollbar-color: transparent transparent;
+  }
+  .nextra-sidebar:hover .nextra-scrollbar,
+  .nextra-sidebar .nextra-scrollbar:focus-within {
+    scrollbar-color: rgba(128, 128, 128, 0.45) transparent;
+  }
+  .nextra-sidebar .nextra-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  .nextra-sidebar .nextra-scrollbar::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+  .nextra-sidebar:hover .nextra-scrollbar::-webkit-scrollbar-thumb,
+  .nextra-sidebar .nextra-scrollbar:focus-within::-webkit-scrollbar-thumb {
+    background-color: rgba(128, 128, 128, 0.45);
+  }
+}
