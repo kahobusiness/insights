@@ -7,6 +7,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next'
 import { NavbarAutoHide } from '../components/navbar-auto-hide'
 import { SidebarAutoHide } from '../components/sidebar-auto-hide'
 import { TocAutoHide } from '../components/toc-auto-hide'
+import { NavbarLocaleSwitch, NavbarThemeSwitch } from '../components/navbar-switches'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import type { Locale } from '../../i18n-config'
@@ -52,7 +53,13 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   const pageMap = await getPageMap(lang)
   const direction = getDirection(lang)
   const dictionary = await getDictionary(lang)
-  
+
+  // Shared by both the Layout's i18n config and our navbar locale switch.
+  const i18nLocales = [
+    { locale: 'en', name: 'English（翻译）' },
+    { locale: 'zh', name: '中文（Translate）' }
+  ]
+
   return (
     <html
       lang={lang}
@@ -71,16 +78,23 @@ export default async function RootLayout({ children, params }: LayoutProps) {
           editLink={dictionary.editPage}
           feedback={{ content: dictionary.feedback }}
           // footer={<Footer>{dictionary.footer}</Footer>} // 禁用 footer
-          i18n={[
-            { locale: 'en', name: 'English（翻译）' },
-            { locale: 'zh', name: '中文（Translate）' }
-          ]}
+          i18n={i18nLocales}
           lastUpdated={<LastUpdated>{dictionary.lastUpdated}</LastUpdated>}
-          navbar={<Navbar 
-            logo={<b style={{ fontSize: 22 }}>👀 Insights</b>} 
+          navbar={<Navbar
+            logo={<b style={{ fontSize: 22 }}>👀 Insights</b>}
             projectLink="https://github.com/kahobusiness/insights"
-            />}
+            >
+            <NavbarThemeSwitch
+              light={dictionary.light}
+              dark={dictionary.dark}
+              system={dictionary.system}
+            />
+            <NavbarLocaleSwitch options={i18nLocales} />
+          </Navbar>}
           pageMap={pageMap}
+          // 隐藏 sidebar 的宽窄折叠按钮；配合 globals.css 隐藏整个 footer，
+          // 让左侧只保留干净的目录。locale/theme 切换已移到 navbar 右侧。
+          sidebar={{ toggleButton: false }}
           search={
             <Search
               emptyResult={dictionary.searchEmptyResult}
