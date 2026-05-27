@@ -43,39 +43,41 @@ article h2 {
 }
 
 /* Auto-hide left sidebar on desktop once the reader scrolls past the fold.
-   The sidebar slides left, leaving an 8px sliver as the only visible cue.
-   A separate viewport-fixed hot zone (.nextra-sidebar-hotzone) extends the
-   effective hover area to 32px without altering the silhouette. The hot
-   zone is NOT a child of the sidebar, so it does not travel with the
-   sidebar's transform — that decoupling is what prevents the hover/unhover
-   feedback loop that would otherwise cause jitter at the edge.
+   We fade opacity rather than slide: on wide screens the centered
+   max-w-content-width layout leaves margins on both sides, so a horizontal
+   slide only parks the sidebar in the margin — still visible. Opacity hides
+   it regardless of position. The sidebar stays in place, so hovering its
+   (now-invisible) column reveals it again — no separate hot zone, and no edge
+   jitter since nothing moves under the cursor. Pointer events stay enabled on
+   the invisible column so the hover can fire.
 
-   Important: do not set `transition: transform ...` on .nextra-sidebar — the
-   shorthand would override Nextra's own `transition-all`, which makes the
-   w-64↔w-20 width change instantaneous. Nextra's Collapse component then
-   measures child.clientWidth at the wrong moment and locks the menu to the
-   collapsed width. Leaving transition-all in place keeps both transform and
-   width animating, and Collapse measures correctly. */
-.nextra-sidebar-hotzone {
-  display: none;
-}
+   Do NOT add `transition: ...` to .nextra-sidebar — it already carries
+   Nextra's `transition-all`, which animates this opacity change for us and is
+   also what Nextra's Collapse relies on to measure the w-64↔w-20 menu width.
+   A `transition` shorthand here would override it and lock the menu width. */
 @media (min-width: 768px) {
   html[data-sidebar-hidden] .nextra-sidebar {
-    transform: translateX(calc(-100% + 8px));
-    z-index: 20;
+    opacity: 0;
   }
-  html[data-sidebar-hidden] .nextra-sidebar-hotzone {
-    display: block;
-    position: fixed;
-    left: 0;
-    top: var(--nextra-navbar-height);
-    width: 32px;
-    height: calc(100dvh - var(--nextra-navbar-height));
-    z-index: 21;
+  html[data-sidebar-hidden] .nextra-sidebar:hover {
+    opacity: 1;
   }
-  html[data-sidebar-hidden] .nextra-sidebar:hover,
-  html[data-sidebar-hidden]:has(.nextra-sidebar-hotzone:hover) .nextra-sidebar {
-    transform: translateX(0);
+}
+
+/* Auto-hide right TOC on desktop, mirroring the sidebar with the same fade
+   rationale. The xl breakpoint matches Nextra's own `x:max-xl:hidden` on
+   .nextra-toc — below 1280px there is no TOC to hide. Unlike .nextra-sidebar,
+   .nextra-toc has no transition-all of its own, so we add an opacity one here
+   (safe: the TOC has no collapsible width for it to interfere with). */
+.nextra-toc {
+  transition: opacity 0.25s ease;
+}
+@media (min-width: 1280px) {
+  html[data-toc-hidden] .nextra-toc {
+    opacity: 0;
+  }
+  html[data-toc-hidden] .nextra-toc:hover {
+    opacity: 1;
   }
 }
 
