@@ -153,16 +153,44 @@ article h2 {
   }
 }
 
-/* Direction-aware navbar: hides on scroll-down, reveals on scroll-up, and
-   always reveals near the top. State is driven by data-navbar-hidden on
-   <html>. Translating the sticky header off-screen keeps the layout stable
-   without remeasuring scroll offsets. */
+/* Auto-hide navbar: it slides up out of view once the reader scrolls past the
+   fold (data-navbar-hidden on <html>, set by navbar-auto-hide.tsx) and comes
+   back only on three triggers:
+     1. the reader returns to the top (the attribute is removed);
+     2. the pointer reaches the top edge — the off-screen header can't be
+        hovered directly, so a fixed .nextra-navbar-hotzone covers the navbar's
+        band and catches the hover;
+     3. the search input takes focus (e.g. via Cmd+K) — matched specifically
+        via :has(input[type="search"]:focus), NOT :focus-within, so focusing
+        other navbar controls (notably the mobile hamburger button, which lives
+        in the navbar and keeps focus after a tap) does not pin the bar open.
+   It no longer reappears merely on scroll-up. Translating the sticky header
+   keeps the layout stable without remeasuring scroll offsets. */
 .nextra-navbar {
   transition: transform 0.25s ease;
   will-change: transform;
 }
+.nextra-navbar-hotzone {
+  display: none;
+}
 html[data-navbar-hidden] .nextra-navbar {
   transform: translateY(-100%);
+}
+html[data-navbar-hidden] .nextra-navbar-hotzone {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--nextra-navbar-height);
+  /* Below the navbar (z-30) so the revealed bar sits on top of the hot zone
+     and keeps itself open via :hover. */
+  z-index: 19;
+}
+html[data-navbar-hidden] .nextra-navbar:hover,
+html[data-navbar-hidden] .nextra-navbar:has(input[type="search"]:focus),
+html[data-navbar-hidden]:has(.nextra-navbar-hotzone:hover) .nextra-navbar {
+  transform: translateY(0);
 }
 
 /* Hide the sidebar's scrollbar when idle, fade it in on hover. macOS uses
