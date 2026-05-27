@@ -1,4 +1,5 @@
 import { generateStaticParamsFor, importPage } from 'nextra/pages'
+import { notFound } from 'next/navigation'
 import type { FC } from 'react'
 
 import { useMDXComponents as getMDXComponents } from '../../../mdx-components'
@@ -30,6 +31,7 @@ function hreflangFor(lang: Locale): string {
 
 export async function generateMetadata(props: PageProps) {
   const params = await props.params
+  if (!(i18n.locales as readonly string[]).includes(params.lang)) notFound()
   const { metadata } = await importPage(params.mdxPath, params.lang)
 
   const slug = buildPath(params.mdxPath)
@@ -56,6 +58,7 @@ const Wrapper = getMDXComponents().wrapper
 
 const Page: FC<PageProps> = async (props) => {
   const params = await props.params
+  if (!(i18n.locales as readonly string[]).includes(params.lang)) notFound()
   const result = await importPage(params.mdxPath, params.lang)
   const { default: MDXContent, toc, metadata } = result
 

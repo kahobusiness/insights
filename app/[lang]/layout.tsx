@@ -2,6 +2,8 @@ import { Footer, LastUpdated, Layout, Navbar } from 'nextra-theme-docs'
 import { Banner, Head, Search } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import { getDictionary, getDirection } from '../../get-dictionary'
+import { notFound } from 'next/navigation'
+import { i18n } from '../../i18n-config'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { NavbarAutoHide } from '../components/navbar-auto-hide'
@@ -50,6 +52,11 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children, params }: LayoutProps) {
   const { lang } = await params
+  // Reject non-locale first segments (e.g. Chrome DevTools probing
+  // /.well-known/...json, which bypasses the proxy's static-file skip and
+  // reaches this catch-all with lang=".well-known"). Without this guard
+  // getPageMap throws a 500; notFound() returns a clean 404 instead.
+  if (!(i18n.locales as readonly string[]).includes(lang)) notFound()
   const pageMap = await getPageMap(lang)
   const direction = getDirection(lang)
   const dictionary = await getDictionary(lang)
