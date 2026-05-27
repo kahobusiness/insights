@@ -30,7 +30,8 @@ export function NavbarThemeSwitch({ light, dark, system }: ThemeSwitchProps) {
   const mounted = useMounted()
   // Before mount, render a stable default to avoid a hydration mismatch.
   const Icon = mounted && resolvedTheme === 'dark' ? MoonIcon : SunIcon
-  const value = mounted ? theme : 'light'
+  // `theme` is string | undefined; fall back so value is always a string.
+  const value = mounted ? theme ?? 'system' : 'light'
 
   return (
     <Select
@@ -57,7 +58,8 @@ interface LocaleSwitchProps {
 
 export function NavbarLocaleSwitch({ options }: LocaleSwitchProps) {
   const pathname = usePathname()
-  const [, locale] = pathname.split('/', 2)
+  // Array index is string | undefined; default to '' so value is a string.
+  const locale = pathname.split('/', 2)[1] ?? ''
 
   const onChange = (lang: string) => {
     const expires = new Date(Date.now() + ONE_YEAR).toUTCString()
