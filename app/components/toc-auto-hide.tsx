@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 
 const SCROLL_THRESHOLD = 64
 
-export function SidebarAutoHide() {
+export function TocAutoHide() {
   useEffect(() => {
     const root = document.documentElement
     let ticking = false
@@ -12,9 +12,9 @@ export function SidebarAutoHide() {
     const apply = () => {
       ticking = false
       if (window.scrollY > SCROLL_THRESHOLD) {
-        root.setAttribute('data-sidebar-hidden', 'true')
+        root.setAttribute('data-toc-hidden', 'true')
       } else {
-        root.removeAttribute('data-sidebar-hidden')
+        root.removeAttribute('data-toc-hidden')
       }
     }
 
@@ -28,7 +28,7 @@ export function SidebarAutoHide() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => {
       window.removeEventListener('scroll', onScroll)
-      root.removeAttribute('data-sidebar-hidden')
+      root.removeAttribute('data-toc-hidden')
     }
   }, [])
 

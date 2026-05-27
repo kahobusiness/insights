@@ -42,53 +42,155 @@ article h2 {
   overflow-y: hidden;
 }
 
-/* Auto-hide left sidebar on desktop once the reader scrolls past the fold.
-   The sidebar slides left, leaving an 8px sliver as the only visible cue.
-   A separate viewport-fixed hot zone (.nextra-sidebar-hotzone) extends the
-   effective hover area to 32px without altering the silhouette. The hot
-   zone is NOT a child of the sidebar, so it does not travel with the
-   sidebar's transform — that decoupling is what prevents the hover/unhover
-   feedback loop that would otherwise cause jitter at the edge.
-
-   Important: do not set `transition: transform ...` on .nextra-sidebar — the
-   shorthand would override Nextra's own `transition-all`, which makes the
-   w-64↔w-20 width change instantaneous. Nextra's Collapse component then
-   measures child.clientWidth at the wrong moment and locks the menu to the
-   collapsed width. Leaving transition-all in place keeps both transform and
-   width animating, and Collapse measures correctly. */
-.nextra-sidebar-hotzone {
+/* Drop the desktop sidebar's bottom footer entirely, leaving only the clean
+   directory. That footer holds the locale switch, theme switch, and the
+   width-collapse toggle; the toggle is turned off via `sidebar.toggleButton`
+   in layout.tsx, and the two switches now live in the navbar instead. Nextra
+   keeps rendering the footer whenever i18n or dark mode is enabled (which we
+   still want, for the navbar switches and the mobile menu), so we hide it
+   here. Scope to `.nextra-sidebar` so the mobile menu — which reuses the same
+   `nextra-sidebar-footer` class inside `.nextra-mobile-nav` — keeps its own
+   switches. */
+.nextra-sidebar .nextra-sidebar-footer {
   display: none;
 }
-@media (min-width: 768px) {
-  html[data-sidebar-hidden] .nextra-sidebar {
-    transform: translateX(calc(-100% + 8px));
-    z-index: 20;
-  }
-  html[data-sidebar-hidden] .nextra-sidebar-hotzone {
-    display: block;
-    position: fixed;
-    left: 0;
-    top: var(--nextra-navbar-height);
-    width: 32px;
-    height: calc(100dvh - var(--nextra-navbar-height));
-    z-index: 21;
-  }
-  html[data-sidebar-hidden] .nextra-sidebar:hover,
-  html[data-sidebar-hidden]:has(.nextra-sidebar-hotzone:hover) .nextra-sidebar {
-    transform: translateX(0);
+
+/* The theme/locale switches moved into the navbar render a 12px icon inside a
+   Select button — tiny beside the navbar's 24px GitHub icon. Bump them, but
+   keep the glyph a little below 24px: these icons sit in a padded pill button
+   (h-7, hover background) whose chrome already adds visual weight, so 18px
+   here balances against the bare GitHub icon rather than overpowering it. The
+   `className` we pass each switch lands on its Select trigger button, so the
+   icon is the only descendant svg. */
+.nextra-navbar-switch svg {
+  height: 1.125rem;
+  width: auto;
+}
+
+/* The Select trigger ships with horizontal padding (px-2). Combined with the
+   navbar's gap-4, that made the glyph-to-glyph spacing grow left to right: a
+   bare→pill gap is `gap + one pad`, but a pill→pill gap is `gap + two pads`,
+   so the GitHub→theme→language icons drifted apart unevenly.
+
+   We still want a roomy hover/tap zone (the gray pill), just not the uneven
+   spacing. The padding + equal negative margin trick gives both: the padding
+   grows the hover background, while `margin = -padding` cancels its effect on
+   layout, so every glyph stays gap-4 apart (when margin = -padding, the
+   bare→pill and pill→pill gaps are algebraically equal). Vertical height (h-7)
+   stays as-is for the hover target. */
+.nextra-navbar-switch {
+  padding-inline: 0.5rem;
+  margin-inline: -0.5rem;
+}
+
+/* Kill the blue focus ring on the navbar switches in every state. Two separate
+   rings are in play: while the menu is open, Nextra's `.nextra-focus` paints a
+   box-shadow ring (we override it — globals.css is unlayered, so it beats the
+   `@layer utilities` rule without !important); after a click closes the menu
+   the button stays focused but `.nextra-focus` is gone, taking its
+   `:focus-visible { outline: none }` with it, so the browser's default outline
+   reappears until the button blurs. Suppressing both covers open, closed, and
+   keyboard-focus states. */
+.nextra-navbar-switch {
+  box-shadow: none;
+  outline: none;
+}
+
+/* Widen the spacing between the trailing navbar controls. The gap lives on the
+   navbar's inner flex row (Nextra's `gap-4`); bumping it spaces search → GitHub
+   → theme → language evenly. Because each switch uses padding = -margin, the
+   glyph-to-glyph distance equals this gap, so all three icons stay evenly
+   spread. The logo keeps its `me-auto`, so it stays pinned left. */
+.nextra-navbar nav {
+  gap: 1.5rem;
+}
+
+/* Hide the navbar switches on mobile: the hamburger menu's own footer already
+   carries the locale and theme switches there. 767px is just below the md
+   (768px) breakpoint the theme uses to swap to the mobile nav. */
+@media (max-width: 767px) {
+  .nextra-navbar-switch {
+    display: none;
   }
 }
 
-/* Direction-aware navbar: hides on scroll-down, reveals on scroll-up, and
-   always reveals near the top. State is driven by data-navbar-hidden on
-   <html>. Translating the sticky header off-screen keeps the layout stable
-   without remeasuring scroll offsets. */
+/* Auto-hide left sidebar on desktop once the reader scrolls past the fold.
+   We fade opacity rather than slide: on wide screens the centered
+   max-w-content-width layout leaves margins on both sides, so a horizontal
+   slide only parks the sidebar in the margin — still visible. Opacity hides
+   it regardless of position. The sidebar stays in place, so hovering its
+   (now-invisible) column reveals it again — no separate hot zone, and no edge
+   jitter since nothing moves under the cursor. Pointer events stay enabled on
+   the invisible column so the hover can fire.
+
+   Do NOT add `transition: ...` to .nextra-sidebar — it already carries
+   Nextra's `transition-all`, which animates this opacity change for us and is
+   also what Nextra's Collapse relies on to measure the w-64↔w-20 menu width.
+   A `transition` shorthand here would override it and lock the menu width. */
+@media (min-width: 768px) {
+  html[data-sidebar-hidden] .nextra-sidebar {
+    opacity: 0;
+  }
+  html[data-sidebar-hidden] .nextra-sidebar:hover {
+    opacity: 1;
+  }
+}
+
+/* Auto-hide right TOC on desktop, mirroring the sidebar with the same fade
+   rationale. The xl breakpoint matches Nextra's own `x:max-xl:hidden` on
+   .nextra-toc — below 1280px there is no TOC to hide. Unlike .nextra-sidebar,
+   .nextra-toc has no transition-all of its own, so we add an opacity one here
+   (safe: the TOC has no collapsible width for it to interfere with). */
+.nextra-toc {
+  transition: opacity 0.25s ease;
+}
+@media (min-width: 1280px) {
+  html[data-toc-hidden] .nextra-toc {
+    opacity: 0;
+  }
+  html[data-toc-hidden] .nextra-toc:hover {
+    opacity: 1;
+  }
+}
+
+/* Auto-hide navbar: it slides up out of view once the reader scrolls past the
+   fold (data-navbar-hidden on <html>, set by navbar-auto-hide.tsx) and comes
+   back only on three triggers:
+     1. the reader returns to the top (the attribute is removed);
+     2. the pointer reaches the top edge — the off-screen header can't be
+        hovered directly, so a fixed .nextra-navbar-hotzone covers the navbar's
+        band and catches the hover;
+     3. the search input takes focus (e.g. via Cmd+K) — matched specifically
+        via :has(input[type="search"]:focus), NOT :focus-within, so focusing
+        other navbar controls (notably the mobile hamburger button, which lives
+        in the navbar and keeps focus after a tap) does not pin the bar open.
+   It no longer reappears merely on scroll-up. Translating the sticky header
+   keeps the layout stable without remeasuring scroll offsets. */
 .nextra-navbar {
   transition: transform 0.25s ease;
   will-change: transform;
 }
+.nextra-navbar-hotzone {
+  display: none;
+}
 html[data-navbar-hidden] .nextra-navbar {
   transform: translateY(-100%);
+}
+html[data-navbar-hidden] .nextra-navbar-hotzone {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--nextra-navbar-height);
+  /* Below the navbar (z-30) so the revealed bar sits on top of the hot zone
+     and keeps itself open via :hover. */
+  z-index: 19;
+}
+html[data-navbar-hidden] .nextra-navbar:hover,
+html[data-navbar-hidden] .nextra-navbar:has(input[type="search"]:focus),
+html[data-navbar-hidden]:has(.nextra-navbar-hotzone:hover) .nextra-navbar {
+  transform: translateY(0);
 }
 
 /* Hide the sidebar's scrollbar when idle, fade it in on hover. macOS uses

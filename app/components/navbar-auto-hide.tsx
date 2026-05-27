@@ -2,31 +2,23 @@
 
 import { useEffect } from 'react'
 
-const TOP_REVEAL_ZONE = 64
-const SCROLL_DELTA = 4
+const SCROLL_THRESHOLD = 64
 
 export function NavbarAutoHide() {
   useEffect(() => {
     const root = document.documentElement
-    let lastY = window.scrollY
     let ticking = false
 
     const apply = () => {
       ticking = false
-      const y = window.scrollY
-      const delta = y - lastY
-
-      if (Math.abs(delta) < SCROLL_DELTA) return
-
-      if (y <= TOP_REVEAL_ZONE) {
-        root.removeAttribute('data-navbar-hidden')
-      } else if (delta > 0) {
+      // Hide once scrolled past the fold; only the return-to-top removes the
+      // attribute. Hover-at-top and search focus reveal it via CSS (see
+      // globals.css), without touching this scroll state.
+      if (window.scrollY > SCROLL_THRESHOLD) {
         root.setAttribute('data-navbar-hidden', 'true')
       } else {
         root.removeAttribute('data-navbar-hidden')
       }
-
-      lastY = y
     }
 
     const onScroll = () => {
@@ -35,6 +27,7 @@ export function NavbarAutoHide() {
       requestAnimationFrame(apply)
     }
 
+    apply()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => {
       window.removeEventListener('scroll', onScroll)
@@ -42,5 +35,5 @@ export function NavbarAutoHide() {
     }
   }, [])
 
-  return null
+  return <div className="nextra-navbar-hotzone" aria-hidden />
 }
