@@ -54,8 +54,6 @@ I like apples
 
 为了让这些字符变得可被「计算」，我们需要把字符变成数字。我们先试试采用最简单的办法 —— 直接给每个字符或词片段进行独立编号，比如：我=01，喜=02，欢=03...，I=06, like=07...,す=16
 
-![抽象字符和词片段被逐个编号后出现碎片化和错位问题的示意图](/llm-first-principles/02-token-and-embedding/naive-numbering.png)
-
 稍微推演下，会发现这么编号，会遇到很多问题：
 
 ```text
@@ -71,6 +69,8 @@ I like apples
 我们把句子经过切割后出来的一串串「内容块」称作 token。换言之，token 是由人类语言切成的模型可以稳定处理的最小内容块。它不是语言学里的「词」，也不是固定意义上的「字」。它更像是模型词表里的一个基本符号单元。
 
 具体来说，句子是如何被切割成 token 的呢？
+
+![抽象字符和词片段被逐个编号后出现碎片化和错位问题的示意图](/llm-first-principles/02-token-and-embedding/naive-numbering.png)
 
 ## 二、Tokenizer：把连续语言切成离散 token
 
@@ -120,8 +120,6 @@ un / believe / able
 
 不同模型使用的 tokenizer 不同，切法也不完全一样。tokenizer 需要根据模型自身特点来设计：词表大小、训练语料、支持语言、压缩效率和工程成本都会影响 tokenizer 的设计。
 
-![一条连续的抽象文本流被 tokenizer 切分成不同宽度 token 卡片的示意图](/llm-first-principles/02-token-and-embedding/tokenization.png)
-
 这也解释了很多使用大模型时的现象：
 
 1. 同样一句话，在不同语言里消耗的 token 数可能不同。中文、英文、代码、emoji、特殊符号的切分方式不同，所以计费和上下文占用也会不同
@@ -129,6 +127,8 @@ un / believe / able
 3. 代码能力和 tokenizer 关系很大。代码里的空格、换行、括号、变量名、操作符，都会影响模型看到的 token 序列
 
 所以 token 不是一个无关紧要的技术细节。它决定了模型观察语言的分辨率。
+
+![一条连续的抽象文本流被 tokenizer 切分成不同宽度 token 卡片的示意图](/llm-first-principles/02-token-and-embedding/tokenization.png)
 
 ## 三、Token id：模型先看到的是编号，不是意义
 
@@ -186,8 +186,6 @@ token id → embedding 向量
 
 这些数字不是人手写进去的，也不是词典定义。它们是在训练过程中学出来的。
 
-![彩色 token 先映射成编号，再查表变成高维 embedding 向量并流入神经网络的示意图](/llm-first-principles/02-token-and-embedding/id-to-embedding.png)
-
 一开始，embedding 可能只是随机数字。模型不断做 next token prediction，不断犯错、更新参数。为了更好地预测，模型会逐渐把经常出现在相似语境里的 token 调整到某种「更有用」的位置上。
 
 这里的「位置」不是二维地图上的坐标，而是高维向量空间里的关系。
@@ -202,6 +200,8 @@ token id → embedding 向量
 ```
 
 这就是 embedding 的关键价值：它把离散符号变成连续空间中的点，让模型可以计算「相似」「差异」「组合」「方向」。
+
+![彩色 token 先映射成编号，再查表变成高维 embedding 向量并流入神经网络的示意图](/llm-first-principles/02-token-and-embedding/id-to-embedding.png)
 
 ## 五、Embedding 不是词典，而是关系空间
 
@@ -224,8 +224,6 @@ question 和 answer 常常构成问答关系。
 也就是说，embedding 不是知识库，不是词典，也不是概念卡片。
 
 它更像是模型开始思考之前的「初始坐标系」：
-
-![高维向量空间中相似 token 聚成不同簇，同一个 token 沿上下文轨迹移动到不同语义位置的示意图](/llm-first-principles/02-token-and-embedding/embedding-space.png)
 
 ```text
 先把每个 token 放到一个可计算的位置上，
@@ -258,6 +256,8 @@ Transformer 根据上下文，把初始表示更新成上下文表示。
 ```
 
 下一篇我们讲 Transformer 和 Attention 时，就会继续拆这个过程。
+
+![高维向量空间中相似 token 聚成不同簇，同一个 token 沿上下文轨迹移动到不同语义位置的示意图](/llm-first-principles/02-token-and-embedding/embedding-space.png)
 
 ## 六、为什么向量能表达语义
 
