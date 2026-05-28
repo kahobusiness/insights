@@ -119,11 +119,11 @@ So a pretrained model is more like a general language engine than a reliable ass
 
 It contains many latent capabilities, but those capabilities have not yet been organized into stable product behavior.
 
-![Web pages, books, code, and dialogue examples becoming token streams that enter a neural network and emerge as continuation tokens](/llm-first-principles/05-pretraining-finetuning-alignment/pretraining-continuation.png)
-
 You can imagine someone who has read many books, code files, and chat logs, but has not been trained in how to be an assistant.
 
 They may know a lot, but they may not know when to be brief, when to ask a follow-up question, when to refuse, or when to give steps.
+
+![Web pages, books, code, and dialogue examples becoming token streams that enter a neural network and emerge as continuation tokens](/llm-first-principles/05-pretraining-finetuning-alignment/pretraining-continuation.png)
 
 ## 2. Supervised Fine-tuning: Turning Continuation Into Instruction Response
 
@@ -180,8 +180,6 @@ Without SFT, the model may know many things but not know that it should organize
 
 With SFT, the model begins to move from "can continue anything" toward "tries to complete the user's task."
 
-![User instructions and ideal responses entering the model to turn scattered continuations into structured assistant replies](/llm-first-principles/05-pretraining-finetuning-alignment/supervised-finetuning.png)
-
 But SFT has limits.
 
 Many questions do not have one standard answer.
@@ -208,6 +206,8 @@ All of these may be acceptable, but they are not equally good.
 SFT can teach the model "answer like this," but it is less precise at teaching "among many possible answers, prefer this kind of answer."
 
 That requires the next layer: preference alignment.
+
+![User instructions and ideal responses entering the model to turn scattered continuations into structured assistant replies](/llm-first-principles/05-pretraining-finetuning-alignment/supervised-finetuning.png)
 
 ## 3. Preference Alignment: Teaching the Model Which Answer to Prefer
 
@@ -259,8 +259,6 @@ Knowing how to talk does not mean knowing how to act as customer support, teache
 
 Preference alignment trains that tendency of "how to answer."
 
-![A user request branching into multiple candidate responses that are scored, ranked, calibrated for safety, and fed back into the model](/llm-first-principles/05-pretraining-finetuning-alignment/preference-alignment.png)
-
 Of course, alignment is not magic.
 
 It can introduce new problems:
@@ -276,6 +274,8 @@ capability loss: some subtle abilities becoming weaker after alignment.
 So alignment is not simply "more is better." It is an ongoing tradeoff.
 
 Good alignment should make the model more reliable, not merely more polite.
+
+![A user request branching into multiple candidate responses that are scored, ranked, calibrated for safety, and fed back into the model](/llm-first-principles/05-pretraining-finetuning-alignment/preference-alignment.png)
 
 ## 4. An Assistant Is Not a Piece of Knowledge. It Is a Behavior Distribution
 
@@ -310,8 +310,6 @@ one feels like a reasoning-oriented research assistant.
 
 The bottom mechanism is still token prediction, but the prediction distribution has been shaped into different task behaviors.
 
-![Raw model token paths passing through an alignment funnel and separating into assistant behaviors such as answering, refusing, clarifying, and tool use](/llm-first-principles/05-pretraining-finetuning-alignment/behavior-distribution.png)
-
 So we should not treat "assistant-like behavior" as a mysterious ability.
 
 It comes from many concrete engineering choices:
@@ -328,6 +326,8 @@ how the product interface guides user tasks.
 ```
 
 All of these change model behavior in real use.
+
+![Raw model token paths passing through an alignment funnel and separating into assistant behaviors such as answering, refusing, clarifying, and tool use](/llm-first-principles/05-pretraining-finetuning-alignment/behavior-distribution.png)
 
 ## 5. A Modern AI Assistant Is a System, Not a Bare Model
 
@@ -369,8 +369,6 @@ That is the real shape of a modern assistant.
 
 The model is central, but it is not the whole system.
 
-![An assistant interface connected to a base model, context documents, search, calculation, code, database tools, safety policy, and a user feedback loop](/llm-first-principles/05-pretraining-finetuning-alignment/assistant-system.png)
-
 From this view, many product problems become easier to diagnose.
 
 If the model gives wrong facts, fine-tuning may not be the answer. Retrieval or tools may be needed.
@@ -380,6 +378,8 @@ If the output format is unstable, replacing the model may not be necessary. Clea
 If the model does not know an internal company process, the problem may be missing context, not stupidity.
 
 If the model over-refuses, the issue may sit in safety policy, preference data, or system prompts.
+
+![An assistant interface connected to a base model, context documents, search, calculation, code, database tools, safety policy, and a user feedback loop](/llm-first-principles/05-pretraining-finetuning-alignment/assistant-system.png)
 
 ## 6. Common Misunderstandings
 

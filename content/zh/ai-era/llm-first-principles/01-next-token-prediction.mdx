@@ -82,8 +82,6 @@ export const metadata = {
 
 具体怎么切，取决于模型使用的 tokenizer，也就是分词器。
 
-![一条连续内容被分割成不同大小 token 方块并进入模型输入层的示意图](/llm-first-principles/01-next-token-prediction/tokens.png)
-
 英文、代码、公式也一样。比如一段代码：
 
 ```text
@@ -108,6 +106,8 @@ function add(a, b) { return
 ```
 
 因为 token 是模型处理世界的基本单位。
+
+![一条连续内容被分割成不同大小 token 方块并进入模型输入层的示意图](/llm-first-principles/01-next-token-prediction/tokens.png)
 
 ## 二、模型训练的任务很简单：猜下一个 token
 
@@ -196,8 +196,6 @@ f(上下文) = 下一个 token 的概率分布
 
 真实情况当然更复杂。模型不是只在这几个词里选，而是在整个词表里给每个可能的 token 都算一个概率。
 
-![模型从上下文计算出多个候选 token 概率，并在低温到高温之间呈现不同采样范围的示意图](/llm-first-principles/01-next-token-prediction/probability-distribution.png)
-
 然后，系统会根据一定的规则选出一个 token。选完以后，把它接回原来的上下文里，再继续预测下一个。
 
 因此生成一段回答，大概就是这个过程：
@@ -228,6 +226,8 @@ temperature 高：更多样、更发散
 
 这是理解模型幻觉、上下文工程、推理和 Agent 的基础。
 
+![模型从上下文计算出多个候选 token 概率，并在低温到高温之间呈现不同采样范围的示意图](/llm-first-principles/01-next-token-prediction/probability-distribution.png)
+
 ## 四、Transformer 与注意力机制：「现在该看哪里」
 
 想想看，模型每次预测 token 时，都需要参考前方所有 token 并进行计算。上下文里有那么多内容，且这些内容与当前 token 的相关性有强有弱，当前 token 的生成到底该参考哪里？
@@ -254,8 +254,6 @@ Transformer 之所以重要，很大一部分原因就在这里。它里面的 A
 
 它不是把上下文里的每个词都平均看一遍，而是在每一步都重新分配注意力：这一步更该看主语，还是看前面的对象？更该看代码里的变量，还是看用户刚才提出的限制？更该看这段话的开头，还是看最后一句要求？
 
-![不同强度的注意力连线从上下文 token 指向当前 token，表示模型在生成时选择重点参考位置的示意图](/llm-first-principles/01-next-token-prediction/attention.png)
-
 这就是为什么 Transformer 能处理长文、代码、多轮对话和复杂提示词。它不是简单地把所有文字混在一起，而是在文字之间建立联系。
 
 当然，Attention 不是万能的。
@@ -263,6 +261,8 @@ Transformer 之所以重要，很大一部分原因就在这里。它里面的 A
 上下文越长，模型要处理的信息越多，成本也越高。关键信息如果埋得太深，模型仍然可能忽略。提示词写得混乱，模型也可能抓错重点。
 
 后面我们会讲到的上下文工程、RAG 和工具调用。本质上，它们都在解决同一个问题：怎么把正确的信息，在正确的时间，放到模型最容易用上的位置。
+
+![不同强度的注意力连线从上下文 token 指向当前 token，表示模型在生成时选择重点参考位置的示意图](/llm-first-principles/01-next-token-prediction/attention.png)
 
 ## 五、让「预测」看起来像是「理解」
 
@@ -353,8 +353,6 @@ Transformer 之所以重要，很大一部分原因就在这里。它里面的 A
 
 一个现代大模型产品，往往是很多层东西叠在一起：
 
-![现代 AI 产品由模型、检索、工具、安全边界、界面和反馈循环共同组成的系统示意图](/llm-first-principles/01-next-token-prediction/system-stack.png)
-
 ```text
 预训练模型
 + 指令微调
@@ -391,6 +389,8 @@ Agent 框架让模型围绕目标一步步行动。
 ```
 
 大模型本身提供的是一种强大的语言和推理能力。真正可用的产品能力，来自模型和工程系统的组合。
+
+![现代 AI 产品由模型、检索、工具、安全边界、界面和反馈循环共同组成的系统示意图](/llm-first-principles/01-next-token-prediction/system-stack.png)
 
 ## 八、重新回答：大模型到底是什么
 

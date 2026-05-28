@@ -185,8 +185,6 @@ when generating the next token, the model references the state built from the wh
 
 After this step, each token representation is no longer just its initial embedding. It now contains contextual information from related tokens.
 
-![Attention arcs in generative self-attention where the current token references earlier tokens only](/llm-first-principles/03-transformer-and-attention/self-attention.png)
-
 This is why the same word can mean different things in different sentences. Transformer does not only look at the word itself. It recomputes the word inside context.
 
 Put another way:
@@ -196,6 +194,8 @@ embedding gives a token an initial position;
 self-attention relocates it according to context;
 many Transformer layers update that position again and again.
 ```
+
+![Attention arcs in generative self-attention where the current token references earlier tokens only](/llm-first-principles/03-transformer-and-attention/self-attention.png)
 
 ## 4. Q, K, and V: How Attention Is Computed
 
@@ -237,13 +237,13 @@ For the sentence:
 Ming put the backpack on the chair because it was too heavy.
 ```
 
-![A Query matching multiple Keys, then gathering information from relevant Values back into the current token](/llm-first-principles/03-transformer-and-attention/qkv-attention.png)
-
 When updating "it," the Query for "it" may match more strongly with the Keys around "backpack" and "too heavy," so it pulls more Value information from those positions.
 
 The real model uses much larger dimensions, matrices, and many layers. But the core intuition is this:
 
 > Attention uses Q and K to decide "who to look at," then uses V to bring back the information it sees.
+
+![A Query matching multiple Keys, then gathering information from relevant Values back into the current token](/llm-first-principles/03-transformer-and-attention/qkv-attention.png)
 
 ## 5. Multi-Head Attention: More Than One Relationship Happens at Once
 
@@ -264,8 +264,6 @@ If the model had only one Attention pattern at a time, it would struggle to capt
 
 So Transformer uses Multi-Head Attention. The point is not to "look harder." It is to run several attention calculations in parallel over the same context. Each calculation can learn a different way to connect tokens.
 
-![The same token context entering multiple attention heads in parallel before merging into an updated output sequence](/llm-first-principles/03-transformer-and-attention/multi-head-attention.png)
-
 One head may be better at syntax. Another may be better at reference. Another may track brackets and variables in code. Another may pay attention to task instructions near the beginning of a prompt.
 
 The word "may" matters. We should not treat every head as a neat human-readable module. These heads are learned high-dimensional computation structures, not hand-written components.
@@ -277,6 +275,8 @@ Inside the same context, the model can compute multiple token relationships at t
 ```
 
 This is one reason large models can handle complex prompts. A user instruction may include a role, task, constraints, examples, output format, and forbidden behavior all at once. The model needs to read many kinds of relationships from those tokens, not just grab one keyword.
+
+![The same token context entering multiple attention heads in parallel before merging into an updated output sequence](/llm-first-principles/03-transformer-and-attention/multi-head-attention.png)
 
 ## 6. Position: The Model Also Needs to Know Order
 

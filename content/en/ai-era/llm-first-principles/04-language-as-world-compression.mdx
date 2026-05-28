@@ -322,8 +322,6 @@ how causes propagate into effects;
 how rules change under exceptions.
 ```
 
-![Mathematical, code, causal, and goal-decomposition process structures entering a model and continuing as a next-step generation path](/llm-first-principles/04-language-as-world-compression/reasoning-process.png)
-
 This is why chain-of-thought, scratchpads, and step-by-step prompts can help on many tasks.
 
 They do not cast a spell on the model. They write the implicit reasoning process into the context, making it easier for the model to continue along process structures it learned during training.
@@ -333,6 +331,8 @@ But this is not a perfect symbolic reasoning engine.
 The model can make mistakes inside plausible-looking steps. It can be misled by surface patterns. It can produce a fluent but false explanation.
 
 The reason goes back to the first principle: the model generates the most probable token sequence under its learned distribution. It does not automatically produce conclusions verified by an external checker.
+
+![Mathematical, code, causal, and goal-decomposition process structures entering a model and continuing as a next-step generation path](/llm-first-principles/04-language-as-world-compression/reasoning-process.png)
 
 ## 6. From Text World to Real World: Where the Boundary Is
 
