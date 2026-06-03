@@ -153,10 +153,12 @@ article h2 {
   }
 }
 
-/* Auto-hide navbar: it slides up out of view once the reader scrolls past the
-   fold (data-navbar-hidden on <html>, set by navbar-auto-hide.tsx) and comes
-   back only on three triggers:
-     1. the reader returns to the top (the attribute is removed);
+/* Auto-hide navbar: it is pushed up out of view in lockstep with the page as
+   the reader scrolls past the fold — navbar-auto-hide.tsx maps scrollY onto
+   --navbar-shift (0 → -height) so the bar tracks the scroll like part of the
+   document, then sets data-navbar-hidden on <html> once it is fully off-screen.
+   It comes back only on three triggers:
+     1. the reader returns to the top (the shift eases back to 0, attribute off);
      2. the pointer reaches the top edge — the off-screen header can't be
         hovered directly, so a fixed .nextra-navbar-hotzone covers the navbar's
         band and catches the hover;
@@ -167,14 +169,18 @@ article h2 {
    It no longer reappears merely on scroll-up. Translating the sticky header
    keeps the layout stable without remeasuring scroll offsets. */
 .nextra-navbar {
-  transition: transform 0.25s ease;
+  /* Scroll-linked offset, no transition: the bar stays glued to the scroll so
+     it reads as being shoved off the top rather than sliding away on a timer. */
+  transform: translateY(var(--navbar-shift, 0px));
   will-change: transform;
 }
 .nextra-navbar-hotzone {
   display: none;
 }
+/* Fully off-screen now: switch to a timed transition so the reveal triggers —
+   and the retract when they end — glide in instead of snapping. */
 html[data-navbar-hidden] .nextra-navbar {
-  transform: translateY(-100%);
+  transition: transform 0.25s ease;
 }
 html[data-navbar-hidden] .nextra-navbar-hotzone {
   display: block;
