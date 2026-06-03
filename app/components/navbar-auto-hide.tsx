@@ -2,19 +2,27 @@
 
 import { useEffect } from 'react'
 
-const SCROLL_THRESHOLD = 64
+// Fallback before the navbar is measured (Nextra's default bar height).
+const FALLBACK_HEIGHT = 64
 
 export function NavbarAutoHide() {
   useEffect(() => {
     const root = document.documentElement
+    const navbar = document.querySelector<HTMLElement>('.nextra-navbar')
+    let height = navbar?.offsetHeight || FALLBACK_HEIGHT
     let ticking = false
 
     const apply = () => {
       ticking = false
-      // Hide once scrolled past the fold; only the return-to-top removes the
-      // attribute. Hover-at-top and search focus reveal it via CSS (see
-      // globals.css), without touching this scroll state.
-      if (window.scrollY > SCROLL_THRESHOLD) {
+      // Scroll-linked: push the bar up in lockstep with the page over its first
+      // `height` pixels of scroll, so it feels shoved off the top edge rather
+      // than animating away on its own. CSS reads --navbar-shift (globals.css).
+      const shift = Math.min(window.scrollY, height)
+      root.style.setProperty('--navbar-shift', `${-shift}px`)
+      // Once fully off-screen, flag it hidden so the hot zone activates and the
+      // reveal triggers (top-edge hover, search focus) and the timed transition
+      // kick in. Only the return-to-top (scrollY back within `height`) clears it.
+      if (window.scrollY > height) {
         root.setAttribute('data-navbar-hidden', 'true')
       } else {
         root.removeAttribute('data-navbar-hidden')
@@ -27,11 +35,19 @@ export function NavbarAutoHide() {
       requestAnimationFrame(apply)
     }
 
+    const onResize = () => {
+      height = navbar?.offsetHeight || FALLBACK_HEIGHT
+      apply()
+    }
+
     apply()
     window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onResize)
     return () => {
       window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onResize)
       root.removeAttribute('data-navbar-hidden')
+      root.style.removeProperty('--navbar-shift')
     }
   }, [])
 
