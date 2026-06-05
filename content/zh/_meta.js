@@ -12,6 +12,10 @@ export default {
     type: 'separator',
     title: '生活随记'
   },
+  'ten-years-review': {
+    display: 'hidden',
+    title: '⏳ 十年回顾'
+  },
   'japan-journey': '🇯🇵 端午日本游记',
   'japan-gallery': {
     type: 'page',
