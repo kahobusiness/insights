@@ -6,6 +6,7 @@ export default {
   '05-pretraining-finetuning-alignment': '05: Pretraining, Fine-tuning, and Alignment',
   '06-scaling-laws-and-emergence': '06: Scaling Laws and Emergence',
   '07-inference-and-generation': '07: Inference and Generation',
+  '08-hallucination': '08: The Nature of Hallucination',
   'series-outline': {
     display: 'hidden',
     title: 'Series Outline: Understanding LLMs from First Principles'
