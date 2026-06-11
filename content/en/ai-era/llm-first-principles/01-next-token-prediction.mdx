@@ -102,6 +102,8 @@ That is the core idea of this post:
 
 ## 1. The Model Sees Tokens, Not Sentences
 
+![A continuous stream of content split into token tiles of different sizes before entering a model input layer](/llm-first-principles/01-next-token-prediction/tokens.png)
+
 A token is the basic unit a model uses to process the world.
 
 When a person reads this sentence:
@@ -147,9 +149,9 @@ Why do code completion, mathematical symbols, and multilingual text affect model
 
 Because tokens are the model's basic unit for processing the world.
 
-![A continuous stream of content split into token tiles of different sizes before entering a model input layer](/llm-first-principles/01-next-token-prediction/tokens.png)
-
 ## 2. The Training Task Is Simple: Predict the Next Token
+
+![The model uses the true next token as the training target and updates parameters through prediction error feedback](/llm-first-principles/01-next-token-prediction/training-next-token.png)
 
 Once we understand tokens, we can look at training.
 
@@ -211,6 +213,8 @@ That is why a task as small as "predict the next token" can grow into such large
 
 ## 3. The Model Does Not Give an Answer; It Gives Probabilities
 
+![A model turns context into many candidate next tokens with different probabilities, from narrow low-temperature sampling to wider high-temperature sampling](/llm-first-principles/01-next-token-prediction/probability-distribution.png)
+
 So does the model really know the correct answer? Not exactly. At every step, what it produces is a set of probabilities.
 
 We can think of a large language model as a giant function:
@@ -266,9 +270,9 @@ So during inference, a large language model does not first "think through the wh
 
 This is the foundation for understanding hallucination, context engineering, reasoning, and agents.
 
-![A model turns context into many candidate next tokens with different probabilities, from narrow low-temperature sampling to wider high-temperature sampling](/llm-first-principles/01-next-token-prediction/probability-distribution.png)
-
 ## 4. Transformer and Attention: "Where Should I Look Now?"
+
+![Attention lines of different strengths point from earlier context tokens to the current token being generated](/llm-first-principles/01-next-token-prediction/attention.png)
 
 Think about what happens every time the model predicts a token: it needs to refer to all the previous tokens and compute how relevant they are. The context may contain many pieces of information, and some are far more relevant than others. So where should the current prediction look?
 
@@ -302,9 +306,9 @@ The longer the context, the more information the model has to process, and the h
 
 Later, when we talk about context engineering, RAG, and tool use, they are all, in a sense, trying to solve the same problem: how to put the right information, at the right time, in the place where the model can use it most easily.
 
-![Attention lines of different strengths point from earlier context tokens to the current token being generated](/llm-first-principles/01-next-token-prediction/attention.png)
-
 ## 5. How Prediction Starts to Look Like Understanding
+
+![Many language traces are compressed into reusable structure, making prediction look like understanding at the output layer](/llm-first-principles/01-next-token-prediction/prediction-as-understanding.png)
 
 At this point, we reach the central question:
 
@@ -346,6 +350,8 @@ They are powerful because language really does contain a huge amount of human ci
 
 ## 6. Scaling Law: Pushing a Simple Task Into Complex Capability
 
+![As model scale, data, and compute grow, the simple prediction task crosses increasingly complex capability thresholds](/llm-first-principles/01-next-token-prediction/scaling-bridge.png)
+
 If we only look at "guess the next token," large language models should not seem this capable.
 
 But when several dimensions scale together, things change:
@@ -386,6 +392,8 @@ This is what people call emergent capability.
 But emergence is not magic. It does not mean a tiny person who truly understands the world suddenly appears inside the model. It is closer to this: a sufficiently complex prediction system, trained on enough data and feedback, learns structures that can generalize.
 
 ## 7. Today's AI Products Are Not Just One Model
+
+![A modern AI product system composed of a model, retrieval, tools, safety boundaries, interface, and feedback loop](/llm-first-principles/01-next-token-prediction/system-stack.png)
 
 One more point matters.
 
@@ -430,9 +438,9 @@ Does the interaction let users stay in control?
 
 The model itself provides powerful language and reasoning ability. The product capability we can actually use comes from the combination of the model and the surrounding engineering system.
 
-![A modern AI product system composed of a model, retrieval, tools, safety boundaries, interface, and feedback loop](/llm-first-principles/01-next-token-prediction/system-stack.png)
-
 ## 8. So What Is a Large Language Model?
+
+![A large language model summarized as probabilistic prediction, compressed world structure, and a surrounding product system](/llm-first-principles/01-next-token-prediction/llm-summary.png)
 
 Now we can return to the opening question.
 

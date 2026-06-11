@@ -53,6 +53,8 @@ In other words, next-token prediction is the surface task. What gets compressed 
 
 ## 1. Language Is Not Random Symbols. It Is a Trace of the World
 
+![Cooking, code, documents, and conversations compressed into token streams that flow into a model](/llm-first-principles/04-language-as-world-compression/world-traces.png)
+
 Start with a simple prompt:
 
 ```text
@@ -103,9 +105,9 @@ So language is not an isolated symbol game. It is the world's projection into te
 
 If a model is trained to predict this text at large scale, across many domains, it cannot get very far by learning only surface word frequency. To reduce prediction error, it has to learn stable structures behind the text.
 
-![Cooking, code, documents, and conversations compressed into token streams that flow into a model](/llm-first-principles/04-language-as-world-compression/world-traces.png)
-
 ## 2. Predicting Language Forces the Model to Learn Hidden Variables
+
+![A visible token sequence connected to hidden variables such as goals, environment, object use, and consequences that shape candidate next tokens](/llm-first-principles/04-language-as-world-compression/hidden-variables.png)
 
 Imagine a model sees this opening:
 
@@ -163,9 +165,9 @@ The text does not say them directly, but predicting the text requires inferring 
 
 From this angle, next-token prediction is not a shallow task. On the surface, it predicts words. Under the surface, it pressures the model to build compressed representations of the world, tasks, and human expression.
 
-![A visible token sequence connected to hidden variables such as goals, environment, object use, and consequences that shape candidate next tokens](/llm-first-principles/04-language-as-world-compression/hidden-variables.png)
-
 ## 3. Compression Is Not Memorization. It Is Reusable Structure
+
+![Many text examples pass through a compression layer into a compact parameter structure that unfolds into relation, sequence, code, and planning patterns](/llm-first-principles/04-language-as-world-compression/compression-structure.png)
 
 When we say "language is compression of the world," it is easy to misunderstand this as:
 
@@ -227,9 +229,9 @@ Good compression does not preserve every sample exactly. It finds the shared str
 
 A large part of LLM capability comes from reusing these structures.
 
-![Many text examples pass through a compression layer into a compact parameter structure that unfolds into relation, sequence, code, and planning patterns](/llm-first-principles/04-language-as-world-compression/compression-structure.png)
-
 ## 4. Why This Compression Looks Like Knowledge
+
+![Language traces are compressed into internal model structure and unfolded into knowledge-like relationship networks](/llm-first-principles/04-language-as-world-compression/knowledge-from-compression.png)
 
 When we say a person "knows" something, we usually mean they can use it correctly across contexts.
 
@@ -272,6 +274,8 @@ combining multiple facts into one answer.
 These abilities are not mystical. They are the result of large-scale language compression being unfolded again inside context.
 
 ## 5. Why This Compression Looks Like Reasoning
+
+![Mathematical, code, causal, and goal-decomposition process structures entering a model and continuing as a next-step generation path](/llm-first-principles/04-language-as-world-compression/reasoning-process.png)
 
 Knowledge is already useful. But the more surprising part is that models sometimes show reasoning-like behavior.
 
@@ -332,9 +336,9 @@ The model can make mistakes inside plausible-looking steps. It can be misled by 
 
 The reason goes back to the first principle: the model generates the most probable token sequence under its learned distribution. It does not automatically produce conclusions verified by an external checker.
 
-![Mathematical, code, causal, and goal-decomposition process structures entering a model and continuing as a next-step generation path](/llm-first-principles/04-language-as-world-compression/reasoning-process.png)
-
 ## 6. From Text World to Real World: Where the Boundary Is
+
+![Model parameters and text context sit inside a text-world boundary while live facts require tools to connect to the external world](/llm-first-principles/04-language-as-world-compression/text-world-boundary.png)
 
 If language compresses the world, does the model truly understand the world?
 
@@ -361,6 +365,8 @@ LLMs are powerful because language really does compress a huge amount of world s
 LLMs also fail because language is not the world itself, and predicting text is not the same thing as verifying facts.
 
 ## 7. What This Means for Products and Engineering
+
+![Raw model capability becomes reliable product experience only when combined with context, retrieval, tools, safety, and feedback systems](/llm-first-principles/04-language-as-world-compression/compression-product-engineering.png)
 
 Once you understand "language as compression of the world," many product and engineering decisions become clearer.
 
@@ -432,6 +438,8 @@ These questions are closer to the model's real capability boundary.
 
 ## 8. Common Misunderstandings
 
+![Common misunderstandings about language compression are filtered toward the correct view of reusable compressed structure](/llm-first-principles/04-language-as-world-compression/compression-misconceptions.png)
+
 **Misunderstanding 1: If the model only predicts text, it cannot understand anything.**
 
 Not quite. The important question is not whether the objective is text prediction. The important question is what kind of text must be predicted. If text compresses rich world structure, predicting text forces the model to learn part of that structure. This is still not the same as human experiential understanding.
@@ -449,6 +457,8 @@ No. The model mainly learns textual traces of the world. It can model descriptio
 Not necessarily. Data scale matters, but so do data quality, architecture, training method, inference method, alignment, tool feedback, and evaluation. Compression has limits, and wrong compression can amplify bias.
 
 ## 9. Summary: Why Predicting Text Can Become Intelligence
+
+![World activity leaves language traces that are compressed by a model and unfolded into knowledge, reasoning, and product output](/llm-first-principles/04-language-as-world-compression/compression-summary.png)
 
 We can compress this post into one chain:
 

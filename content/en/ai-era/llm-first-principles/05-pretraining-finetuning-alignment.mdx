@@ -75,6 +75,8 @@ Understanding these three layers explains why large language models are not born
 
 ## 1. Pretraining: First Build a Powerful Continuation Machine
 
+![Web pages, books, code, and dialogue examples becoming token streams that enter a neural network and emerge as continuation tokens](/llm-first-principles/05-pretraining-finetuning-alignment/pretraining-continuation.png)
+
 Pretraining is the foundation of model capability.
 
 The basic operation looks plain:
@@ -123,9 +125,9 @@ You can imagine someone who has read many books, code files, and chat logs, but 
 
 They may know a lot, but they may not know when to be brief, when to ask a follow-up question, when to refuse, or when to give steps.
 
-![Web pages, books, code, and dialogue examples becoming token streams that enter a neural network and emerge as continuation tokens](/llm-first-principles/05-pretraining-finetuning-alignment/pretraining-continuation.png)
-
 ## 2. Supervised Fine-tuning: Turning Continuation Into Instruction Response
+
+![User instructions and ideal responses entering the model to turn scattered continuations into structured assistant replies](/llm-first-principles/05-pretraining-finetuning-alignment/supervised-finetuning.png)
 
 The next stage is supervised fine-tuning, often shortened to SFT.
 
@@ -207,9 +209,9 @@ SFT can teach the model "answer like this," but it is less precise at teaching "
 
 That requires the next layer: preference alignment.
 
-![User instructions and ideal responses entering the model to turn scattered continuations into structured assistant replies](/llm-first-principles/05-pretraining-finetuning-alignment/supervised-finetuning.png)
-
 ## 3. Preference Alignment: Teaching the Model Which Answer to Prefer
+
+![A user request branching into multiple candidate responses that are scored, ranked, calibrated for safety, and fed back into the model](/llm-first-principles/05-pretraining-finetuning-alignment/preference-alignment.png)
 
 Preference alignment solves a different problem. Not "can the model answer?" but "which kind of answer should it lean toward?"
 
@@ -275,9 +277,9 @@ So alignment is not simply "more is better." It is an ongoing tradeoff.
 
 Good alignment should make the model more reliable, not merely more polite.
 
-![A user request branching into multiple candidate responses that are scored, ranked, calibrated for safety, and fed back into the model](/llm-first-principles/05-pretraining-finetuning-alignment/preference-alignment.png)
-
 ## 4. An Assistant Is Not a Piece of Knowledge. It Is a Behavior Distribution
+
+![Raw model token paths passing through an alignment funnel and separating into assistant behaviors such as answering, refusing, clarifying, and tool use](/llm-first-principles/05-pretraining-finetuning-alignment/behavior-distribution.png)
 
 Once we understand pretraining, SFT, and alignment, we can define "assistant" more precisely.
 
@@ -327,9 +329,9 @@ how the product interface guides user tasks.
 
 All of these change model behavior in real use.
 
-![Raw model token paths passing through an alignment funnel and separating into assistant behaviors such as answering, refusing, clarifying, and tool use](/llm-first-principles/05-pretraining-finetuning-alignment/behavior-distribution.png)
-
 ## 5. A Modern AI Assistant Is a System, Not a Bare Model
+
+![An assistant interface connected to a base model, context documents, search, calculation, code, database tools, safety policy, and a user feedback loop](/llm-first-principles/05-pretraining-finetuning-alignment/assistant-system.png)
 
 When people discuss LLMs, they often attribute every capability to "the model itself."
 
@@ -379,9 +381,9 @@ If the model does not know an internal company process, the problem may be missi
 
 If the model over-refuses, the issue may sit in safety policy, preference data, or system prompts.
 
-![An assistant interface connected to a base model, context documents, search, calculation, code, database tools, safety policy, and a user feedback loop](/llm-first-principles/05-pretraining-finetuning-alignment/assistant-system.png)
-
 ## 6. Common Misunderstandings
+
+![Common misunderstandings about pretraining, fine-tuning, and alignment are separated into different training layers](/llm-first-principles/05-pretraining-finetuning-alignment/alignment-misconceptions.png)
 
 **Misunderstanding 1: Fine-tuning simply makes the model smarter.**
 
@@ -404,6 +406,8 @@ No. The response is a token sequence generated under the combined influence of c
 Not necessarily. Poor alignment can reduce capability, but good alignment can make the model more reliable, controllable, and suitable for real products. The key is the quality of preference data, evaluation, and training method.
 
 ## 7. What This Means for Products and Engineering
+
+![Training layers plus context, retrieval, tools, safety, and evaluation systems jointly shape product capability](/llm-first-principles/05-pretraining-finetuning-alignment/training-product-engineering.png)
 
 If we see an LLM as a system shaped layer by layer from pretraining to alignment, engineering decisions become clearer.
 
@@ -465,6 +469,8 @@ continuous evaluation loops.
 That is why the same model can feel very different inside different products.
 
 ## 8. Summary: From Continuation Machine to Assistant
+
+![A model moves from pretraining continuation through supervised fine-tuning and preference alignment into assistant behavior](/llm-first-principles/05-pretraining-finetuning-alignment/assistant-summary.png)
 
 We can summarize this post in a few simple lines:
 

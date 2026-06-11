@@ -101,6 +101,8 @@ export const metadata = {
 
 ## 一、模型看到的不是句子，而是 token
 
+![一条连续内容被分割成不同大小 token 方块并进入模型输入层的示意图](/llm-first-principles/01-next-token-prediction/tokens.png)
+
 token 是模型处理世界的基本单位，中文叫「词元」。
 
 当人类看到这句话：
@@ -150,9 +152,9 @@ function add(a, b) { return
 
 因为 token 是模型处理世界的基本单位。
 
-![一条连续内容被分割成不同大小 token 方块并进入模型输入层的示意图](/llm-first-principles/01-next-token-prediction/tokens.png)
-
 ## 二、模型训练的任务很简单：预测下一个 token
+
+![模型用真实下一个 token 作为训练目标，通过预测分布和误差反馈更新参数的示意图](/llm-first-principles/01-next-token-prediction/training-next-token.png)
 
 知道 token 以后，我们再看训练。
 
@@ -214,6 +216,8 @@ a + b
 
 ## 三、模型不是给答案，而是给概率
 
+![模型从上下文计算出多个候选 token 概率，并在低温到高温之间呈现不同采样范围的示意图](/llm-first-principles/01-next-token-prediction/probability-distribution.png)
+
 所以模型真的知道正确答案么？答案是否定的。它的每一步输出，都是一组概率。
 
 我们可以把大模型想成一个巨大的函数：
@@ -269,9 +273,9 @@ temperature 高：更多样、更发散
 
 这是理解模型幻觉、上下文工程、推理和 Agent 的基础。
 
-![模型从上下文计算出多个候选 token 概率，并在低温到高温之间呈现不同采样范围的示意图](/llm-first-principles/01-next-token-prediction/probability-distribution.png)
-
 ## 四、Transformer 与注意力机制：「现在该看哪里」
+
+![不同强度的注意力连线从上下文 token 指向当前 token，表示模型在生成时选择重点参考位置的示意图](/llm-first-principles/01-next-token-prediction/attention.png)
 
 想想看，模型每次预测 token 时，都需要参考前方所有 token 并进行计算。上下文里有那么多内容，且这些内容与当前 token 的相关性有强有弱，当前 token 的生成到底该参考哪里？
 
@@ -305,9 +309,9 @@ Transformer 之所以重要，很大一部分原因就在这里。它里面的 A
 
 后面我们会讲到的上下文工程、RAG 和工具调用。本质上，它们都在解决同一个问题：怎么把正确的信息，在正确的时间，放到模型最容易用上的位置。
 
-![不同强度的注意力连线从上下文 token 指向当前 token，表示模型在生成时选择重点参考位置的示意图](/llm-first-principles/01-next-token-prediction/attention.png)
-
 ## 五、让「预测」看起来像是「理解」
+
+![大量语言痕迹被模型压缩成可复用结构，并在输出中表现出类似理解能力的示意图](/llm-first-principles/01-next-token-prediction/prediction-as-understanding.png)
 
 到这里，最关键的问题来了：
 
@@ -349,6 +353,8 @@ Transformer 之所以重要，很大一部分原因就在这里。它里面的 A
 
 ## 六、Scaling Law：通过规模，把简单任务，推到复杂能力
 
+![模型规模、数据和计算增长后，简单预测任务逐步跨过复杂能力阈值的示意图](/llm-first-principles/01-next-token-prediction/scaling-bridge.png)
+
 如果只看「猜下一个 token」，大模型似乎不应该这么厉害。
 
 但当几个维度一起放大，事情就会变得很不一样：
@@ -389,6 +395,8 @@ Transformer 之所以重要，很大一部分原因就在这里。它里面的 A
 不过，涌现不等于魔法。它不是突然凭空产生一个「真正懂世界的小人」。它更像是：足够复杂的预测系统，在足够多的数据和反馈下，学出了可以泛化的结构。
 
 ## 七、今天的 AI 产品不只是一个模型
+
+![现代 AI 产品由模型、检索、工具、安全边界、界面和反馈循环共同组成的系统示意图](/llm-first-principles/01-next-token-prediction/system-stack.png)
 
 还有一点也很重要。
 
@@ -433,9 +441,9 @@ Agent 框架让模型围绕目标一步步行动。
 
 大模型本身提供的是一种强大的语言和推理能力。真正可用的产品能力，来自模型和工程系统的组合。
 
-![现代 AI 产品由模型、检索、工具、安全边界、界面和反馈循环共同组成的系统示意图](/llm-first-principles/01-next-token-prediction/system-stack.png)
-
 ## 八、重新回答：大模型到底是什么
+
+![大语言模型由概率预测、世界结构压缩和产品系统共同组成的总结示意图](/llm-first-principles/01-next-token-prediction/llm-summary.png)
 
 现在我们可以回到开头的问题。
 

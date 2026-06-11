@@ -55,6 +55,8 @@ The core sentence of this post is:
 
 ## 1. First, Define Hallucination Precisely
 
+![A probabilistically plausible next-token path still needs verification against the external world](/llm-first-principles/08-hallucination/probability-not-truth.png)
+
 We should not start by treating hallucination as deception.
 
 A more precise definition is:
@@ -107,8 +109,6 @@ This is the key difference:
 Linguistic plausibility is not factual truth.
 ```
 
-![A probabilistically plausible next-token path still needs verification against the external world](/llm-first-principles/08-hallucination/probability-not-truth.png)
-
 During training, a model learns:
 
 ```text
@@ -129,6 +129,8 @@ These two operations are related, but they are not the same operation.
 Many hallucinations happen in that gap.
 
 ## 2. Why Next-Token Prediction Naturally Creates Hallucination Risk
+
+![A locally high-probability token path gradually diverges from an externally verified fact path, creating hallucination risk](/llm-first-principles/08-hallucination/next-token-hallucination-risk.png)
 
 Return to the bottom-level objective from the first post:
 
@@ -198,6 +200,8 @@ If the impression is vague and the system still pushes for an answer, the model 
 
 ## 3. Parameters Are Lossy Compression, Not a Fact Database
 
+![The boundary between model parameters, current context, and external facts creates an unknown gap](/llm-first-principles/08-hallucination/knowledge-boundary.png)
+
 In post 04, we said:
 
 ```text
@@ -232,8 +236,6 @@ private information that was never provided cannot appear from nowhere.
 
 This is why hallucination often appears near the knowledge boundary.
 
-![The boundary between model parameters, current context, and external facts creates an unknown gap](/llm-first-principles/08-hallucination/knowledge-boundary.png)
-
 The knowledge boundary is the place where:
 
 ```text
@@ -261,6 +263,8 @@ Much of generalization comes from it.
 But when the task requires factual accuracy, plausible interpolation can become hallucination.
 
 ## 4. Why Hallucinations Often Sound Confident
+
+![A fluent answer carries a strong confidence glow while the factual evidence chain beneath it is weak or broken](/llm-first-principles/08-hallucination/confident-tone.png)
 
 One of the most counterintuitive parts of hallucination is:
 
@@ -325,6 +329,8 @@ A model with strong answering ability and weak calibration can sound especially 
 
 ## 5. Autoregressive Generation Can Compound Small Errors
 
+![An early unsupported guess is appended to context and gradually grows into a complete incorrect answer](/llm-first-principles/08-hallucination/autoregressive-drift.png)
+
 Post 07 explained that generation is not a one-shot answer object.
 
 It is token-by-token output:
@@ -357,8 +363,6 @@ Those later sentences do not necessarily come from real material.
 
 They may simply extend the local path created by the first unsupported claim.
 
-![An early unsupported guess is appended to context and gradually grows into a complete incorrect answer](/llm-first-principles/08-hallucination/autoregressive-drift.png)
-
 This is why hallucination is often not one isolated mistake.
 
 It becomes a coherent chain:
@@ -386,6 +390,8 @@ later generation can treat it as established fact.
 Unless the system adds external checking, reflection, retrieval, or user confirmation, the model does not naturally roll back to the earlier step.
 
 ## 6. Common Sources of Hallucination
+
+![Missing evidence, stale knowledge, ambiguous prompts, noisy context, and absent verification converge into hallucination risk](/llm-first-principles/08-hallucination/hallucination-sources.png)
 
 Once we separate the mechanisms, we can classify hallucinations more clearly.
 
@@ -420,6 +426,8 @@ A polished format can make users believe the data really exists.
 
 ## 7. Reducing Hallucination Requires More Than One Prompt
 
+![A product system reduces hallucination risk with retrieval, tools, context, verification, and user confirmation](/llm-first-principles/08-hallucination/grounding-stack.png)
+
 Many people try to solve hallucination with prompt instructions:
 
 ```text
@@ -449,8 +457,6 @@ validators check facts, format, and constraints;
 product interaction shows sources, uncertainty, and confirmation points.
 ```
 
-![A product system reduces hallucination risk with retrieval, tools, context, verification, and user confirmation](/llm-first-principles/08-hallucination/grounding-stack.png)
-
 Different tasks need different anti-hallucination layers.
 
 | Task | Main Risk | Better Handling |
@@ -471,6 +477,8 @@ If the user cares who is responsible, preserve sources and process.
 ```
 
 ## 8. Why RAG Comes Next
+
+![RAG retrieves external evidence to anchor the generation path and pull ungrounded answers back toward verification](/llm-first-principles/08-hallucination/rag-next-step.png)
 
 Once we understand hallucination, the role of RAG becomes natural.
 
@@ -526,6 +534,8 @@ then RAG is the first system-level pattern for attaching traceable grounding to 
 
 ## 9. Common Misunderstandings
 
+![Common misunderstandings about hallucination are filtered toward the system view of evidence plus verification reducing risk](/llm-first-principles/08-hallucination/hallucination-misconceptions.png)
+
 **Misunderstanding 1: Hallucination proves the model has no understanding at all.**
 
 No. Hallucination shows a gap between language generation and factual verification. It does not mean the model learned no structure. A person making a mistake also does not prove that they understand nothing.
@@ -547,6 +557,8 @@ Not always. More reasoning text may help with complex problems, but without fact
 No. RAG provides evidence and traceability, but retrieval, chunking, ranking, citation, and answer synthesis can still fail. It is a system layer that reduces hallucination, not immunity.
 
 ## 10. Summary: Hallucination Is Probabilistic Generation Without Grounding
+
+![A probabilistic generation path creates risk without evidence and verification, while retrieval, tools, and validation close the factual gap](/llm-first-principles/08-hallucination/hallucination-summary.png)
 
 We can compress this post into a few sentences:
 
