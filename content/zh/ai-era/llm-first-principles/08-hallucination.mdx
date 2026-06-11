@@ -46,6 +46,8 @@ export const metadata = {
 
 ## 一、先把「幻觉」定义清楚
 
+![概率上合理的下一个 token 路径仍然需要外部世界验证的示意图](/llm-first-principles/08-hallucination/probability-not-truth.png)
+
 先不要急着把幻觉理解成「模型骗人」。
 
 更准确地说，幻觉是：
@@ -98,8 +100,6 @@ export const metadata = {
 语言上的合理性，不等于事实上的真实性。
 ```
 
-![概率上合理的下一个 token 路径仍然需要外部世界验证的示意图](/llm-first-principles/08-hallucination/probability-not-truth.png)
-
 大模型训练时学到的是：
 
 ```text
@@ -118,6 +118,8 @@ export const metadata = {
 这两件事虽相关，却存在本质差异，因而产生了模型幻觉。
 
 ## 二、为什么 next-token prediction 会天然带来幻觉风险
+
+![局部高概率 token 路径与外部事实路径逐渐分叉，从而形成幻觉风险的示意图](/llm-first-principles/08-hallucination/next-token-hallucination-risk.png)
 
 回到第一篇我们讲过的大语言模型核心机制：
 
@@ -186,6 +188,8 @@ export const metadata = {
 
 ## 三、模型参数是有损压缩，不是事实数据库
 
+![模型参数、上下文和外部世界之间的知识边界与未知缺口示意图](/llm-first-principles/08-hallucination/knowledge-boundary.png)
+
 第 4 篇我们说过：
 
 ```text
@@ -220,8 +224,6 @@ export const metadata = {
 
 因此，幻觉经常出现在知识边界附近。
 
-![模型参数、上下文和外部世界之间的知识边界与未知缺口示意图](/llm-first-principles/08-hallucination/knowledge-boundary.png)
-
 所谓知识边界，就是：
 
 ```text
@@ -249,6 +251,8 @@ export const metadata = {
 但当任务要求事实准确时，「合理插值」就可能变成幻觉。
 
 ## 四、为什么幻觉经常听起来很自信
+
+![流畅答案表面带有强置信度光环，但底部事实证据链薄弱或断裂的示意图](/llm-first-principles/08-hallucination/confident-tone.png)
 
 幻觉还有一个很反直觉的地方：
 
@@ -313,6 +317,8 @@ export const metadata = {
 
 ## 五、自回归生成会让小错误越滚越大
 
+![自回归生成中早期小猜测被接回上下文并逐步放大成完整错误回答的示意图](/llm-first-principles/08-hallucination/autoregressive-drift.png)
+
 第 7 篇讲过，大模型生成不是一次性产生完整答案，而是逐 token 输出：
 
 ```text
@@ -343,8 +349,6 @@ export const metadata = {
 
 它们只是沿着前面那个「2023 年论文」的局部路径继续扩展。
 
-![自回归生成中早期小猜测被接回上下文并逐步放大成完整错误回答的示意图](/llm-first-principles/08-hallucination/autoregressive-drift.png)
-
 这也是为什么幻觉常常不是一个孤立错误，而是一串连贯错误。
 
 第一步错得很小。
@@ -372,6 +376,8 @@ export const metadata = {
 除非系统加入外部校验、反思、检索或用户确认，否则模型不会天然回滚到前面那一步。
 
 ## 六、幻觉有几种常见来源
+
+![缺少证据、知识过期、问题歧义、上下文噪音和缺少验证等因素共同造成幻觉的示意图](/llm-first-principles/08-hallucination/hallucination-sources.png)
 
 把机制拆开后，我们可以更清楚地分类。
 
@@ -403,6 +409,8 @@ export const metadata = {
 
 ## 七、减少幻觉，不能只靠一句 prompt
 
+![通过检索、工具、上下文、校验和用户确认降低幻觉风险的 AI 产品系统示意图](/llm-first-principles/08-hallucination/grounding-stack.png)
+
 很多人会尝试用 prompt 解决幻觉：
 
 ```text
@@ -432,8 +440,6 @@ RAG 负责把可追溯资料放进上下文；
 产品交互负责展示来源、不确定性和确认节点。
 ```
 
-![通过检索、工具、上下文、校验和用户确认降低幻觉风险的 AI 产品系统示意图](/llm-first-principles/08-hallucination/grounding-stack.png)
-
 不同任务需要的防幻觉手段也不同。
 
 | 任务 | 主要风险 | 更合适的处理 |
@@ -454,6 +460,8 @@ RAG 负责把可追溯资料放进上下文；
 ```
 
 ## 八、RAG 为什么是下一步
+
+![RAG 通过检索外部证据锚定生成路径，把无依据回答拉回可验证轨道的示意图](/llm-first-principles/08-hallucination/rag-next-step.png)
 
 理解幻觉之后，就能自然理解 RAG 的位置。
 
@@ -509,6 +517,8 @@ RAG 加入了第三类信息：
 
 ## 九、常见误解
 
+![关于幻觉的常见误解被过滤，并指向证据与验证共同降低风险的系统方案](/llm-first-principles/08-hallucination/hallucination-misconceptions.png)
+
 **误解一：幻觉说明模型没有任何理解能力。**
 
 不对。幻觉说明模型的语言生成和事实验证之间存在缺口，不等于模型没有学到结构。一个会犯错的人也不等于完全不理解问题。
@@ -530,6 +540,8 @@ RAG 加入了第三类信息：
 不能。RAG 可以提供证据和可追溯性，但检索、切片、排序、引用和答案合成都会出错。它是降低幻觉的系统层，不是免疫药。
 
 ## 十、总结：幻觉是概率生成缺少可靠事实依据的结果
+
+![概率生成路径在缺少证据和验证时产生风险，而检索、工具和校验能缩小事实缺口的总结图](/llm-first-principles/08-hallucination/hallucination-summary.png)
 
 现在我们可以把本文压缩成几句话：
 

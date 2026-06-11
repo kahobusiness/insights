@@ -53,6 +53,8 @@ The core sentence of this post is:
 
 ## 1. Inference Is Not "Thinking of the Whole Answer First"
 
+![The model does not prepare a complete answer first; it gradually traces a token path through probability space](/llm-first-principles/07-inference-and-generation/not-prewritten-answer.png)
+
 Start with an intuitive mistake.
 
 When you ask:
@@ -118,6 +120,8 @@ They are not commands injected into a human-like mind. They shape the context vi
 
 ## 2. The Next-Token Distribution: A Ranked Table of Possibilities
 
+![The model turns the current context into a probability distribution over candidate next tokens instead of producing a full paragraph at once](/llm-first-principles/07-inference-and-generation/probability-distribution.png)
+
 During inference, the first thing the model produces is not a sentence. It produces a set of scores.
 
 More precisely, it gives a raw score to every possible token in the vocabulary. In engineering terms, these raw scores are often called logits.
@@ -132,8 +136,6 @@ other tokens: lower probabilities
 ```
 
 This means that at each step, the model does not face one unique answer. It faces a table of candidates.
-
-![The model turns the current context into a probability distribution over candidate next tokens instead of producing a full paragraph at once](/llm-first-principles/07-inference-and-generation/probability-distribution.png)
 
 For example, suppose the context is:
 
@@ -187,6 +189,8 @@ During inference, the parameters are already fixed. The model is no longer learn
 
 ## 3. Sampling and Temperature: Why the Same Model Can Answer Differently
 
+![Low, medium, and high temperature respectively make the next-token distribution sharper, balanced, or flatter](/llm-first-principles/07-inference-and-generation/temperature-effect.png)
+
 Once we have the next-token distribution, the system must choose.
 
 The most direct method is to always select the highest-probability token.
@@ -224,8 +228,6 @@ You can think of it as a randomness knob:
 Low temperature: high-probability tokens become even higher, and low-probability tokens become even lower.
 High temperature: the distribution becomes flatter, so more candidate tokens have a chance.
 ```
-
-![Low, medium, and high temperature respectively make the next-token distribution sharper, balanced, or flatter](/llm-first-principles/07-inference-and-generation/temperature-effect.png)
 
 At low temperature, the model behaves more like:
 
@@ -274,6 +276,8 @@ Together, these parameters shape the stability and diversity of model output.
 
 ## 4. Context Window: The Model Remembers Tokens Placed in the Window
 
+![In a long conversation, only tokens inside the active context window can be used by the model for the next generation step](/llm-first-principles/07-inference-and-generation/context-window.png)
+
 Now let us talk about the context window.
 
 People often say:
@@ -297,8 +301,6 @@ the answer generated so far.
 ```
 
 Together, they form the world the model can currently "see."
-
-![In a long conversation, only tokens inside the active context window can be used by the model for the next generation step](/llm-first-principles/07-inference-and-generation/context-window.png)
 
 A larger context window allows the model to see more material.
 
@@ -344,6 +346,8 @@ important constraints are not buried.
 
 ## 5. Token-by-Token Output: Why Answers Appear Gradually
 
+![In the autoregressive generation loop, the model repeatedly moves through context, forward pass, probability distribution, sampling, and token appending](/llm-first-principles/07-inference-and-generation/autoregressive-loop.png)
+
 Now let us return to one of the most visible behaviors:
 
 ```text
@@ -379,8 +383,6 @@ Token 1 depends on the original context.
 Token 2 depends on the original context and token 1.
 
 Token 100 depends on the original context and the first 99 generated tokens.
-
-![In the autoregressive generation loop, the model repeatedly moves through context, forward pass, probability distribution, sampling, and token appending](/llm-first-principles/07-inference-and-generation/autoregressive-loop.png)
 
 This is why the model cannot truly produce the final paragraph in parallel.
 
@@ -419,6 +421,8 @@ without a stopping strategy, the model may keep adding irrelevant content.
 ```
 
 ## 6. Stopping: How Does the Model Know It Is Done?
+
+![A token stream stops after passing through end tokens, length limits, stop sequences, and structure validation](/llm-first-principles/07-inference-and-generation/stop-generation.png)
 
 If the model generates one token at a time, when does it stop?
 
@@ -590,6 +594,8 @@ Stopping is not merely a writing issue. It is part of the generation system.
 
 ## 7. Product and Engineering: Treat Generation Settings as Experience Controls
 
+![Generation settings such as randomness, length, stop boundaries, and structure validation act as product experience controls](/llm-first-principles/07-inference-and-generation/generation-controls-product.png)
+
 Once we understand inference and generation, we can design AI products more clearly.
 
 Many product problems are not simply "is the model smart enough?" They are:
@@ -643,6 +649,8 @@ This is the difference between "can talk" and "is usable."
 
 ## 8. Common Misunderstandings
 
+![Common misunderstandings about inference and generation are filtered toward the correct view of an autoregressive probability path](/llm-first-principles/07-inference-and-generation/generation-misconceptions.png)
+
 **Misunderstanding 1: Higher temperature makes the model smarter.**
 
 No. Temperature changes sampling randomness, not model capability. Higher temperature can produce more variety, but it can also produce more drift.
@@ -664,6 +672,8 @@ Not exactly. A model can express plans during generation, and it can use learned
 Not always. Longer context can hold more information, but it can also introduce noise, conflicts, and attention dilution. The goal is not to fill the window. The goal is to make important information clearly visible.
 
 ## 9. Summary: Generation Is a Probability Path, Not Answer Printing
+
+![Context, probability distribution, sampling, token appending, and stopping conditions form the generation loop](/llm-first-principles/07-inference-and-generation/generation-summary.png)
 
 We can compress this post into a few sentences:
 

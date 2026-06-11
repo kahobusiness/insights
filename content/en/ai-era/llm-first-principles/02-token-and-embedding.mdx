@@ -41,6 +41,8 @@ This post explains "how the thing being predicted becomes computable."
 
 ## 1. Why We Cannot Just Feed Sentences to a Model
 
+![Abstract characters and word fragments receive naive independent ids, then become fragmented and misaligned](/llm-first-principles/02-token-and-embedding/naive-numbering.png)
+
 Let's think about neural networks in the plainest possible way.
 
 Inside a model, there are matrix multiplications, additions, normalizations, and nonlinear transformations. No matter how conversational the outer product feels, the bottom layer is still numerical computation.
@@ -73,9 +75,9 @@ We call the content blocks produced by splitting a sentence tokens. In other wor
 
 So how is a sentence split into tokens?
 
-![Abstract characters and word fragments receive naive independent ids, then become fragmented and misaligned](/llm-first-principles/02-token-and-embedding/naive-numbering.png)
-
 ## 2. Tokenizer: Cutting Continuous Language into Discrete Tokens
+
+![A continuous abstract text stream split by a tokenizer into token cards of different widths](/llm-first-principles/02-token-and-embedding/tokenization.png)
 
 The component that cuts text into tokens is called a tokenizer.
 
@@ -147,9 +149,9 @@ Third, code ability is strongly affected by tokenization. Spaces, newlines, brac
 
 Token is not a tiny implementation detail. It determines the resolution at which the model observes language.
 
-![A continuous abstract text stream split by a tokenizer into token cards of different widths](/llm-first-principles/02-token-and-embedding/tokenization.png)
-
 ## 3. Token Id: The Model Sees an Index Before It Sees Meaning
+
+![Tokens first become arbitrary ids before a lookup table maps them into embedding vectors](/llm-first-principles/02-token-and-embedding/token-id-lookup.png)
 
 After tokens are produced, they still cannot directly enter the neural network. Each token is first mapped to an integer called a token id.
 
@@ -187,6 +189,8 @@ That is why the model needs the next step: mapping token ids into embeddings.
 
 ## 4. Embedding: Turning Discrete Symbols into Learnable Vectors
 
+![Colored tokens map to ids, then look up high-dimensional embedding vectors before flowing into a neural network](/llm-first-principles/02-token-and-embedding/id-to-embedding.png)
+
 An embedding is a vector representation of a token in a high-dimensional space.
 
 More concretely, the model contains a large table:
@@ -220,9 +224,9 @@ Code symbols, natural language, numbers, and punctuation also develop structure.
 
 This is the key value of embedding: it turns discrete symbols into points in a continuous space, so the model can compute similarity, difference, composition, and direction.
 
-![Colored tokens map to ids, then look up high-dimensional embedding vectors before flowing into a neural network](/llm-first-principles/02-token-and-embedding/id-to-embedding.png)
-
 ## 5. Embedding Is Not a Dictionary. It Is a Space of Relationships.
+
+![Similar tokens cluster in a high-dimensional vector space while one token moves along context-dependent paths to different semantic regions](/llm-first-principles/02-token-and-embedding/embedding-space.png)
 
 Many introductions describe embeddings as "meaning vectors." That is helpful, but it can also mislead.
 
@@ -276,9 +280,9 @@ The Transformer updates that representation using context.
 
 In the next post, when we discuss Transformer and Attention, we will continue this process.
 
-![Similar tokens cluster in a high-dimensional vector space while one token moves along context-dependent paths to different semantic regions](/llm-first-principles/02-token-and-embedding/embedding-space.png)
-
 ## 6. Why Can Vectors Express Meaning?
+
+![High-dimensional vector space represents meaning through relative positions, clusters, and directional relationships](/llm-first-principles/02-token-and-embedding/vector-semantics.png)
 
 There is an intuitive hurdle here:
 
@@ -315,6 +319,8 @@ So we should not mystify embedding.
 It is not "where the model's soul lives." It is simply a very effective mathematical representation: language enters a continuous space, and neural networks can compute over it.
 
 ## 7. Tokenization Shapes Product Experience
+
+![The same input can split into token streams of different lengths, affecting cost, latency, and context budget](/llm-first-principles/02-token-and-embedding/tokenization-product-impact.png)
 
 Once you understand tokens and embeddings, many product and engineering issues become easier to reason about.
 
@@ -360,6 +366,8 @@ This is why bilingual products should not merely translate English prompts into 
 
 ## 8. Common Misconceptions
 
+![Common misconceptions about tokens and embeddings are filtered toward the correct view of vector relationships](/llm-first-principles/02-token-and-embedding/token-misconceptions.png)
+
 **Misconception 1: A token is a word.**
 
 Not necessarily. A token may be a word, a character, part of a word, punctuation, whitespace, a code fragment, or a special symbol. It is a model-vocabulary unit, not a fixed linguistic unit.
@@ -377,6 +385,8 @@ Not quite. Embedding is the initial representation. Knowledge and capability are
 No. The model first cuts text into tokens, maps them into vectors, computes contextual representations through layers, and finally predicts the next token step by step.
 
 ## 9. Returning to the Question: How Language Becomes Numbers
+
+![Language becomes model-computable numbers through text, tokens, ids, embeddings, contextual vectors, and neural computation](/llm-first-principles/02-token-and-embedding/language-to-numbers-summary.png)
 
 We can now compress the whole flow into one chain:
 

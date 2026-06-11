@@ -40,6 +40,8 @@ export const metadata = {
 
 ## 一、为什么不能直接把句子丢给模型
 
+![抽象字符和词片段被逐个编号后出现碎片化和错位问题的示意图](/llm-first-principles/02-token-and-embedding/naive-numbering.png)
+
 让我们把大模型的神经网络掰开来看，模型内部由很多矩阵乘法、加法、归一化和非线性变换。无论它外面包装得多像一个聊天对象，其底层逻辑依然是数字运算。
 
 但自然语言不是天然的数字。
@@ -70,9 +72,9 @@ I like apples
 
 具体来说，句子是如何被切割成 token 的呢？
 
-![抽象字符和词片段被逐个编号后出现碎片化和错位问题的示意图](/llm-first-principles/02-token-and-embedding/naive-numbering.png)
-
 ## 二、Tokenizer：把连续语言切成离散 token
+
+![一条连续的抽象文本流被 tokenizer 切分成不同宽度 token 卡片的示意图](/llm-first-principles/02-token-and-embedding/tokenization.png)
 
 负责把句子切分成 token 的组件叫 tokenizer，也叫分词器。
 
@@ -128,9 +130,9 @@ un / believe / able
 
 所以 token 不是一个无关紧要的技术细节。它决定了模型观察语言的分辨率。
 
-![一条连续的抽象文本流被 tokenizer 切分成不同宽度 token 卡片的示意图](/llm-first-principles/02-token-and-embedding/tokenization.png)
-
 ## 三、Token id：模型先看到的是编号，不是意义
+
+![token 先变成任意编号，再通过查表进入 embedding 向量空间的示意图](/llm-first-principles/02-token-and-embedding/token-id-lookup.png)
 
 token 被切出来以后，还不能直接进入神经网络。它会先被映射成一个整数编号，也就是 token id。
 
@@ -168,6 +170,8 @@ token id 本身没有语义。
 
 ## 四、Embedding：把离散符号变成可学习的向量
 
+![彩色 token 先映射成编号，再查表变成高维 embedding 向量并流入神经网络的示意图](/llm-first-principles/02-token-and-embedding/id-to-embedding.png)
+
 embedding 可以理解成每个 token 在高维空间里的一个向量表示。
 
 更具体一点，模型内部有一张很大的表：
@@ -201,9 +205,9 @@ token id → embedding 向量
 
 这就是 embedding 的关键价值：它把离散符号变成连续空间中的点，让模型可以计算「相似」「差异」「组合」「方向」。
 
-![彩色 token 先映射成编号，再查表变成高维 embedding 向量并流入神经网络的示意图](/llm-first-principles/02-token-and-embedding/id-to-embedding.png)
-
 ## 五、Embedding 不是词典，而是关系空间
+
+![高维向量空间中相似 token 聚成不同簇，同一个 token 沿上下文轨迹移动到不同语义位置的示意图](/llm-first-principles/02-token-and-embedding/embedding-space.png)
 
 很多介绍会说 embedding 是「词义向量」。这个说法有帮助，但也容易让人误会。
 
@@ -257,9 +261,9 @@ Transformer 根据上下文，把初始表示更新成上下文表示。
 
 下一篇我们讲 Transformer 和 Attention 时，就会继续拆这个过程。
 
-![高维向量空间中相似 token 聚成不同簇，同一个 token 沿上下文轨迹移动到不同语义位置的示意图](/llm-first-principles/02-token-and-embedding/embedding-space.png)
-
 ## 六、为什么向量能表达语义
+
+![高维向量空间中 token 通过相对位置、聚类和方向关系表达语义的示意图](/llm-first-principles/02-token-and-embedding/vector-semantics.png)
 
 这里可能会有一个直觉上的坎：
 
@@ -296,6 +300,8 @@ Transformer 根据上下文，把初始表示更新成上下文表示。
 它不是「模型的灵魂所在」。它只是一个非常有效的数学表示方式：让语言可以进入连续空间，让神经网络可以对语言做计算。
 
 ## 七、Tokenization 会影响产品体验
+
+![同一段输入被切成不同长度 token 流，从而影响成本、延迟和上下文预算的示意图](/llm-first-principles/02-token-and-embedding/tokenization-product-impact.png)
 
 理解 token 和 embedding 以后，很多产品和工程问题会变得更清楚。
 
@@ -341,6 +347,8 @@ Transformer 根据上下文，把初始表示更新成上下文表示。
 
 ## 八、常见误解
 
+![关于 token 和 embedding 的常见误解被过滤，并指向向量关系空间的示意图](/llm-first-principles/02-token-and-embedding/token-misconceptions.png)
+
 **误解一：token 就是词。**
 
 不完全是。token 可能是词、字、词的一部分、标点、空格、代码片段或特殊符号。它是模型词表里的单位，不是自然语言里的固定单位。
@@ -358,6 +366,8 @@ Transformer 根据上下文，把初始表示更新成上下文表示。
 不是。模型先把文本切成 token，映射成向量，再经过层层计算得到上下文表示，最后逐 token 预测输出。
 
 ## 九、总结：语言如何变成模型能处理的数字
+
+![语言从连续文本变成 token、编号、embedding 和上下文向量并进入神经计算的总结图](/llm-first-principles/02-token-and-embedding/language-to-numbers-summary.png)
 
 现在我们可以把整个过程压缩成一条链路：
 

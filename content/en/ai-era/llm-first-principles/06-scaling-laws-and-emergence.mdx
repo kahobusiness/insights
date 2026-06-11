@@ -63,6 +63,8 @@ That is what this post tries to explain:
 
 ## 1. The Intuitive Question: Why Does "Bigger" Become More Than "A Bit More"?
 
+![Larger models cross more task usability thresholds rather than merely producing more content](/llm-first-principles/06-scaling-laws-and-emergence/scale-more-than-more.png)
+
 Start with a common observation.
 
 When a small model and a large model face the same task, the difference is sometimes not:
@@ -125,6 +127,8 @@ Tasks that were previously "almost there" can suddenly become "usable."
 This is the key connection between scaling laws and emergence.
 
 ## 2. What Scaling Laws Actually Say
+
+![A scaling curve where loss decreases as model scale grows, crossing multiple task thresholds along the way](/llm-first-principles/06-scaling-laws-and-emergence/scaling-law-curve.png)
 
 In the context of large language models, scaling laws describe an empirical pattern:
 
@@ -190,9 +194,9 @@ A better way to say it is:
 
 > Scale keeps lowering prediction error, and lower prediction error forces the model to learn deeper, more reusable structure.
 
-![A scaling curve where loss decreases as model scale grows, crossing multiple task thresholds along the way](/llm-first-principles/06-scaling-laws-and-emergence/scaling-law-curve.png)
-
 ## 3. Scale Is Not Just More Parameters
+
+![A triangle of parameters, training data, and compute determining whether a model can move down the scaling curve effectively](/llm-first-principles/06-scaling-laws-and-emergence/scale-triad.png)
 
 When people talk about scale, the first thought is often:
 
@@ -249,9 +253,9 @@ One may have many parameters, but weak data quality, training recipe, post-train
 
 Another may not be the largest model, but with better data, training, alignment, and product systems, it can be more reliable for a specific task.
 
-![A triangle of parameters, training data, and compute determining whether a model can move down the scaling curve effectively](/llm-first-principles/06-scaling-laws-and-emergence/scale-triad.png)
-
 ## 4. Emergence Is Not Magic. It Is a Threshold Being Crossed
+
+![Underlying capability rises smoothly, but a visible emergent ability appears only after it crosses the task threshold](/llm-first-principles/06-scaling-laws-and-emergence/emergence-threshold.png)
 
 Now we can talk about emergence.
 
@@ -335,9 +339,9 @@ So we can summarize it this way:
 
 > Emergence is not magic. It is continuous model improvement crossing the usability threshold of a discrete task.
 
-![Underlying capability rises smoothly, but a visible emergent ability appears only after it crosses the task threshold](/llm-first-principles/06-scaling-laws-and-emergence/emergence-threshold.png)
-
 ## 5. Why Scale Changes Capability Boundaries
+
+![A model capability map expanding with scale, from word association into code, reasoning, and complex task areas](/llm-first-principles/06-scaling-laws-and-emergence/capability-boundary.png)
 
 Now we can answer the central question:
 
@@ -406,9 +410,9 @@ Scaling laws expand the map.
 
 Emergence is when users first see a new region become usable.
 
-![A model capability map expanding with scale, from word association into code, reasoning, and complex task areas](/llm-first-principles/06-scaling-laws-and-emergence/capability-boundary.png)
-
 ## 6. The Boundary of Scale: Why Larger Still Does Not Mean Reliable
+
+![A larger model crosses some capability thresholds but still faces factual, context, cost, and verification boundaries](/llm-first-principles/06-scaling-laws-and-emergence/scale-reliability-boundary.png)
 
 At this point, it is easy to fall into another misunderstanding:
 
@@ -478,6 +482,8 @@ Scale is the foundation of capability, but reliable experience comes from the sy
 
 ## 7. Common Misunderstandings
 
+![Common misunderstandings about scaling laws and emergence are filtered toward the correct view of smooth improvement crossing thresholds](/llm-first-principles/06-scaling-laws-and-emergence/scaling-misconceptions.png)
+
 **Misunderstanding 1: Emergence means the model suddenly became conscious.**
 
 No. Emergent abilities usually mean the model's representation for a task crossed a visible threshold. That is not the same as subjective experience or consciousness.
@@ -499,6 +505,8 @@ Not necessarily. Many benchmarks use discrete scoring. The underlying capability
 Not necessarily. Product quality depends on the task, cost, latency, reliability, context, tools, evaluation, and interaction design. The model is one part of the system.
 
 ## 8. What This Means for Products and Engineering
+
+![Product engineering selects models by task thresholds and adds evaluation, retrieval, tools, and workflows for reliability](/llm-first-principles/06-scaling-laws-and-emergence/scaling-product-engineering.png)
 
 Once we understand scaling laws and emergence, AI product decisions become less mystical and less dismissive of scale.
 
@@ -577,6 +585,8 @@ Do not treat the model as the whole product. Do not ignore the model's capabilit
 Good AI products often start with a model of the right scale, then add the right context, tools, constraints, and feedback.
 
 ## 9. Summary: How Scale Changes Capability Boundaries
+
+![Parameters, data, and compute merge into a scaling path that lights up task thresholds over time](/llm-first-principles/06-scaling-laws-and-emergence/scaling-summary.png)
 
 We can compress this post into a few lines:
 

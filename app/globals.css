@@ -20,6 +20,72 @@ article h2 {
   padding-bottom: 0;
 }
 
+/* LightGallery appends its chrome outside the gallery CSS Module subtree, so
+   these theme overrides need to live in global CSS. */
+html .lg-backdrop {
+  background-color: #fff;
+}
+
+html.dark .lg-backdrop {
+  background-color: #000;
+}
+
+/* LightGallery toolbar icons are too light on the white backdrop. */
+.lg-toolbar .lg-icon,
+.lg-counter {
+  color: #4b5563;
+}
+
+.lg-toolbar .lg-icon:hover,
+.lg-toolbar .lg-icon:focus-visible {
+  color: #111827;
+}
+
+html.dark .lg-toolbar .lg-icon,
+html.dark .lg-counter {
+  color: #d1d5db;
+}
+
+html.dark .lg-toolbar .lg-icon:hover,
+html.dark .lg-toolbar .lg-icon:focus-visible {
+  color: #fff;
+}
+
+html .lg-sub-html,
+html .lg-error-msg {
+  color: #4b5563;
+}
+
+html.dark .lg-sub-html {
+  color: #eee;
+}
+
+html.dark .lg-error-msg {
+  color: #999;
+}
+
+html .lg-next,
+html .lg-prev {
+  background-color: rgba(255, 255, 255, 0.45);
+  color: #4b5563;
+}
+
+html .lg-next:hover:not(.disabled),
+html .lg-prev:hover:not(.disabled) {
+  color: #111827;
+}
+
+html.dark .lg-next,
+html.dark .lg-prev {
+  background-color: rgba(0, 0, 0, 0.45);
+  color: #d1d5db;
+}
+
+html.dark .lg-next:hover:not(.disabled),
+html.dark .lg-prev:hover:not(.disabled) {
+  color: #fff;
+}
+
 /* Long KaTeX display equations would otherwise stretch wider than the article
    column on mobile and trigger horizontal page scroll. Confine the overflow to
    the equation's own container so only the formula scrolls sideways, not the
