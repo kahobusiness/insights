@@ -12,24 +12,28 @@ export const metadata = {
 
 <Callout type="info" emoji="🧭">
 
-This is the first post in the "Understanding LLMs from First Principles" series. Across the series, we will use first principles thinking to analyze the most fundamental mechanisms of LLMs, then gradually expand toward everything built on top of them: tokens, token prediction, why models appear to develop intelligence, pretraining, post-training, tool use, agents, engineering systems, and commercialization. I hope the series gives you something useful.
+This is the first post in the "Understanding LLMs from First Principles" series, and it also serves as the guidepost for the whole series. In 2026, large language models (LLMs) have already become part of our work and everyday life. Across this series, we will use first principles thinking in plain language to analyze the most fundamental mechanisms of LLMs, then gradually expand toward everything built on top of them: tokens, token prediction, why models appear to develop "intelligence," pretraining, post-training, tool use, agents, engineering systems, and commercialization. I hope the series gives you something useful.
 
 </Callout>
 
+Have you ever wondered how large language models can seem to "answer anything," and appear fluent at everything from poetry and prose to strategy, code, and creative work?
+
+With the same curiosity, this series will use first principles thinking to look inside the mechanisms behind the model.
+
 Before we talk about the "first principle" of large language models, let's begin with what "first principles" means.
 
-There are many ways to explain "first principles." The version I find most useful goes back to Aristotle: return to the most basic conditions of a thing, break it into elements that are hard to reduce further, then reason upward from those elements toward the path that can achieve the goal.
+There are many ways to explain "first principles." The version I find most useful goes back to Aristotle. Roughly speaking:
+
+> Return to the most basic conditions of a thing, break it into elements that are hard to reduce further, then reason upward from those elements toward the path that can achieve the goal.
 
 That sentence contains two core questions:
 
 1. **What is the goal?** Why do we need large language models at all?
 2. **What are the key elements?** What are the most basic elements for realizing a large language model?
 
-On the goal: my view is that, along this technical path, humanity is pursuing artificial general intelligence (AGI): enabling machines to understand and handle open-ended human tasks, and in doing so, further improve productivity. LLMs are one viable path toward AGI, at least on the language side.
+On the goal: my view is that, in order to further liberate productivity, humanity is pursuing artificial general intelligence (AGI): enabling machines to understand and handle open-ended human tasks. LLMs are an important branch of that pursuit, at least on the language side.
 
-If the goal were merely "make machines memorize knowledge," then search engines, knowledge bases, databases, and expert systems would all be reasonable tools. We would not necessarily need large language models.
-
-The problem changes if the goal is "make machines understand and handle open-ended human language tasks": answering questions, explaining concepts, writing code, summarizing articles, translating sentences, planning steps, and continuing a conversation based on context.
+"Make machines understand and handle open-ended human tasks": answering questions, explaining concepts, writing code, summarizing articles, translating sentences, planning steps, and continuing a conversation based on context.
 
 These tasks look different on the surface, but they share the same underlying form: they can all be written as a language input, and we expect the system to produce a suitable language output. That gives us a computable goal:
 
@@ -37,15 +41,15 @@ These tasks look different on the surface, but they share the same underlying fo
 Given the context so far, generate the most suitable continuation.
 ```
 
-This is why we need large language models. They are not built to store one fixed answer, but to learn the regularities of how context leads to what comes next in human language — so they can take on more general tasks and answer questions they have never seen before.
+This is the key trait that distinguishes large language models from search engines, knowledge bases, databases, and expert systems. They are not built to store one fixed answer, but to learn the regularities of how context leads to what comes next in human language — so they can take on more general tasks and answer questions they have never seen before.
 
-This scenario also reveals one of the most critical elements of a large language model: its core mechanism — autoregressive generation.
+At the same time, this reveals the most critical element of a large language model: its core mechanism — autoregressive generation.
 
 So why autoregressive generation?
 
 Because language naturally unfolds in sequence. When people write, speak, code, or derive a formula, they keep adding new content after what already exists. If a model can repeatedly do one thing well -- predict the next token from the current context -- it can unfold an open-ended problem into a complete answer step by step.
 
-So in this series, "first principles" is not a mysterious slogan. It is a chain of reasoning:
+From here, "first principles" in this series is not a mysterious slogan. It is a chain of reasoning we can derive:
 
 ```text
 Goal: handle open-ended human language tasks
@@ -55,9 +59,11 @@ Training: learn next-token prediction from massive text corpora
 Result: compress the distribution of language, indirectly learning structures behind language
 ```
 
-With that goal in mind, "predicting the next token" is not an isolated trick. It is the lowest-level path by which large language models handle open-ended language tasks.
+Next, we will look inside the core mechanism of large language models and gradually unpack the technical principles behind it.
 
----
+## 1. The Model Sees Tokens, Not Sentences
+
+![A continuous stream of content split into token tiles of different sizes before entering a model input layer](/llm-first-principles/01-next-token-prediction/tokens.png)
 
 Let's start from the way we use these models today. You are probably already used to asking things like:
 
@@ -68,23 +74,20 @@ Help me think through a product plan.
 Make this sentence sound more natural.
 ```
 
-Given how capable today's models are, their answers can feel smooth and confident, almost as if they really "know" the answer. They feel like knowledgeable friends, and also like assistants who are always on call.
+When you send these prompts to a model, the answer often feels fluent and natural, almost as if it really "knows" the answer.
 
-But if we remove the chat interface and look only at the lowest-level mechanism, what the model does is surprisingly simple:
+If you watch closely, though, you will notice that the model's answer appears word by word. Technically, this is called streaming output.
 
-```text
-Given everything it has seen so far, predict which token is most likely to come next.
-```
+This word-by-word output is not only a product feature. It also corresponds to the model's basic mechanism:
 
-At its core, the model is doing "token prediction." This is the central mechanism of a large language model.
+> At its core, the model is doing "token prediction."
 
 For now, you can think of a token as the smallest chunk of content the model treats as a unit. It may be a character, a word, a punctuation mark, a code symbol, or some other piece of text.
 
-So a large language model does not first think up a complete answer in its head and then type it out. Instead, it keeps repeating this loop:
+After the user enters a prompt, a large language model does not first think up a complete answer in its head and then type it out. Instead, it keeps repeating this loop:
 
 ```text
-Look at what has already been seen;
-predict the next small chunk;
+Given what has already been seen, predict the next small chunk;
 append that chunk to the context;
 predict the next chunk again;
 repeat until the answer is finished.
@@ -96,13 +99,7 @@ That intuition is not wrong, but it is not enough. Ordinary autocomplete fills i
 
 Once this prediction task is scaled far enough, it is no longer just guessing words. In order to predict well, the model is forced to learn the structure behind language: facts, grammar, logic, style, code patterns, the relationship between questions and answers, and the common ways humans complete tasks.
 
-That is the core idea of this post:
-
-> An LLM is not "looking up answers." It compresses the distribution of human knowledge by learning to predict the next token.
-
-## 1. The Model Sees Tokens, Not Sentences
-
-![A continuous stream of content split into token tiles of different sizes before entering a model input layer](/llm-first-principles/01-next-token-prediction/tokens.png)
+Now let's shrink the scale back down and return to "tokens."
 
 A token is the basic unit a model uses to process the world.
 
@@ -114,13 +111,17 @@ I ate an apple today
 
 we naturally understand it as one complete meaning: someone ate an apple today.
 
-But the model does not directly receive that complete meaning. Before the sentence enters the model, it is first split into a sequence of tokens. It might look like this:
+But the model does not directly receive that complete meaning. Before the sentence enters the model, it is first split into a sequence of tokens. It might look like this, with each word becoming one token:
 
 ```text
 I / ate / an / apple / today
 ```
 
-Or, depending on the tokenizer, some words may be split into smaller pieces.
+Or it may be finer, with some words split into smaller subword pieces:
+
+```text
+I / ate / an / app / le / today
+```
 
 The exact split depends on the tokenizer, the component that turns text into tokens.
 
