@@ -8,6 +8,7 @@ export default {
   '07-inference-and-generation': '07: Inference and Generation',
   '08-hallucination': '08: The Nature of Hallucination',
   '09-rag': '09: RAG',
+  '10-tool-use': '10: Tool Use',
   'series-outline': {
     display: 'hidden',
     title: 'Series Outline: Understanding LLMs from First Principles'

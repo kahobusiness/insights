@@ -8,6 +8,7 @@ export default {
   '07-inference-and-generation': '07：推理与生成',
   '08-hallucination': '08：幻觉的本质',
   '09-rag': '09：RAG',
+  '10-tool-use': '10：Tool Use',
   'series-outline': {
     display: 'hidden',
     title: '系列大纲：用第一性原理理解大模型'
