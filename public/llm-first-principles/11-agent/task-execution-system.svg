@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1672" height="941" viewBox="0 0 1672 941" role="img" aria-labelledby="title desc">
+  <title id="title">From answering to task progress</title>
+  <desc id="desc">A chatbot answers once, while an agent updates task state through repeated actions.</desc>
+  <rect width="1672" height="941" fill="#f8fafc"/>
+  <text x="120" y="132" font-size="54" font-weight="800" fill="#172033" font-family="ui-sans-serif,system-ui">From answer generation to task progress</text>
+  <text x="123" y="184" font-size="25" font-weight="500" fill="#64748b" font-family="ui-sans-serif,system-ui">A chatbot optimizes the next response. An agent moves a stateful task forward.</text>
+  <rect x="120" y="294" width="610" height="404" rx="8" fill="#fff" stroke="#cbd5e1" stroke-width="3"/>
+  <text x="425" y="354" text-anchor="middle" font-size="34" font-weight="800" fill="#334155" font-family="ui-sans-serif,system-ui">Chatbot</text>
+  <rect x="220" y="430" width="190" height="74" rx="8" fill="#e0f2fe" stroke="#7dd3fc" stroke-width="3"/>
+  <text x="315" y="477" text-anchor="middle" font-size="24" font-weight="700" fill="#075985" font-family="ui-sans-serif,system-ui">Question</text>
+  <path d="M418 467 H518" stroke="#64748b" stroke-width="5" marker-end="url(#a)" fill="none"/>
+  <rect x="534" y="430" width="190" height="74" rx="8" fill="#ede9fe" stroke="#c4b5fd" stroke-width="3"/>
+  <text x="629" y="477" text-anchor="middle" font-size="24" font-weight="700" fill="#5b21b6" font-family="ui-sans-serif,system-ui">Answer</text>
+  <text x="425" y="598" text-anchor="middle" font-size="24" fill="#64748b" font-family="ui-sans-serif,system-ui">One generation. Little durable state.</text>
+  <rect x="942" y="294" width="610" height="404" rx="8" fill="#fff" stroke="#cbd5e1" stroke-width="3"/>
+  <text x="1247" y="354" text-anchor="middle" font-size="34" font-weight="800" fill="#334155" font-family="ui-sans-serif,system-ui">Agent</text>
+  <circle cx="1247" cy="508" r="92" fill="#4f46e5"/>
+  <text x="1247" y="502" text-anchor="middle" font-size="30" font-weight="800" fill="#fff" font-family="ui-sans-serif,system-ui">Task</text>
+  <text x="1247" y="536" text-anchor="middle" font-size="22" fill="#dbeafe" font-family="ui-sans-serif,system-ui">state</text>
+  <rect x="1012" y="430" width="172" height="66" rx="8" fill="#dcfce7" stroke="#86efac" stroke-width="3"/>
+  <text x="1098" y="472" text-anchor="middle" font-size="22" font-weight="700" fill="#166534" font-family="ui-sans-serif,system-ui">Act</text>
+  <rect x="1310" y="430" width="172" height="66" rx="8" fill="#fef3c7" stroke="#fcd34d" stroke-width="3"/>
+  <text x="1396" y="472" text-anchor="middle" font-size="22" font-weight="700" fill="#92400e" font-family="ui-sans-serif,system-ui">Observe</text>
+  <rect x="1161" y="626" width="172" height="66" rx="8" fill="#fee2e2" stroke="#fca5a5" stroke-width="3"/>
+  <text x="1247" y="668" text-anchor="middle" font-size="22" font-weight="700" fill="#991b1b" font-family="ui-sans-serif,system-ui">Update</text>
+  <path d="M1182 464 C1168 484 1162 502 1162 522" stroke="#64748b" stroke-width="5" marker-end="url(#a)" fill="none"/>
+  <path d="M1332 522 C1332 502 1326 484 1312 464" stroke="#64748b" stroke-width="5" marker-end="url(#a)" fill="none"/>
+  <path d="M1247 600 V622" stroke="#64748b" stroke-width="5" marker-end="url(#a)" fill="none"/>
+  <path d="M1162 660 C1060 634 1012 560 1048 496" stroke="#64748b" stroke-width="5" marker-end="url(#a)" fill="none"/>
+  <defs><marker id="a" markerWidth="13" markerHeight="13" refX="10" refY="6.5" orient="auto"><path d="M2 2 L11 6.5 L2 11 Z" fill="#64748b"/></marker></defs>
+</svg>

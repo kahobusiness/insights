@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1672" height="941" viewBox="0 0 1672 941" role="img" aria-labelledby="title desc">
+  <title id="title">Agent summary</title>
+  <desc id="desc">Goal, state, plan, tools, observations, evaluation, stop conditions, and human confirmation form an agent.</desc>
+  <rect width="1672" height="941" fill="#f8fafc"/>
+  <text x="120" y="132" font-size="54" font-weight="800" fill="#172033" font-family="ui-sans-serif,system-ui">Agent = controlled continuous action</text>
+  <text x="123" y="184" font-size="25" fill="#64748b" font-family="ui-sans-serif,system-ui">The system keeps acting only while goals, evidence, risk, and stop rules allow it.</text>
+  <defs><marker id="a" markerWidth="13" markerHeight="13" refX="10" refY="6.5" orient="auto"><path d="M2 2 L11 6.5 L2 11 Z" fill="#64748b"/></marker></defs>
+  <circle cx="836" cy="512" r="118" fill="#4f46e5"/>
+  <text x="836" y="505" text-anchor="middle" font-size="36" font-weight="800" fill="#fff" font-family="ui-sans-serif,system-ui">Agent</text>
+  <text x="836" y="548" text-anchor="middle" font-size="22" fill="#dbeafe" font-family="ui-sans-serif,system-ui">task loop</text>
+  <g font-family="ui-sans-serif,system-ui" font-size="24" font-weight="800">
+    <rect x="198" y="286" width="250" height="82" rx="8" fill="#dbeafe" stroke="#60a5fa" stroke-width="3"/><text x="323" y="337" text-anchor="middle" fill="#1d4ed8">Goal</text>
+    <rect x="522" y="246" width="250" height="82" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="3"/><text x="647" y="297" text-anchor="middle" fill="#5b21b6">Plan</text>
+    <rect x="900" y="246" width="250" height="82" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="3"/><text x="1025" y="297" text-anchor="middle" fill="#166534">Tools</text>
+    <rect x="1224" y="286" width="250" height="82" rx="8" fill="#fef3c7" stroke="#fcd34d" stroke-width="3"/><text x="1349" y="337" text-anchor="middle" fill="#92400e">Observation</text>
+    <rect x="1224" y="648" width="250" height="82" rx="8" fill="#fee2e2" stroke="#fca5a5" stroke-width="3"/><text x="1349" y="699" text-anchor="middle" fill="#991b1b">Stop</text>
+    <rect x="900" y="690" width="250" height="82" rx="8" fill="#fff7ed" stroke="#fdba74" stroke-width="3"/><text x="1025" y="741" text-anchor="middle" fill="#9a3412">Confirm</text>
+    <rect x="522" y="690" width="250" height="82" rx="8" fill="#cffafe" stroke="#22d3ee" stroke-width="3"/><text x="647" y="741" text-anchor="middle" fill="#0e7490">Evaluate</text>
+    <rect x="198" y="648" width="250" height="82" rx="8" fill="#fff" stroke="#cbd5e1" stroke-width="3"/><text x="323" y="699" text-anchor="middle" fill="#334155">State</text>
+  </g>
+  <path d="M448 327 C576 340 660 384 733 443" stroke="#64748b" stroke-width="5" marker-end="url(#a)" fill="none"/>
+  <path d="M772 287 C818 326 826 366 826 390" stroke="#64748b" stroke-width="5" marker-end="url(#a)" fill="none"/>
+  <path d="M900 287 C858 326 846 366 846 390" stroke="#64748b" stroke-width="5" marker-end="url(#a)" fill="none"/>
+  <path d="M1224 327 C1096 340 1012 384 939 443" stroke="#64748b" stroke-width="5" marker-end="url(#a)" fill="none"/>
+  <path d="M1224 689 C1096 676 1012 632 939 573" stroke="#64748b" stroke-width="5" marker-end="url(#a)" fill="none"/>
+  <path d="M900 731 C858 692 846 652 846 628" stroke="#64748b" stroke-width="5" marker-end="url(#a)" fill="none"/>
+  <path d="M772 731 C818 692 826 652 826 628" stroke="#64748b" stroke-width="5" marker-end="url(#a)" fill="none"/>
+  <path d="M448 689 C576 676 660 632 733 573" stroke="#64748b" stroke-width="5" marker-end="url(#a)" fill="none"/>
+</svg>
