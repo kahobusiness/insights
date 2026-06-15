@@ -9,6 +9,7 @@ export default {
   '08-hallucination': '08: The Nature of Hallucination',
   '09-rag': '09: RAG',
   '10-tool-use': '10: Tool Use',
+  '11-agent': '11: Agents',
   'series-outline': {
     display: 'hidden',
     title: 'Series Outline: Understanding LLMs from First Principles'

@@ -1,0 +1,817 @@
+import { Callout } from 'nextra/components'
+
+export const metadata = {
+  title: 'Agents: From Chatbots to Task-Execution Systems',
+  description: 'A first-principles explanation of agents through goals, state, planning, tool loops, memory, failure recovery, stop conditions, and engineering boundaries.',
+  publishedAt: '2026-06-15'
+}
+
+# 11: Agents: From Chatbots to Task-Execution Systems
+
+![A model forms an agent task-execution system around a goal, plan, tools, observations, state, and stop conditions](/llm-first-principles/11-agent/cover.png)
+
+<Callout type="info" emoji="🧭">
+
+This is the eleventh post in the "Understanding LLMs from First Principles" series. [Post 10: Tool Use](./10-tool-use.mdx) explained how models move from "can say" to "can do" through structured tool calls. Now we take one step further: if a task is not a single tool call, but requires decomposing a goal, acting repeatedly, observing results, revising the plan, and eventually delivering an outcome, how does a system move from chatbot to agent?
+
+</Callout>
+
+In the Tool Use post, we reached one central point:
+
+```text
+The model understands intent and emits tool calls.
+The runtime validates, executes, and returns observations.
+Tool results enter context and affect the model's next generation.
+```
+
+This already gives the model a way to act.
+
+But many real tasks are not completed in one step.
+
+A user may not simply ask:
+
+```text
+Check this order.
+```
+
+They are more likely to ask:
+
+```text
+Help me understand why this customer requested a refund.
+Look at the conversation history and order status.
+If the request matches policy, draft a handling plan.
+Create a support ticket if needed.
+Then give me a conclusion I can confirm.
+```
+
+The key in this kind of task is not only "which tool should be called."
+
+The key is:
+
+```text
+What is the goal?
+How far has the task progressed?
+What should happen next?
+Did the last step succeed?
+How should the system adjust after failure?
+When should it stop?
+Which actions require human confirmation?
+```
+
+That is the problem agents solve.
+
+> An agent is not a model that chats better. It is an execution system that keeps moving a task toward a goal.
+
+Once this sentence is clear, agents become much less mysterious.
+
+## 1. Agents Solve Task Progress, Not Just Answers
+
+![A chatbot stays at single-turn answering, while an agent keeps moving task state toward a goal](/llm-first-principles/11-agent/task-execution-system.png)
+
+The default pattern of a normal chatbot is:
+
+```text
+User asks
+↓
+Model answers
+↓
+The conversation ends, or waits for the next turn
+```
+
+Even if the answer is well written, it is still one act of language generation.
+
+Tool Use adds one more step:
+
+```text
+User makes a request
+↓
+The model calls a tool
+↓
+The tool returns a result
+↓
+The model answers
+```
+
+An agent looks more like:
+
+```text
+The user gives a goal
+↓
+The system decomposes the task
+↓
+The model chooses the next action
+↓
+A tool executes and returns an observation
+↓
+The system updates state
+↓
+The model continues from the new state
+↓
+This repeats until completion, or until human intervention is needed
+```
+
+Suppose the user asks:
+
+```text
+Prepare a competitive research brief for me.
+```
+
+A chatbot may directly generate a plausible report.
+
+A tool-calling system may search a few web pages and summarize them.
+
+An agent system should behave more like a junior researcher:
+
+```text
+Clarify the research goal.
+List the competitors.
+Search public material.
+Extract features, pricing, positioning, and user feedback.
+Notice missing information.
+Fill the important gaps.
+Organize a comparison table.
+Write conclusions.
+Attach sources.
+Mark which judgments remain uncertain.
+```
+
+The point is not how beautiful the model's first answer is.
+
+The point is whether the system can maintain task state and move the task step by step toward completion.
+
+## 2. Chatbots, Workflows, and Agents
+
+![Chatbots, fixed workflows, and agents compared across flexibility and control](/llm-first-principles/11-agent/chatbot-workflow-agent.png)
+
+The easiest way to understand agents is to separate them from two nearby ideas:
+
+```text
+Chatbots
+Fixed workflows
+Agents
+```
+
+A chatbot centers on answering.
+
+It usually does not maintain complex state or actively plan future steps.
+
+A fixed workflow centers on process.
+
+It predefines the steps:
+
+```text
+Check the order.
+Then check policy.
+Then evaluate eligibility.
+Then generate the reply.
+Then wait for confirmation.
+```
+
+This is stable and easy to audit.
+
+But it does not handle open-ended tasks well.
+
+If the order is abnormal, the material is missing, or the user's goal changes, the fixed workflow either explodes into many branches or falls back to a human.
+
+An agent sits between these two.
+
+It is not unconstrained conversation.
+
+It is also not a fully hardcoded process.
+
+More precisely:
+
+```text
+An agent gives the model a goal, state, tools, and constraints,
+then lets the model choose the next action inside controlled boundaries.
+```
+
+So the advantage of an agent is not that it is magical.
+
+Its advantage is:
+
+```text
+When the goal is clear but the path is not fully known,
+it can choose steps dynamically and keep progressing.
+```
+
+That is why agents fit tasks such as research, debugging, code editing, data analysis, operations handling, and customer-support collaboration.
+
+These tasks have goals, but the path changes as observations arrive.
+
+## 3. First Principles: Goal, State, Action, Observation, Stop
+
+![The minimal agent system consists of a goal, state, actions, observations, and stop conditions](/llm-first-principles/11-agent/agent-loop.png)
+
+From first principles, an agent needs at least five elements:
+
+```text
+Goal
+State
+Action
+Observation
+Stop condition
+```
+
+The goal answers:
+
+```text
+What should the system ultimately complete?
+```
+
+The state answers:
+
+```text
+What is known now?
+What has already been done?
+What remains?
+What constraints exist?
+```
+
+The action answers:
+
+```text
+What can be done next?
+Which tool should be called?
+What should be asked from the user?
+What intermediate artifact should be generated?
+Should the system wait for an external result?
+```
+
+The observation answers:
+
+```text
+What new fact did the outside world return after the action?
+Did it succeed?
+Did it fail?
+Does the result change the plan?
+```
+
+The stop condition answers:
+
+```text
+When can the system deliver?
+When must it pause?
+When should it ask for user confirmation?
+When should it abandon the current path?
+```
+
+Together, these elements make an agent concrete.
+
+It can be written as a loop:
+
+```text
+Read the goal and current state
+↓
+Choose the next action
+↓
+Execute the action
+↓
+Read the observation
+↓
+Update state
+↓
+Decide whether to stop
+↓
+If not stopped, continue
+```
+
+So an agent is not "a model that suddenly has autonomy."
+
+It is:
+
+> A controlled loop in which the model repeatedly chooses the next action from goal and state until the task is complete or a stop condition fires.
+
+## 4. A Plan Is a Temporary Hypothesis, Not an Answer
+
+![An agent revises its plan with observations, treating the plan as a temporary hypothesis rather than a fixed answer](/llm-first-principles/11-agent/plan-as-hypothesis.png)
+
+Many agent systems first ask the model to generate a plan.
+
+For example:
+
+```text
+1. Read the request
+2. Search relevant sources
+3. Build a comparison table
+4. Write conclusions
+5. Check for gaps
+```
+
+Plans matter.
+
+But a plan should not be treated as an immutable answer.
+
+Agents operate in an open world.
+
+After taking action, the system may discover:
+
+```text
+The material does not exist.
+The API failed.
+Permission is missing.
+The user's input is ambiguous.
+The first judgment was wrong.
+The task goal needs clarification.
+The cost is higher than expected.
+An action is too risky.
+```
+
+If the plan is frozen, the agent will keep moving down the wrong path.
+
+A better way to see a plan is:
+
+```text
+A plan is a working hypothesis under current information.
+```
+
+It gives the system direction.
+
+But every new observation may justify revising it.
+
+For example, a code-editing agent may first plan:
+
+```text
+1. Find the file that triggers the error
+2. Update the type definition
+3. Run tests
+4. Commit the change
+```
+
+But after tests fail, it should revise the plan:
+
+```text
+The type issue is only surface-level.
+The real problem is the data structure.
+Inspect the upstream input path.
+Do not commit yet.
+```
+
+This is the difference between an agent and a fixed workflow.
+
+A fixed workflow emphasizes executing predefined steps.
+
+An agent emphasizes keeping the goal stable while revising the path from observations.
+
+## 5. State and Memory: Context Is Not All Memory
+
+![An agent manages short-term context, long-term memory, task state, and external records as separate layers](/llm-first-principles/11-agent/state-memory.png)
+
+An agent must manage state.
+
+Otherwise it cannot answer:
+
+```text
+Where am I in the task?
+Which facts have been confirmed?
+Which tools have already been called?
+Which attempts failed?
+Why is the next step justified?
+```
+
+Many people equate state with the context window.
+
+That is not enough.
+
+The context window is the model's current workspace.
+
+But an agent task can be long.
+
+It may span many turns, many tool calls, many files, many hours, or even many days.
+
+If all state is stuffed into context, several problems appear:
+
+```text
+Context grows and cost rises.
+Old information gets truncated.
+Irrelevant details distract the model.
+Key decisions lack structured records.
+State disappears after a system restart.
+```
+
+A safer design is layered memory:
+
+```text
+Short-term context: information needed for the current step
+Task state: goal, todo list, completed work, blockers, decisions
+Long-term memory: user preferences, project background, historical experience
+External records: databases, files, tickets, logs, version control
+```
+
+The model should not carry everything in its own prompt.
+
+The system should store important state structurally and bring relevant parts back into context when needed.
+
+This is similar to the idea behind RAG:
+
+```text
+Do not permanently stuff all information into the model.
+Retrieve the relevant information when it matters.
+```
+
+For agents, memory is not mystical.
+
+Memory is state management.
+
+## 6. Tools and Environment: The Agent's Action Space
+
+![An agent accesses files, browsers, databases, code runners, and business systems through controlled tools](/llm-first-principles/11-agent/tool-environment.png)
+
+What an agent can do depends on the environment it can access.
+
+A model that only chats has one action space:
+
+```text
+Generate text.
+```
+
+A model with tools has a larger action space:
+
+```text
+Search.
+Read files.
+Write files.
+Run code.
+Query databases.
+Call business APIs.
+Open a browser.
+Send notifications.
+Create tickets.
+```
+
+But a larger action space also means higher risk.
+
+So an agent system should not only ask:
+
+```text
+Is the model smart enough?
+```
+
+It also needs to ask:
+
+```text
+What can it see?
+What can it change?
+Which actions require confirmation?
+Which tools are read-only?
+Which environments are sandboxed?
+Which logs must be kept?
+Which operations can be rolled back?
+Which operations should never run automatically?
+```
+
+From a product perspective, an agent's capability boundary is mainly determined by three things:
+
+```text
+Model capability
+Tool set
+Environment permissions
+```
+
+A stronger model can understand more complex goals.
+
+A more complete tool set lets it actually act.
+
+Clearer permissions let it act safely.
+
+Without any one of these, the agent deforms.
+
+A model without tools can only speak.
+
+Tools without a model are just automation scripts.
+
+A model plus tools without permission boundaries becomes uncontrolled risk.
+
+## 7. Observation and Recovery: Failure Is Part of the Loop
+
+![An agent turns failure observations into diagnosis, retry, path changes, or requests for human confirmation](/llm-first-principles/11-agent/failure-recovery.png)
+
+Agents will fail.
+
+This is not a design defect. It is normal for open-ended tasks.
+
+Failure can come from many places:
+
+```text
+The model misunderstood the goal.
+The wrong tool was selected.
+The arguments were wrong.
+The external system timed out.
+Permission was missing.
+Data was absent.
+Tests failed.
+The user's goal changed.
+The environment state contradicted the assumption.
+```
+
+An immature agent hides failure inside pleasant prose:
+
+```text
+I have completed it.
+```
+
+A mature agent treats failure as an observation:
+
+```text
+This step failed.
+Why did it fail?
+Can it be retried?
+Should another tool be used?
+Is more information needed?
+Did it already produce side effects?
+Should the system pause and ask a human?
+```
+
+In a code-editing task, a failing test is not the end.
+
+It is input for the next reasoning step:
+
+```text
+Which test failed?
+What is the error message?
+Is it a type issue, logic issue, or environment issue?
+Did the last edit introduce a new problem?
+Should the agent continue editing or roll part of the change back?
+```
+
+That is why agent observations must be structured.
+
+If a tool only returns:
+
+```text
+It failed.
+```
+
+The model has little to reason from.
+
+If the tool returns:
+
+```json
+{
+  "status": "error",
+  "step": "run_tests",
+  "code": "ASSERTION_FAILED",
+  "message": "Expected 3 items but received 2.",
+  "file": "cart.test.ts",
+  "suggested_next_step": "Inspect cart item filtering logic."
+}
+```
+
+The model can more easily turn failure into the next action.
+
+An agent's reliability depends heavily on how it handles failure.
+
+## 8. Stop Conditions: Stopping Matters as Much as Acting
+
+![The agent loop is constrained by completion, confirmation, budget, risk, and blocker stop conditions](/llm-first-principles/11-agent/control-boundary.png)
+
+If a system can keep acting, "when should it stop?" becomes a core question.
+
+An agent without stop conditions is dangerous.
+
+It may:
+
+```text
+Loop forever.
+Call tools repeatedly.
+Attempt actions outside its authority.
+Consume too many tokens and too much cost.
+Invent a completion state when uncertain.
+Continue low-confidence actions.
+Move forward when human confirmation is required.
+```
+
+So an agent needs several kinds of stop conditions.
+
+The first kind is completion:
+
+```text
+Is the goal satisfied?
+Was the deliverable produced?
+Did checks pass?
+Did the user confirm?
+```
+
+The second kind is risk:
+
+```text
+Will the action create irreversible side effects?
+Does it involve payment, deletion, sending, committing, or approval?
+Does it require explicit user confirmation?
+Does it hit a permission or compliance boundary?
+```
+
+The third kind is resources:
+
+```text
+Maximum steps
+Maximum tool calls
+Maximum elapsed time
+Maximum cost
+```
+
+The fourth kind is blockers:
+
+```text
+Required information is missing.
+Permission is insufficient.
+An external system is unavailable.
+Retries have failed repeatedly.
+Evidence is not strong enough to continue.
+```
+
+A good agent does not only know how to continue.
+
+It must know how to stop, ask, and hand off.
+
+In a product, this usually means:
+
+```text
+Show the current plan.
+Show completed steps.
+Explain blockers.
+Offer possible next steps.
+Wait for user confirmation before high-risk actions.
+Escalate to a human when confidence is low.
+```
+
+Action needs boundaries.
+
+Stop conditions are part of those boundaries.
+
+## 9. Product and Engineering: An Agent Is a System, Not a Prompt
+
+![Model, tools, state, permissions, evaluation, observability, and human confirmation form the agent product engineering stack](/llm-first-principles/11-agent/product-engineering.png)
+
+A common mistake in agent products is:
+
+```text
+Write a very long prompt and let the model plan and execute by itself.
+```
+
+Prompts matter.
+
+But an agent cannot rely on prompts alone.
+
+A usable agent system usually needs these layers:
+
+```text
+Task intake: user goal, scope, constraints, confirmation mode
+State management: plan, progress, todo, completed work, blockers, decisions
+Tool runtime: schema, permission, argument validation, execution, error returns
+Environment isolation: sandbox, read-only mode, write confirmation, rollback
+Observation logs: every call, result, latency, cost, and user feedback
+Evaluation: whether the task was completed, steps were reasonable, risks were controlled
+Human intervention: confirmation, approval, takeover, correction, final acceptance
+```
+
+This explains why agent products are hard for reasons beyond model quality.
+
+The hard part is end-to-end system design.
+
+A coding agent does not only need to write code.
+
+It must also:
+
+```text
+Understand the repository structure.
+Find relevant files.
+Avoid overwriting user changes.
+Run tests.
+Explain failures.
+Control the edit scope.
+Pause when uncertain.
+Tell the user what changed.
+```
+
+A support agent does not only need to speak politely.
+
+It must also:
+
+```text
+Read user identity.
+Query orders.
+Match policy.
+Protect privacy.
+Separate suggestions from official actions.
+Confirm high-risk operations.
+Write the handling process back to a ticket.
+```
+
+So the engineering problem of agents is:
+
+```text
+How can a probabilistic model participate in deterministic business processes
+while preserving control, explainability, and responsibility boundaries?
+```
+
+## 10. Levels of Agent Autonomy
+
+Not every agent should have the same autonomy.
+
+We can roughly divide autonomy into levels:
+
+| Level | Capability | Risk | Suitable Uses |
+| --- | --- | --- | --- |
+| L0 | Answers only, no action | Low | Q&A, explanation, drafting |
+| L1 | Reads tools to support answers | Lower | RAG, search, data lookup |
+| L2 | Suggests actions and waits for confirmation | Medium | Email drafts, ticket suggestions, recommendations |
+| L3 | Automatically executes low-risk actions | Medium-high | File organization, test runs, status sync |
+| L4 | Continues tasks inside defined boundaries | High | Code editing, data analysis, operations handling |
+| L5 | Handles long-running goals autonomously | Very high | Complex work requiring audit, approval, and human fallback |
+
+This is not an industry standard.
+
+It is only a reminder:
+
+```text
+Agent autonomy should match task risk.
+```
+
+Many products do not need to start with a fully autonomous agent.
+
+A more realistic path is:
+
+```text
+First let the model read.
+Then let it suggest.
+Then let it write after confirmation.
+Then let it automatically execute low-risk steps.
+Only then extend toward long-horizon tasks.
+```
+
+That path is usually more reliable than chasing full autonomy from day one.
+
+## 11. Common Misunderstandings
+
+![Common misunderstandings about agent autonomy, tool calls, planning, memory, and human confirmation being filtered out](/llm-first-principles/11-agent/agent-misconceptions.png)
+
+**Misunderstanding 1: An agent is just a chatbot with tool calling.**
+
+Not quite. Tool calling is one foundation of agents, but agents also need goals, state, plans, observations, stop conditions, and an execution loop.
+
+**Misunderstanding 2: More autonomy is always better.**
+
+Not necessarily. Autonomy must match risk. Reading can be more automatic; writing, high-risk actions, and irreversible actions need confirmation, permission, and audit.
+
+**Misunderstanding 3: If the model is strong enough, workflows are unnecessary.**
+
+No. The stronger the model, the more important boundaries become. Workflows, permissions, tool schemas, and evaluation do not replace the model; they make its capability usable.
+
+**Misunderstanding 4: Once a plan is written, the agent should follow it exactly.**
+
+No. A plan is a temporary hypothesis under current information. When observations change, the plan should be revised.
+
+**Misunderstanding 5: Agent memory means putting all history into context.**
+
+No. Memory should be layered: short-term context, task state, long-term preferences, and external records are different things.
+
+**Misunderstanding 6: If an agent completes tasks, users do not need to see the process.**
+
+Also no. The higher the risk, the more the product needs to show plans, key actions, results, cost, failure reasons, and confirmation points.
+
+## 12. Summary: An Agent Is a Controlled Loop for Continuous Action
+
+![Goal, state, plan, tools, observations, evaluation, stop conditions, and human confirmation form the agent summary](/llm-first-principles/11-agent/agent-summary.png)
+
+We can now compress agents into a few lines:
+
+```text
+Chatbots mainly generate answers.
+Tool Use connects language intent to external systems.
+Agents create a continuous execution loop among goals, state, tools, and constraints.
+Plans are temporary hypotheses, not fixed answers.
+Observations update state and change the next action.
+Memory is structured state management.
+Stop conditions and human confirmation define the safety boundary.
+The hard part of agent products is end-to-end system design, not only prompting.
+```
+
+Compressed into one sentence:
+
+> An agent lets a model repeatedly choose actions, read observations, update state, and eventually deliver, pause, or ask for human confirmation inside controlled boundaries.
+
+After understanding agents, modern AI products look less like "answering products" and more like "task products."
+
+The model understands, generates, and chooses the next step.
+
+RAG brings in external evidence.
+
+Tool Use connects external actions.
+
+The agent organizes these abilities into a system that keeps moving a task forward.
+
+But the stronger the task-execution system becomes, the more engineering matters:
+
+```text
+Inference cost
+Context management
+KV cache
+Concurrent execution
+Tool latency
+State persistence
+Observability
+Deployment architecture
+```
+
+Next, we will move into LLM engineering: why cost, latency, and deployment systems become decisive when every answer is generated token by token.
