@@ -162,6 +162,8 @@ not externally verifying every generated sentence.
 
 This is not a small distinction.
 
+It also means that even cleaner and more correct training data does not remove hallucination entirely. As long as the objective is to generate likely text from context rather than verify every factual claim externally, there can be a statistical floor: low-evidence, high-similarity, high-format-pressure cases will still fail sometimes.
+
 If the user asks:
 
 ```text
@@ -303,6 +305,8 @@ This does not mean the model has a subjective belief.
 More precisely, it is generating high-probability text in the style of a confident answer.
 
 If training and alignment emphasize being helpful to the user, but the system does not also make the model reliably abstain or express uncertainty when evidence is missing, hallucination risk rises.
+
+RLHF and other alignment methods often make answers more helpful and fluent. But if the reward signal favors confident, complete, user-pleasing responses without equally rewarding calibration and evidence boundaries, the model may become better at answering without becoming equally better at saying "I don't know."
 
 This is why modern AI products need to separate two abilities:
 

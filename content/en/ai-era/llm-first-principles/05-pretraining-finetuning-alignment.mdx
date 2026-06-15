@@ -239,14 +239,18 @@ clear about uncertainty when uncertain.
 
 That is what alignment tries to shape.
 
-Common methods include RLHF, RLAIF, and DPO. Their algorithms differ, but the first-principles structure is similar:
+Common methods include RLHF, RLAIF, and DPO. They share one first-principles idea: turn "which answer is better" into a training signal that updates the model.
+
+At a high level, alignment often follows this chain:
 
 ```text
-Ask the model to generate multiple candidate responses.
-Use humans, AI judges, or preference data to decide which is better.
+Collect or construct candidate responses for the same prompt.
+Use humans, AI judges, or existing preference data to decide which is better.
 Turn that preference signal into a training signal.
 Make the model more likely to generate preferred responses in the future.
 ```
+
+The algorithmic details matter, though. RLHF and RLAIF usually train a reward model, then use reinforcement learning to optimize the policy. DPO directly optimizes the model on pairwise preference data; it does not require online candidate generation or a separately trained reward model.
 
 You can think of it this way: the model already knows many ways to speak. Alignment does not teach language from scratch. It adjusts the output distribution.
 

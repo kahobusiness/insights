@@ -95,11 +95,13 @@ RAG can help it read documents, but inventory is not a static document.
 
 Inventory is a changing business system.
 
-So the model needs a tool:
+So the model needs a tool.
+
+Real APIs do not all use the same field names. Anthropic `tool_use` blocks use `name` / `input`; OpenAI Chat Completions use `function.name` / `function.arguments`; OpenAI Responses API uses `name` / `arguments`. To keep the mechanism readable, the examples below use a simplified `name` + `arguments` shape.
 
 ```json
 {
-  "tool": "get_inventory",
+  "name": "get_inventory",
   "arguments": {
     "sku": "SKU-1024"
   }
@@ -272,7 +274,7 @@ The model may first call a calendar lookup tool:
 
 ```json
 {
-  "tool": "list_calendar_events",
+  "name": "list_calendar_events",
   "arguments": {
     "date": "2026-06-13",
     "start": "15:00",
@@ -309,7 +311,7 @@ So it may call another tool:
 
 ```json
 {
-  "tool": "find_free_slots",
+  "name": "find_free_slots",
   "arguments": {
     "date": "2026-06-13",
     "duration_minutes": 30,
@@ -340,12 +342,20 @@ At minimum, a tool should be described like this:
 {
   "name": "create_calendar_event",
   "description": "Create a calendar event after the user confirms the time and participants.",
-  "parameters": {
-    "title": "string",
-    "start_time": "datetime",
-    "end_time": "datetime",
-    "participants": "string[]",
-    "location": "string | null"
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "title": { "type": "string" },
+      "start_time": { "type": "string", "format": "date-time" },
+      "end_time": { "type": "string", "format": "date-time" },
+      "participants": {
+        "type": "array",
+        "items": { "type": "string", "format": "email" }
+      },
+      "location": { "type": ["string", "null"] }
+    },
+    "required": ["title", "start_time", "end_time", "participants"],
+    "additionalProperties": false
   }
 }
 ```
@@ -383,7 +393,7 @@ With a schema, it can emit:
 
 ```json
 {
-  "tool": "create_calendar_event",
+  "name": "create_calendar_event",
   "arguments": {
     "title": "Meeting with Alice",
     "start_time": "2026-06-13T15:00:00+08:00",
@@ -490,7 +500,7 @@ Read the current file.
 
 Read tools mainly change what the model can see.
 
-They are usually lower risk, though they still require permission and privacy controls.
+They are usually lower risk, but they are not risk-free. Tool results enter the model context. The model may treat returned content as fact, or even mistake malicious instructions inside retrieved content for instructions it should follow. Read tools still need permission, privacy, prompt-injection, and data-exfiltration controls.
 
 The second group is write tools:
 
@@ -608,7 +618,8 @@ It can also be failure:
   "status": "error",
   "code": "TIME_CONFLICT",
   "message": "The selected time overlaps with another event.",
-  "suggested_next_step": "Find another available slot."
+  "retryable": true,
+  "safe_alternatives": ["find_free_slots"]
 }
 ```
 

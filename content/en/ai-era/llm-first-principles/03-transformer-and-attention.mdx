@@ -169,7 +169,7 @@ I / like / red / apples
 
 In self-attention, when the model updates the vector at a position, it looks for useful reference points inside the same context.
 
-For a generative language model, it usually cannot peek at future tokens. To predict the next token, the current position mainly references tokens that have already appeared.
+For a generative language model, it usually cannot peek at future tokens. Training and generation use a causal mask, so each position can only reference itself and positions that have already appeared before it.
 
 So each position is closer to asking:
 
@@ -223,14 +223,14 @@ Value: If someone references me, what content can I provide?
 
 When a token vector enters Attention, the model transforms it into three vectors: Q, K, and V.
 
-Then the model compares the current token's Query with the Keys of other tokens. A higher match means the current token should reference that position more strongly. After those weights are computed, the model uses them to take a weighted sum of the other tokens' Values.
+Then the model compares the current token's Query with the Keys of other tokens. A higher match means the current token should reference that position more strongly. These raw matching scores pass through a softmax, turning them into attention weights that add up to 1. After those weights are computed, the model uses them to take a weighted sum of the other tokens' Values.
 
 In a simplified flow:
 
 ```text
 current token's Query
 → compare it with every token's Key
-→ get attention weights
+→ apply softmax to get normalized attention weights
 → use those weights to combine every token's Value
 → produce new information for the current token
 ```
