@@ -905,103 +905,9 @@ goal → inspect the workspace → change the system → verify the result
 
 It is not only retrieval. It is retrieval + action + verification.
 
-### 2. Strengths of Grep-Style Search
+Its strengths are freshness, precision, light infrastructure, and debuggability. Its limits are that it depends on search terms, can drown in noise, is weaker for conceptual retrieval, and depends heavily on the agent's ability to propose hypotheses, narrow scope, read context, and verify results. For example, if the user asks why a page sometimes jumps back after login, the code may not contain the phrase "jump back"; the model must translate the symptom into search directions such as `redirect`, `session`, `auth`, `middleware`, `token refresh`, or `router.push`.
 
-This pattern has several clear strengths.
-
-First, it is very fresh.
-
-It reads the current workspace directly and does not depend on whether an offline index has been updated.
-
-Uncommitted changes, newly generated files, and freshly failed test output can immediately enter the model's context.
-
-Second, it is precise.
-
-In code, many problems have literal clues:
-
-```text
-a function name;
-an error message;
-an API route;
-a CSS class;
-a field name.
-```
-
-In those cases, exact search can be more reliable than semantic similarity.
-
-Third, it needs lighter infrastructure.
-
-There may be no separate vector database, embedding pipeline, chunk update strategy, or index-permission synchronization.
-
-A local filesystem plus command-line tools can already go far.
-
-Fourth, it is debuggable.
-
-Which files grep matched, which lines read opened, which commands bash ran, and what the results were can all be recorded.
-
-When the outcome is wrong, you can often replay the investigation:
-
-```text
-Was the search keyword wrong?
-Was a file missed?
-Was the test output misunderstood?
-Was an edge case not verified?
-```
-
-### 3. Weaknesses of Grep-Style Search
-
-But it has real limits.
-
-First, it depends on search terms.
-
-If the user question and the relevant file share no literal clue, grep can miss it.
-
-For example, the user asks:
-
-```text
-Why does the page sometimes jump back after login?
-```
-
-The code may not contain the phrase "jump back."
-
-The model has to translate the symptom into possible search directions:
-
-```text
-redirect;
-session;
-auth;
-middleware;
-token refresh;
-router.push;
-```
-
-If the hypothesis is wrong, the search can drift.
-
-Second, it can drown in noise.
-
-A common function name may appear hundreds of times.
-
-Without a good search strategy, the model may read many irrelevant files.
-
-Third, it is weaker for conceptual retrieval.
-
-If you ask:
-
-```text
-Where does this project implement permission isolation?
-```
-
-The relevant code may be spread across middleware, database schema, API guards, frontend routing, and tests. It may not literally say "permission isolation."
-
-Pure grep may be worse than semantic retrieval or a structured code index.
-
-Fourth, the result depends on the quality of the agent loop.
-
-The model must propose search hypotheses, narrow scope, read context, abandon wrong paths, and verify results.
-
-If the agent loop is poor, grep only gives it more raw text. It does not automatically become understanding.
-
-### 4. RAG vs Grep-Style Search
+### 2. RAG vs Grep-Style Search
 
 We can compare the two directly:
 
@@ -1009,7 +915,7 @@ We can compare the two directly:
 | --- | --- | --- |
 | Typical material | Docs, knowledge bases, FAQs, reports, policies | Codebases, logs, test output, config, git diff |
 | Preparation | Clean, chunk, and index ahead of time | Search the live workspace on demand |
-| Retrieval method | Keywords, vectors, hybrid recall, reranking | Glob, grep, read, shell, LSP |
+| Retrieval method | Keywords, vectors, hybrid recall, reranking | Glob, grep, read, shell, LSP (Language Server Protocol) |
 | Strength | Semantic recall, citations, permissions, Q&A | Freshness, precision, light infrastructure, executable verification |
 | Risk | Stale index, bad chunking, reranking failure, inaccurate citations | Bad search terms, noisy results, weak conceptual retrieval |
 | Best question shape | "What does this material say?" | "Why is this system behaving this way now?" |
@@ -1036,7 +942,7 @@ test and build feedback;
 the agent's iterative investigation.
 ```
 
-### 5. Complete Systems Often Mix Both
+### 3. Complete Systems Often Mix Both
 
 Real systems can combine them.
 
@@ -1058,45 +964,11 @@ At that point, the model is no longer simply "asking a knowledge base."
 
 It is investigating inside a tool environment.
 
-The higher-level abstraction is not RAG. It is:
+The higher-level abstraction is not RAG. It is how the model obtains the external evidence required by the current task. RAG is one way to obtain evidence. Grep-style tool search is another. Database queries, API calls, browser actions, code execution, and human confirmation are evidence sources too.
 
-```text
-how the model obtains the external evidence required by the current task.
-```
+When designing a product, the real questions are: what evidence does this task need, where does it live, does it need pre-indexing, does it need live reading, does it need permission filtering, does it need executable verification, and does the result need to be cited back to the user? If the evidence is stable documentation, RAG fits well. If it is the current workspace and runtime result, grep-style tool search is more natural. If it is structured data, query a database. If it is the result of an external action, call a tool.
 
-RAG is one way to obtain evidence.
-
-Grep-style tool search is another.
-
-Database queries, API calls, browser actions, code execution, and human confirmation are evidence sources too.
-
-When designing a product, the real questions are:
-
-```text
-What evidence does this task need?
-Where does that evidence live?
-Does it need pre-indexing?
-Does it need live reading?
-Does it need permission filtering?
-Does it need executable verification?
-Does the result need to be cited back to the user?
-```
-
-If the evidence is stable documentation, RAG fits well.
-
-If the evidence is the current workspace and runtime result, grep-style tool search is more natural.
-
-If the evidence is structured data, query a database.
-
-If the evidence is the result of an external action, call a tool.
-
-This is why the next post after RAG should be Tool Use.
-
-RAG connects the model to material.
-
-Grep-style search connects the model to the workspace.
-
-Tool calling connects the model to real actions.
+This is why the next post after RAG should be Tool Use. RAG connects the model to material, grep-style search connects it to the workspace, and tool calling connects it to real actions.
 
 ## 12. Product and Engineering: RAG Is About Trustworthy Delivery
 

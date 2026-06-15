@@ -409,6 +409,8 @@ Do not permanently stuff all information into the model.
 Retrieve the relevant information when it matters.
 ```
 
+Long tasks usually need two context-recovery patterns at the same time. The first is retrieval-based: store history, files, tickets, and logs in external systems, then retrieve the relevant pieces by keyword or semantic search when needed. The second is compression-based: summarize completed work into a shorter task brief, decision log, and current state so the context does not grow without bound.
+
 For agents, memory is not mystical.
 
 Memory is state management.
@@ -460,17 +462,20 @@ Which operations can be rolled back?
 Which operations should never run automatically?
 ```
 
-From a product perspective, an agent's capability boundary is mainly determined by three things:
+From a product perspective, an agent's capability boundary is mainly determined by four things:
 
 ```text
 Model capability
 Tool set
+State and memory
 Environment permissions
 ```
 
 A stronger model can understand more complex goals.
 
 A more complete tool set lets it actually act.
+
+Clearer state lets it stay coherent across steps.
 
 Clearer permissions let it act safely.
 
@@ -553,7 +558,8 @@ If the tool returns:
   "code": "ASSERTION_FAILED",
   "message": "Expected 3 items but received 2.",
   "file": "cart.test.ts",
-  "suggested_next_step": "Inspect cart item filtering logic."
+  "failed_assertion": "Expected cart to contain 3 items after filtering, but received 2.",
+  "related_test": "cart item filtering"
 }
 ```
 

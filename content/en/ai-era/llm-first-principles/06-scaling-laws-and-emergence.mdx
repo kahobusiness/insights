@@ -134,10 +134,10 @@ In the context of large language models, scaling laws describe an empirical patt
 
 ```text
 When parameter count, training data, and compute increase in a reasonable balance,
-training and prediction error tend to decrease along relatively smooth and predictable curves.
+prediction error on held-out data tends to decrease along relatively smooth and predictable curves.
 ```
 
-The key metric here is loss.
+The key metric here is not how well the model memorizes the training set. It is prediction error on held-out data, often discussed as test loss.
 
 Roughly speaking, loss measures:
 
@@ -145,7 +145,9 @@ Roughly speaking, loss measures:
 How far the model's next-token prediction is from the actual next token.
 ```
 
-Lower loss means the model assigns higher probability to the true next token. It also means the model is modeling the language distribution more closely.
+Lower test loss means the model assigns higher probability to the true next token even on samples it was not directly trained on. It also means the model is modeling the language distribution with better generalization.
+
+Power-law improvement also implies diminishing returns. Scaling still helps, but each further unit of loss reduction usually requires more data, parameters, and compute than the previous one.
 
 But loss is not the same thing as the user's direct feeling of intelligence.
 
@@ -338,6 +340,8 @@ But the model quality behind those outcomes may have been changing relatively sm
 So we can summarize it this way:
 
 > Emergence is not magic. It is continuous model improvement crossing the usability threshold of a discrete task.
+
+There is still an active debate about emergence. Some work treats certain capabilities as real phase-transition-like jumps. Other work argues that many apparent jumps come from discrete metrics and measurement choices. This post uses the more conservative frame: underlying capability often improves continuously, while discrete tasks, thresholds, and benchmarks create the feeling that the model "suddenly" learned something.
 
 ## 5. Why Scale Changes Capability Boundaries
 

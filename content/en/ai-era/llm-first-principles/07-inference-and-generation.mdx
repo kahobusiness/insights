@@ -222,6 +222,8 @@ Temperature does not make the model better at reasoning. It does not add new kno
 
 It changes the shape of the probability distribution before sampling.
 
+More technically, the model first computes logits, then passes them through softmax to get probabilities. Temperature scales the logits before softmax: `T=1` mostly preserves the original distribution, `T<1` makes it sharper, and `T>1` makes it flatter. In product settings, common values are roughly between 0 and 2. As T approaches 0, sampling behaves more like greedy decoding.
+
 You can think of it as a randomness knob:
 
 ```text
@@ -268,7 +270,7 @@ The intuition of top-p is:
 Sample only from the smallest set of candidate tokens whose cumulative probability reaches a threshold.
 ```
 
-For example, if top-p = 0.9, the system sorts tokens from high to low probability, then keeps only the candidates whose cumulative probability reaches 90%. This filters out the long tail of very unlikely and often unstable tokens.
+For example, if top-p = 0.9, the system sorts tokens from high to low probability, then keeps the candidates whose cumulative probability reaches 90%, usually including the token that first pushes the cumulative total over the threshold. This filters out the long tail of very unlikely and often unstable tokens.
 
 If temperature changes the shape of the distribution, top-p decides how large the candidate pool is.
 
@@ -465,96 +467,9 @@ Production systems usually do not rely entirely on the model to stop itself.
 
 The more reliable approach is to design stopping and output constraints together.
 
-### 1. Parsers: turn output into something machines can check
+For structured output, production systems often combine parsers, schemas, and validators: parse the JSON or tool call, check fields, types, enums, permissions, business rules, and cited evidence. Parse failures can trigger retries, but if the original task lacks enough information, the system should allow nulls, error codes, or requests for missing input instead of pressuring the model to invent fields. The full mechanism of tool calling appears in [Post 10: Tool Use](./10-tool-use.mdx). For now, the important point is that stopping is not just waiting for the model to finish; the product layer needs ways to check, reject, retry, and degrade gracefully.
 
-If the output must be structured JSON, it is not enough for it to "look like JSON."
-
-The system should actually parse it:
-
-```text
-Can it be parsed?
-Are required fields present?
-Are field types correct?
-Are array lengths valid?
-Is there extra explanatory text outside the JSON object?
-```
-
-If parsing fails, the usual strategy is not to show broken JSON to the user. The system can retry automatically.
-
-During retry, it can feed the parse error back to the model:
-
-```text
-The previous output was not valid JSON. Error: missing closing brace.
-Return only JSON that matches the schema. Do not include explanation.
-```
-
-But retry needs care. If the original task lacks enough information, the system should not pressure the model to invent fields. It should allow null values, error codes, or a request for more user input.
-
-### 2. Function Calling and Schema: narrow the output space
-
-If the model needs to call a tool, it is better not to let it freely write:
-
-```text
-I want to look up order 12345.
-```
-
-Instead, ask it to produce a schema-constrained call:
-
-```text
-{
-  "name": "getOrder",
-  "arguments": {
-    "orderId": "12345"
-  }
-}
-```
-
-The value of function calling is that the model does not directly execute the action. It first turns intent into structured parameters.
-
-The system can then check whether those parameters match the tool signature, business rules, and permission model.
-
-Schema can constrain:
-
-```text
-which fields are required;
-what type each field has;
-which enum values are allowed;
-which fields are optional;
-how nested structures are shaped.
-```
-
-Schema does not guarantee the model is always correct, but it greatly reduces the space of free-form generation.
-
-### 3. Validators: check business correctness beyond syntax
-
-A parser only tells you whether the structure is valid.
-
-A validator checks things like:
-
-```text
-Does the order ID actually exist?
-Does the amount match the database?
-Is the date within the allowed range?
-Does the user have permission to perform this action?
-Is the generated SQL read-only?
-Do the cited sources actually support the conclusion?
-```
-
-These checks should usually be handled by deterministic programs, databases, rule engines, or tool results, not by asking the model "are you sure?"
-
-Models are good at generating explanations. They are not reliable final auditors of their own output.
-
-In high-risk workflows, validators should also decide what happens after failure:
-
-```text
-retry automatically;
-fall back to human confirmation;
-return a request for missing information;
-refuse execution;
-show a draft instead of submitting directly.
-```
-
-### 4. max_tokens and Post-processing: length control is not just truncation
+### 1. max_tokens and Post-processing: length control is not just truncation
 
 If an answer must stay within a fixed length, max_tokens is a hard ceiling.
 
@@ -574,7 +489,7 @@ send answers that violate length limits back to the model for rewriting.
 
 Post-processing is not about secretly changing the model's answer. It is about shaping generated output into something the product can consume reliably.
 
-### 5. Stop Sequences: brake at explicit boundaries
+### 2. Stop Sequences: brake at explicit boundaries
 
 Some tasks can use stop sequences.
 

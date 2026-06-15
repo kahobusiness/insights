@@ -47,7 +47,7 @@ Neither view is precise enough.
 
 A better first-principles explanation is:
 
-> A language model does not learn language because it wants to understand the world. It learns part of the world's structure because that structure is necessary for predicting language.
+> A language model does not learn language because it wants to understand the world. In a sufficiently diverse and complex text distribution, learning part of the world's structure often becomes the most efficient way to reduce prediction error.
 
 In other words, next-token prediction is the surface task. What gets compressed into the model's parameters is the structure needed to perform that task well.
 
@@ -103,7 +103,7 @@ A chat log compresses intention, emotion, and relationship.
 
 So language is not an isolated symbol game. It is the world's projection into text space.
 
-If a model is trained to predict this text at large scale, across many domains, it cannot get very far by learning only surface word frequency. To reduce prediction error, it has to learn stable structures behind the text.
+If a model is trained to predict this text at large scale, across many domains, it cannot get very far by learning only surface word frequency. When surface shortcuts stop being enough, reducing prediction error pushes it toward stable structures behind the text.
 
 ## 2. Predicting Language Forces the Model to Learn Hidden Variables
 
@@ -163,7 +163,7 @@ That is what hidden variables mean.
 
 The text does not say them directly, but predicting the text requires inferring the state behind the text.
 
-From this angle, next-token prediction is not a shallow task. On the surface, it predicts words. Under the surface, it pressures the model to build compressed representations of the world, tasks, and human expression.
+From this angle, next-token prediction is not a shallow task. On the surface, it predicts words. When the data is broad enough, the context varies enough, and local word pairings are no longer sufficient, it pressures the model to build compressed representations of the world, tasks, and human expression.
 
 ## 3. Compression Is Not Memorization. It Is Reusable Structure
 
@@ -226,6 +226,8 @@ Translate "Paris is the capital of France" into Chinese.
 That is the power of compression.
 
 Good compression does not preserve every sample exactly. It finds the shared structure between samples.
+
+Once the model compresses reusable structure, it can do more than repeat old samples. It can transfer the same relationships into new expressions it has not seen before. This is the bridge from compression to generalization.
 
 A large part of LLM capability comes from reusing these structures.
 
@@ -454,7 +456,7 @@ No. The model mainly learns textual traces of the world. It can model descriptio
 
 **Misunderstanding 4: If we keep adding data, intelligence will grow without limit.**
 
-Not necessarily. Data scale matters, but so do data quality, architecture, training method, inference method, alignment, tool feedback, and evaluation. Compression has limits, and wrong compression can amplify bias.
+Not necessarily. Compression by itself does not guarantee intelligence. What matters is whether the compressed data actually encodes stable, reusable structure about the world. Data scale matters, but so do data quality, architecture, training method, inference method, alignment, tool feedback, and evaluation. Compression has limits, and wrong compression can amplify bias.
 
 ## 9. Summary: Why Predicting Text Can Become Intelligence
 

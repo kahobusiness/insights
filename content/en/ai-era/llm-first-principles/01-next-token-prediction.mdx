@@ -43,19 +43,19 @@ Given the context so far, generate the most suitable continuation.
 
 This is the key trait that distinguishes large language models from search engines, knowledge bases, databases, and expert systems. They are not built to store one fixed answer, but to learn the regularities of how context leads to what comes next in human language — so they can take on more general tasks and answer questions they have never seen before.
 
-At the same time, this reveals the most critical element of a large language model: its core mechanism — autoregressive generation.
+At the same time, this reveals the most critical training target of a large language model: given context, learn the conditional probability distribution of the next token.
 
-So why autoregressive generation?
+Why is that enough to matter?
 
-Because language naturally unfolds in sequence. When people write, speak, code, or derive a formula, they keep adding new content after what already exists. If a model can repeatedly do one thing well -- predict the next token from the current context -- it can unfold an open-ended problem into a complete answer step by step.
+Because language naturally unfolds in sequence. When people write, speak, code, or derive a formula, they keep adding new content after what already exists. During training, the model learns what the next token could be under the current context and how likely each option is. During generation, the system samples from that distribution token by token, unfolding an open-ended problem into a complete answer step by step.
 
 From here, "first principles" in this series is not a mysterious slogan. It is a chain of reasoning we can derive:
 
 ```text
 Goal: handle open-ended human language tasks
 Path: unify those tasks as "given context, generate continuation"
-Mechanism: generate token by token through an autoregressive process
-Training: learn next-token prediction from massive text corpora
+Training: learn next-token probability distributions from massive text corpora
+Generation: sample and unfold token by token through an autoregressive process
 Result: compress the distribution of language, indirectly learning structures behind language
 ```
 
@@ -80,15 +80,16 @@ If you watch closely, though, you will notice that the model's answer appears wo
 
 This word-by-word output is not only a product feature. It also corresponds to the model's basic mechanism:
 
-> At its core, the model is doing "token prediction."
+> At its core, the model is trained to predict token probabilities.
 
 For now, you can think of a token as the smallest chunk of content the model treats as a unit. It may be a character, a word, a punctuation mark, a code symbol, or some other piece of text.
 
 After the user enters a prompt, a large language model does not first think up a complete answer in its head and then type it out. Instead, it keeps repeating this loop:
 
 ```text
-Given what has already been seen, predict the next small chunk;
-append that chunk to the context;
+Given what has already been seen, compute a probability distribution over the next small chunk;
+select one candidate chunk;
+append it to the context;
 predict the next chunk again;
 repeat until the answer is finished.
 ```
@@ -156,7 +157,13 @@ Because tokens are the model's basic unit for processing the world.
 
 Once we understand tokens, we can look at training.
 
-What is a large language model actually trained to do? Its most basic training task is called next-token prediction: predict the next token.
+What is a large language model actually trained to do? Its most basic training task is called next-token prediction.
+
+More precisely, it is not trying to predict one uniquely correct answer. It is learning:
+
+```text
+Given the current context, what is the probability distribution over the next token?
+```
 
 For example, if the model sees:
 

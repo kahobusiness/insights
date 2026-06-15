@@ -405,6 +405,8 @@ Agent 必须管理状态。
 而是在需要时把相关信息取出来。
 ```
 
+长任务里通常会同时用两种方式回收上下文。第一种是检索式：把历史记录、文件、工单、日志存在外部系统里，需要时再按关键词或语义检索回来。第二种是压缩式：把已经完成的长过程总结成更短的任务摘要、决策记录和当前状态，避免上下文无限膨胀。
+
 对 Agent 来说，记忆不是神秘能力。
 
 记忆是状态管理。
@@ -456,17 +458,20 @@ Agent 能做什么，取决于它能访问什么环境。
 哪些操作永远不能自动执行？
 ```
 
-从产品角度看，Agent 的能力边界主要由三件事决定：
+从产品角度看，Agent 的能力边界主要由四件事决定：
 
 ```text
 模型能力；
 工具集合；
+状态记忆；
 环境权限。
 ```
 
 模型越强，越能理解复杂目标。
 
 工具越完整，越能真正行动。
+
+状态越清晰，越能跨步骤保持连续性。
 
 权限越清晰，越能安全落地。
 
@@ -549,7 +554,8 @@ Agent 一定会遇到失败。
   "code": "ASSERTION_FAILED",
   "message": "Expected 3 items but received 2.",
   "file": "cart.test.ts",
-  "suggested_next_step": "Inspect cart item filtering logic."
+  "failed_assertion": "Expected cart to contain 3 items after filtering, but received 2.",
+  "related_test": "cart item filtering"
 }
 ```
 

@@ -57,7 +57,7 @@ I like apples
 
 These sentences are close in meaning to a human reader, but inside a computer they start as different strings of characters. The model cannot directly process those strings, and it does not magically know how the characters relate to one another.
 
-To make these characters computable, we need to turn them into numbers. Let's start with the simplest possible idea: give each character or word fragment its own independent id, such as `我=01`, `喜=02`, `欢=03`, `I=06`, `like=07`, and `す=16`.
+To make these characters computable, we need to turn them into numbers. Let's start with the simplest possible idea: give each character or word fragment its own independent id, such as `我=01`, `喜=02`, `欢=03`, `苹=04`, and `果=05`.
 
 If we push this idea just a little further, we quickly run into problems:
 
@@ -79,7 +79,7 @@ So how is a sentence split into tokens?
 
 ![A continuous abstract text stream split by a tokenizer into token cards of different widths](/llm-first-principles/02-token-and-embedding/tokenization.png)
 
-The component that cuts text into tokens is called a tokenizer.
+The component that cuts text into tokens is called a tokenizer. Despite the Chinese translation sometimes sounding like "word segmentation," this is not the same as dictionary-based Chinese word segmentation such as jieba. Modern tokenizers often work with bytes, characters, or subword fragments. They may merge adjacent Chinese characters into one token, or split text more finely depending on the vocabulary.
 
 Roughly speaking, it does this:
 
@@ -181,7 +181,7 @@ There is one easy misunderstanding here:
 A token id itself has no semantic meaning.
 ```
 
-The id 9174 is not "larger" or "more fruit-like" than 103. It is just an index in the vocabulary. An ID number can point to a person, but the number itself does not contain that person's personality, history, or relationships.
+The id 9174 is not "larger" or "more fruit-like" than 103. It is just an index in the vocabulary. A hotel room number can point to a room, but the number itself does not contain the furniture, guest, or relationships inside that room.
 
 If the model treated token ids as ordinary numbers, it would learn strange things. The fact that 9174 and 9175 are numerically close does not mean their meanings are close.
 
