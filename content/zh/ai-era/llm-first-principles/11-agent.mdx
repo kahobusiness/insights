@@ -3,12 +3,12 @@ import { Callout } from 'nextra/components'
 export const metadata = {
   title: 'Agent：从聊天机器人到任务执行系统',
   description: '从目标、状态、计划、工具循环、记忆、失败恢复、停止条件和工程边界出发，解释大模型 Agent 如何从对话走向持续任务执行。',
-  publishedAt: '2026-06-14'
+  publishedAt: '2026-06-15'
 }
 
 # 11：Agent：从聊天机器人到任务执行系统
 
-![大模型围绕目标、计划、工具、观察、状态和停止条件组成 Agent 任务执行系统的封面图](/llm-first-principles/11-agent/cover.svg)
+![大模型围绕目标、计划、工具、观察、状态和停止条件组成 Agent 任务执行系统的封面图](/llm-first-principles/11-agent/cover.png)
 
 <Callout type="info" emoji="🧭">
 
@@ -66,7 +66,7 @@ export const metadata = {
 
 ## 一、Agent 要解决的不是「回答问题」，而是「推进任务」
 
-![聊天机器人停留在单轮回答，Agent 则围绕目标持续推进任务状态的示意图](/llm-first-principles/11-agent/task-execution-system.svg)
+![聊天机器人停留在单轮回答，Agent 则围绕目标持续推进任务状态的示意图](/llm-first-principles/11-agent/task-execution-system.png)
 
 普通聊天机器人的默认模式是：
 
@@ -137,7 +137,7 @@ Agent 系统则应该更像一个初级研究员：
 
 ## 二、聊天机器人、工作流和 Agent 有什么区别
 
-![聊天机器人、固定工作流和 Agent 在灵活性与控制性之间的位置对比图](/llm-first-principles/11-agent/chatbot-workflow-agent.svg)
+![聊天机器人、固定工作流和 Agent 在灵活性与控制性之间的位置对比图](/llm-first-principles/11-agent/chatbot-workflow-agent.png)
 
 理解 Agent，最好先把它和两个相近概念区分开：
 
@@ -197,7 +197,7 @@ Agent 把目标、状态、工具和约束交给模型，
 
 ## 三、Agent 的第一性原理：目标、状态、行动、观察、停止
 
-![Agent 由目标、状态、行动、观察和停止条件构成的最小系统图](/llm-first-principles/11-agent/agent-loop.svg)
+![Agent 由目标、状态、行动、观察和停止条件构成的最小系统图](/llm-first-principles/11-agent/agent-loop.png)
 
 从第一性原理看，一个 Agent 至少需要五个要素：
 
@@ -280,7 +280,7 @@ Agent 把目标、状态、工具和约束交给模型，
 
 ## 四、计划不是答案，而是临时假设
 
-![Agent 的计划被不断用观察结果修正，像临时假设而不是固定答案的示意图](/llm-first-principles/11-agent/plan-as-hypothesis.svg)
+![Agent 的计划被不断用观察结果修正，像临时假设而不是固定答案的示意图](/llm-first-principles/11-agent/plan-as-hypothesis.png)
 
 很多 Agent 系统都会先让模型生成计划。
 
@@ -351,7 +351,7 @@ Agent 强调在目标不变的情况下，基于观察修正路径。
 
 ## 五、状态和记忆：上下文不是全部记忆
 
-![Agent 将短期上下文、长期记忆、任务状态和外部记录分层管理的示意图](/llm-first-principles/11-agent/state-memory.svg)
+![Agent 将短期上下文、长期记忆、任务状态和外部记录分层管理的示意图](/llm-first-principles/11-agent/state-memory.png)
 
 Agent 必须管理状态。
 
@@ -411,7 +411,7 @@ Agent 必须管理状态。
 
 ## 六、工具和环境：Agent 的行动空间
 
-![Agent 通过受控工具访问文件、浏览器、数据库、代码运行器和业务系统的行动空间示意图](/llm-first-principles/11-agent/tool-environment.svg)
+![Agent 通过受控工具访问文件、浏览器、数据库、代码运行器和业务系统的行动空间示意图](/llm-first-principles/11-agent/tool-environment.png)
 
 Agent 能做什么，取决于它能访问什么环境。
 
@@ -480,7 +480,7 @@ Agent 能做什么，取决于它能访问什么环境。
 
 ## 七、观察和纠错：失败不是异常，而是循环的一部分
 
-![Agent 将失败观察转化为诊断、重试、换路或请求人工确认的恢复流程图](/llm-first-principles/11-agent/failure-recovery.svg)
+![Agent 将失败观察转化为诊断、重试、换路或请求人工确认的恢复流程图](/llm-first-principles/11-agent/failure-recovery.png)
 
 Agent 一定会遇到失败。
 
@@ -559,7 +559,7 @@ Agent 的可靠性，很大程度上取决于它如何处理失败。
 
 ## 八、停止条件：能停下来和能行动一样重要
 
-![Agent 的行动循环受到完成、确认、预算、风险和阻塞等停止条件约束的示意图](/llm-first-principles/11-agent/control-boundary.svg)
+![Agent 的行动循环受到完成、确认、预算、风险和阻塞等停止条件约束的示意图](/llm-first-principles/11-agent/control-boundary.png)
 
 如果一个系统会持续行动，那么「什么时候停」就是核心问题。
 
@@ -637,7 +637,7 @@ Agent 的可靠性，很大程度上取决于它如何处理失败。
 
 ## 九、产品和工程：Agent 是系统，不是提示词
 
-![模型、工具、状态、权限、评估、可观测性和人类确认共同构成 Agent 产品工程栈的示意图](/llm-first-principles/11-agent/product-engineering.svg)
+![模型、工具、状态、权限、评估、可观测性和人类确认共同构成 Agent 产品工程栈的示意图](/llm-first-principles/11-agent/product-engineering.png)
 
 做 Agent 产品时，最常见的误区是：
 
@@ -740,7 +740,7 @@ Agent 的自主权应该和风险匹配。
 
 ## 十一、常见误解
 
-![关于 Agent 自主性、工具调用、计划、记忆和人类确认的常见误解被过滤的示意图](/llm-first-principles/11-agent/agent-misconceptions.svg)
+![关于 Agent 自主性、工具调用、计划、记忆和人类确认的常见误解被过滤的示意图](/llm-first-principles/11-agent/agent-misconceptions.png)
 
 **误解一：Agent 就是加了工具调用的聊天机器人。**
 
@@ -768,7 +768,7 @@ Agent 的自主权应该和风险匹配。
 
 ## 十二、总结：Agent 是持续行动的受控循环
 
-![目标、状态、计划、工具、观察、评估、停止条件和人类确认共同组成 Agent 总结图](/llm-first-principles/11-agent/agent-summary.svg)
+![目标、状态、计划、工具、观察、评估、停止条件和人类确认共同组成 Agent 总结图](/llm-first-principles/11-agent/agent-summary.png)
 
 现在我们可以把 Agent 压缩成几句话：
 

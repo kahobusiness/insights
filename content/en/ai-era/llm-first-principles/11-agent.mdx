@@ -3,12 +3,12 @@ import { Callout } from 'nextra/components'
 export const metadata = {
   title: 'Agents: From Chatbots to Task-Execution Systems',
   description: 'A first-principles explanation of agents through goals, state, planning, tool loops, memory, failure recovery, stop conditions, and engineering boundaries.',
-  publishedAt: '2026-06-14'
+  publishedAt: '2026-06-15'
 }
 
 # 11: Agents: From Chatbots to Task-Execution Systems
 
-![A model forms an agent task-execution system around a goal, plan, tools, observations, state, and stop conditions](/llm-first-principles/11-agent/cover.svg)
+![A model forms an agent task-execution system around a goal, plan, tools, observations, state, and stop conditions](/llm-first-principles/11-agent/cover.png)
 
 <Callout type="info" emoji="🧭">
 
@@ -66,7 +66,7 @@ Once this sentence is clear, agents become much less mysterious.
 
 ## 1. Agents Solve Task Progress, Not Just Answers
 
-![A chatbot stays at single-turn answering, while an agent keeps moving task state toward a goal](/llm-first-principles/11-agent/task-execution-system.svg)
+![A chatbot stays at single-turn answering, while an agent keeps moving task state toward a goal](/llm-first-principles/11-agent/task-execution-system.png)
 
 The default pattern of a normal chatbot is:
 
@@ -141,7 +141,7 @@ The point is whether the system can maintain task state and move the task step b
 
 ## 2. Chatbots, Workflows, and Agents
 
-![Chatbots, fixed workflows, and agents compared across flexibility and control](/llm-first-principles/11-agent/chatbot-workflow-agent.svg)
+![Chatbots, fixed workflows, and agents compared across flexibility and control](/llm-first-principles/11-agent/chatbot-workflow-agent.png)
 
 The easiest way to understand agents is to separate them from two nearby ideas:
 
@@ -201,7 +201,7 @@ These tasks have goals, but the path changes as observations arrive.
 
 ## 3. First Principles: Goal, State, Action, Observation, Stop
 
-![The minimal agent system consists of a goal, state, actions, observations, and stop conditions](/llm-first-principles/11-agent/agent-loop.svg)
+![The minimal agent system consists of a goal, state, actions, observations, and stop conditions](/llm-first-principles/11-agent/agent-loop.png)
 
 From first principles, an agent needs at least five elements:
 
@@ -284,7 +284,7 @@ It is:
 
 ## 4. A Plan Is a Temporary Hypothesis, Not an Answer
 
-![An agent revises its plan with observations, treating the plan as a temporary hypothesis rather than a fixed answer](/llm-first-principles/11-agent/plan-as-hypothesis.svg)
+![An agent revises its plan with observations, treating the plan as a temporary hypothesis rather than a fixed answer](/llm-first-principles/11-agent/plan-as-hypothesis.png)
 
 Many agent systems first ask the model to generate a plan.
 
@@ -355,7 +355,7 @@ An agent emphasizes keeping the goal stable while revising the path from observa
 
 ## 5. State and Memory: Context Is Not All Memory
 
-![An agent manages short-term context, long-term memory, task state, and external records as separate layers](/llm-first-principles/11-agent/state-memory.svg)
+![An agent manages short-term context, long-term memory, task state, and external records as separate layers](/llm-first-principles/11-agent/state-memory.png)
 
 An agent must manage state.
 
@@ -415,7 +415,7 @@ Memory is state management.
 
 ## 6. Tools and Environment: The Agent's Action Space
 
-![An agent accesses files, browsers, databases, code runners, and business systems through controlled tools](/llm-first-principles/11-agent/tool-environment.svg)
+![An agent accesses files, browsers, databases, code runners, and business systems through controlled tools](/llm-first-principles/11-agent/tool-environment.png)
 
 What an agent can do depends on the environment it can access.
 
@@ -484,7 +484,7 @@ A model plus tools without permission boundaries becomes uncontrolled risk.
 
 ## 7. Observation and Recovery: Failure Is Part of the Loop
 
-![An agent turns failure observations into diagnosis, retry, path changes, or requests for human confirmation](/llm-first-principles/11-agent/failure-recovery.svg)
+![An agent turns failure observations into diagnosis, retry, path changes, or requests for human confirmation](/llm-first-principles/11-agent/failure-recovery.png)
 
 Agents will fail.
 
@@ -563,7 +563,7 @@ An agent's reliability depends heavily on how it handles failure.
 
 ## 8. Stop Conditions: Stopping Matters as Much as Acting
 
-![The agent loop is constrained by completion, confirmation, budget, risk, and blocker stop conditions](/llm-first-principles/11-agent/control-boundary.svg)
+![The agent loop is constrained by completion, confirmation, budget, risk, and blocker stop conditions](/llm-first-principles/11-agent/control-boundary.png)
 
 If a system can keep acting, "when should it stop?" becomes a core question.
 
@@ -641,7 +641,7 @@ Stop conditions are part of those boundaries.
 
 ## 9. Product and Engineering: An Agent Is a System, Not a Prompt
 
-![Model, tools, state, permissions, evaluation, observability, and human confirmation form the agent product engineering stack](/llm-first-principles/11-agent/product-engineering.svg)
+![Model, tools, state, permissions, evaluation, observability, and human confirmation form the agent product engineering stack](/llm-first-principles/11-agent/product-engineering.png)
 
 A common mistake in agent products is:
 
@@ -744,7 +744,7 @@ That path is usually more reliable than chasing full autonomy from day one.
 
 ## 11. Common Misunderstandings
 
-![Common misunderstandings about agent autonomy, tool calls, planning, memory, and human confirmation being filtered out](/llm-first-principles/11-agent/agent-misconceptions.svg)
+![Common misunderstandings about agent autonomy, tool calls, planning, memory, and human confirmation being filtered out](/llm-first-principles/11-agent/agent-misconceptions.png)
 
 **Misunderstanding 1: An agent is just a chatbot with tool calling.**
 
@@ -772,7 +772,7 @@ Also no. The higher the risk, the more the product needs to show plans, key acti
 
 ## 12. Summary: An Agent Is a Controlled Loop for Continuous Action
 
-![Goal, state, plan, tools, observations, evaluation, stop conditions, and human confirmation form the agent summary](/llm-first-principles/11-agent/agent-summary.svg)
+![Goal, state, plan, tools, observations, evaluation, stop conditions, and human confirmation form the agent summary](/llm-first-principles/11-agent/agent-summary.png)
 
 We can now compress agents into a few lines:
 
