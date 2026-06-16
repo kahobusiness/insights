@@ -10,6 +10,7 @@ export default {
   '09-rag': '09: RAG',
   '10-tool-use': '10: Tool Use',
   '11-agent': '11: Agents',
+  '12-llm-engineering': '12: LLM Engineering',
   'series-outline': {
     display: 'hidden',
     title: 'Series Outline: Understanding LLMs from First Principles'
