@@ -98,6 +98,8 @@ It is the runtime system between model capability and product experience.
 
 ## 2. The Starting Point: Autoregressive Generation
 
+![An LLM generates tokens one by one from the existing context, feeding each new token back into context for the next prediction](/llm-first-principles/12-llm-engineering/autoregressive-generation.png)
+
 When we discussed inference and generation, we saw the basic loop:
 
 ```text
@@ -835,6 +837,8 @@ More GPUs add resources. They do not automatically solve scheduling, KV cache pr
 No. Agent cost comes from multi-step inference, tool calls, RAG, state management, failure recovery, and final validation. The more autonomous the agent, the more you need task-level cost accounting.
 
 ## 12. Product and Engineering Implications
+
+![Product experience and engineering controls form a loop around model routing, context management, tool calls, cost guardrails, and observability](/llm-first-principles/12-llm-engineering/product-engineering-implications.png)
 
 Once we understand LLM engineering, we look at AI product design differently.
 
