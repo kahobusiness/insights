@@ -318,9 +318,29 @@ KV cache uses GPU memory to store attention intermediates for previous tokens,
 so each new token does not require recomputing the whole context.
 ```
 
+Concretely, the prefill stage computes and caches the Key / Value for every layer of the prompt while it processes the input context; during decode, each new token only computes its own part and reuses the cached historical Key / Value.
+
 This optimization is one reason modern LLM inference is practical.
 
 Without KV cache, long conversations and long outputs would be far slower.
+
+KV cache can go one step further.
+
+When many requests share the same beginning — the same system prompt, the same few-shot examples, the same long document — the Key / Value for that prefix is identical every time.
+
+If it is identical, there is no need to recompute it for every request.
+
+The cache for that shared prefix can be kept and reused across requests. This is prefix caching, which many APIs package and bill as prompt caching.
+
+The product implication is direct:
+
+```text
+Put stable content (system prompts, rules, long documents) at the front of the prompt,
+so repeated calls hit the cache and skip the repeated prefill;
+put frequently changing content at the end, so it does not invalidate the cache.
+```
+
+So the same long system prompt is paid for in full the first time, but later requests that hit the cache are faster and cheaper.
 
 But KV cache is not free.
 
@@ -541,7 +561,7 @@ Another adds tool results and continues.
 
 That is why modern inference systems usually need dynamic scheduling rather than only static batches.
 
-New requests may be inserted while older requests continue generating.
+New requests may be inserted while older requests continue generating — this is usually called continuous batching (also known as in-flight batching).
 
 The important point is not one specific technique name, but the tradeoff:
 
