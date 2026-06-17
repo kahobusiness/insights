@@ -11,6 +11,7 @@ export default {
   '10-tool-use': '10: Tool Use',
   '11-agent': '11: Agents',
   '12-llm-engineering': '12: LLM Engineering',
+  '13-ai-native-product-design': '13: AI Native Product Design',
   'series-outline': {
     display: 'hidden',
     title: 'Series Outline: Understanding LLMs from First Principles'

@@ -11,6 +11,7 @@ export default {
   '10-tool-use': '10：Tool Use',
   '11-agent': '11：Agent',
   '12-llm-engineering': '12：大模型工程',
+  '13-ai-native-product-design': '13：AI Native 产品设计',
   'series-outline': {
     display: 'hidden',
     title: '系列大纲：用第一性原理理解大模型'

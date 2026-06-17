@@ -8,6 +8,7 @@ export default {
   },
   "annotation-reply": "💬 Annotation Reply",
   "dictionary": "📚 Dictionary",
+  "model-distillation": "🧪 Model Distillation",
   "llm-first-principles": "🌍 LLMs from First Principles",
   "llm-pricing-math": "✏️ The Math Behind LLM Pricing"
 }
