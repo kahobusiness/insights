@@ -1,7 +1,7 @@
 export default {
-  "LLM-Learning-1": "01：工作原理、推理速度及推理成本",
-  "LLM-Learning-2": "02：把推理过程写成方程",
-  "LLM-Learning-3": "03：从推理耗时到推理成本",
-  "LLM-Learning-4": "04：拆开 KV cache",
-  "LLM-Learning-5": "05：从单卡到集群"
+  "01-how-inference-works": "01：工作原理、推理速度及推理成本",
+  "02-inference-as-equations": "02：把推理过程写成方程",
+  "03-latency-to-cost": "03：从推理耗时到推理成本",
+  "04-kv-cache": "04：拆开 KV cache",
+  "05-gpu-to-cluster": "05：从单卡到集群"
 }
