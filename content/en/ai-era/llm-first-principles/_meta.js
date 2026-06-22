@@ -12,6 +12,7 @@ export default {
   '11-agent': '11: Agents',
   '12-llm-engineering': '12: LLM Engineering',
   '13-ai-native-product-design': '13: AI Native Product Design',
+  '14-commercialization-and-future': '14: Commercialization and the Future',
   'series-outline': {
     display: 'hidden',
     title: 'Series Outline: Understanding LLMs from First Principles'
