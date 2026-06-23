@@ -1,7 +1,7 @@
 export default {
-  "LLM-Learning-1": "01: How Inference Actually Works",
-  "LLM-Learning-2": "02: Writing Inference as Equations",
-  "LLM-Learning-3": "03: From Inference Latency to Inference Cost",
-  "LLM-Learning-4": "04: Cracking Open the KV Cache",
-  "LLM-Learning-5": "05: From One GPU to a Cluster"
+  "01-how-inference-works": "01: How Inference Actually Works",
+  "02-inference-as-equations": "02: Writing Inference as Equations",
+  "03-latency-to-cost": "03: From Inference Latency to Inference Cost",
+  "04-kv-cache": "04: Cracking Open the KV Cache",
+  "05-gpu-to-cluster": "05: From One GPU to a Cluster"
 }

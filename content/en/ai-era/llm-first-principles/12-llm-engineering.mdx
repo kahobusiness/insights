@@ -179,7 +179,7 @@ Once this is clear, KV cache, cost, and deployment architecture become much easi
 
 <Callout type="important">
 
-This section builds the engineering intuition first. If you want to turn "moving parameters" and "doing compute" into equations, and understand why output tokens are often more expensive than input tokens and why the batch-size sweet spot falls out of hardware constants, continue with [The Math Behind LLM Pricing 01: How Inference Actually Works](../llm-pricing-math/LLM-Learning-1.mdx) and [02: Writing Inference as Equations](../llm-pricing-math/LLM-Learning-2.mdx).
+This section builds the engineering intuition first. If you want to turn "moving parameters" and "doing compute" into equations, and understand why output tokens are often more expensive than input tokens and why the batch-size sweet spot falls out of hardware constants, continue with [The Math Behind LLM Pricing 01: How Inference Actually Works](../llm-pricing-math/01-how-inference-works.mdx) and [02: Writing Inference as Equations](../llm-pricing-math/02-inference-as-equations.mdx).
 
 </Callout>
 
@@ -458,7 +458,7 @@ That is the relationship between KV cache and context engineering.
 
 <Callout type="important">
 
-For a deeper look at why KV cache becomes central to long-context pricing and architecture optimization, see [The Math Behind LLM Pricing 04: Cracking Open the KV Cache](../llm-pricing-math/LLM-Learning-4.mdx). That post digs into KV bytes per token, GQA / MLA / cross-layer sharing, and how long-context tiered pricing can reveal clues about internal architecture.
+For a deeper look at why KV cache becomes central to long-context pricing and architecture optimization, see [The Math Behind LLM Pricing 04: Cracking Open the KV Cache](../llm-pricing-math/04-kv-cache.mdx). That post digs into KV bytes per token, GQA / MLA / cross-layer sharing, and how long-context tiered pricing can reveal clues about internal architecture.
 
 </Callout>
 
@@ -591,7 +591,7 @@ Scheduling balances all of them.
 
 <Callout type="important">
 
-This section keeps the product-engineering view. If you want the cost curve itself, read [The Math Behind LLM Pricing 03: From Inference Latency to Inference Cost](../llm-pricing-math/LLM-Learning-3.mdx): it decomposes cost per token into amortizable parameter movement, non-amortizable KV, and the compute floor. If you want to go beyond one GPU into clusters, expert / pipeline parallelism, racks, scale-up, and interconnect, continue with [05: From One GPU to a Cluster](../llm-pricing-math/LLM-Learning-5.mdx).
+This section keeps the product-engineering view. If you want the cost curve itself, read [The Math Behind LLM Pricing 03: From Inference Latency to Inference Cost](../llm-pricing-math/03-latency-to-cost.mdx): it decomposes cost per token into amortizable parameter movement, non-amortizable KV, and the compute floor. If you want to go beyond one GPU into clusters, expert / pipeline parallelism, racks, scale-up, and interconnect, continue with [05: From One GPU to a Cluster](../llm-pricing-math/05-gpu-to-cluster.mdx).
 
 </Callout>
 

@@ -177,7 +177,7 @@ Tokens per second：后续输出速度有多快。
 
 <Callout type="important">
 
-这一节先建立工程直觉。如果你想把「搬参数」和「做计算」进一步写成公式，并理解为什么 output token 往往比 input token 更贵、batch 的甜蜜点为什么会从硬件常数里推出来，可以继续读《LLM 定价的数学原理》系列的 [01：工作原理、推理速度及推理成本](../llm-pricing-math/LLM-Learning-1.mdx) 和 [02：把推理过程写成方程](../llm-pricing-math/LLM-Learning-2.mdx)。
+这一节先建立工程直觉。如果你想把「搬参数」和「做计算」进一步写成公式，并理解为什么 output token 往往比 input token 更贵、batch 的甜蜜点为什么会从硬件常数里推出来，可以继续读《LLM 定价的数学原理》系列的 [01：工作原理、推理速度及推理成本](../llm-pricing-math/01-how-inference-works.mdx) 和 [02：把推理过程写成方程](../llm-pricing-math/02-inference-as-equations.mdx)。
 
 </Callout>
 
@@ -456,7 +456,7 @@ Agent 不只是一次问答。
 
 <Callout type="important">
 
-如果你想更深入地理解 KV Cache 为什么会成为长上下文定价和架构优化的核心，可以读《LLM 定价的数学原理》[04：拆开 KV cache](../llm-pricing-math/LLM-Learning-4.mdx)。那一篇会把每个 token 的 KV 字节数、GQA / MLA / 跨层共享，以及如何从长上下文阶梯定价反推出内部架构讲得更细。
+如果你想更深入地理解 KV Cache 为什么会成为长上下文定价和架构优化的核心，可以读《LLM 定价的数学原理》[04：拆开 KV cache](../llm-pricing-math/04-kv-cache.mdx)。那一篇会把每个 token 的 KV 字节数、GQA / MLA / 跨层共享，以及如何从长上下文阶梯定价反推出内部架构讲得更细。
 
 </Callout>
 
@@ -589,7 +589,7 @@ KV Cache 改善重复计算；
 
 <Callout type="important">
 
-这一节只保留产品工程层面的判断。如果你想看「每 token 成本」如何由可摊销的参数搬运、摊不掉的 KV、算力下界共同构成，可以读 [03：从推理耗时到推理成本](../llm-pricing-math/LLM-Learning-3.mdx)。如果你还想继续看单卡之外的 GPU 集群、expert / pipeline parallelism、rack、scale-up 与互联如何影响成本下界，可以接着读 [05：从单卡到集群](../llm-pricing-math/LLM-Learning-5.mdx)。
+这一节只保留产品工程层面的判断。如果你想看「每 token 成本」如何由可摊销的参数搬运、摊不掉的 KV、算力下界共同构成，可以读 [03：从推理耗时到推理成本](../llm-pricing-math/03-latency-to-cost.mdx)。如果你还想继续看单卡之外的 GPU 集群、expert / pipeline parallelism、rack、scale-up 与互联如何影响成本下界，可以接着读 [05：从单卡到集群](../llm-pricing-math/05-gpu-to-cluster.mdx)。
 
 </Callout>
 
