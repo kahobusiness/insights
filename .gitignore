@@ -12,3 +12,6 @@ tsconfig.tsbuildinfo
 
 # Vercel
 .vercel
+
+# Editor
+.vscode
