@@ -1,0 +1,3 @@
+# 单包项目，不声明 workspace packages，仅用于承载 pnpm 设置。
+# pnpm 11 起，lockfile 等 pnpm 专属设置从 .npmrc 迁移到此文件读取。
+lockfile: false
