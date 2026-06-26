@@ -3,7 +3,7 @@ import { Callout } from 'nextra/components'
 export const metadata = {
   title: 'Token and Embedding: How Language Becomes Numbers',
   description: 'A beginner-friendly explanation of how LLMs turn text into tokens, token ids, and high-dimensional embeddings so language can enter neural network computation.',
-  publishedAt: '2026-05-21'
+  publishedAt: '2026-06-26'
 }
 
 # 02: Token and Embedding: How Language Becomes Numbers
@@ -415,5 +415,27 @@ Why does context matter so much? Because an initial token representation is repe
 Why does prompt structure affect output? Because you are not giving the model pure intent; you are giving it a token sequence that changes the probability distribution.
 
 Why is the next post about Transformer and Attention? Because token and embedding are only the entrance. The mechanism that lets a model "see" relationships across context is attention inside the Transformer.
+
+## 10. Technical Appendix: Why Token IDs Do Not Directly Represent Meaning
+
+A token id looks like a number, but it is more like a seat number in the vocabulary.
+
+```text
+token: apple
+token id: 12345
+embedding: [0.12, -0.03, 0.87, ...]
+```
+
+What enters continuous neural computation is not the number `12345` itself, but the vector looked up from the embedding table. Two numerically adjacent token ids do not mean the tokens are semantically close. Semantic closeness usually appears in the relationships among embeddings and later contextual representations in high-dimensional space.
+
+So token id solves the problem of indexing the vocabulary. Embedding solves the problem of putting symbols into a learnable relationship space.
+
+## 11. Three Questions You Should Be Able to Answer
+
+After reading this post, try answering these in your own words:
+
+1. What problems do tokens, token ids, and embeddings each solve?
+2. Why is a token id an index rather than meaning itself?
+3. Why can the same sentence have different cost and behavior across languages or tokenizers?
 
 Next, we will open that layer: how do Transformer and Attention let the model decide which parts of the context to reference when generating the current token?

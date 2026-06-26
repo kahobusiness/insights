@@ -3,7 +3,7 @@ import { Callout } from 'nextra/components'
 export const metadata = {
   title: 'Transformer and Attention: How Models See Context',
   description: 'How embeddings enter Transformer, how Attention finds relevant context, and how layered computation creates representations for next-token prediction.',
-  publishedAt: '2026-05-22'
+  publishedAt: '2026-06-26'
 }
 
 # 03: Transformer and Attention: How Models "See" Context
@@ -500,5 +500,36 @@ Why does prompt structure change results? Because structure changes how hard it 
 Why can long-context models still miss key points? Because visible does not mean usable.
 
 Why does RAG help? Because it places useful information into relationships the model can compute over.
+
+## 12. Technical Appendix: The Intuition Behind the Attention Formula
+
+The most common way to write Self-Attention is:
+
+```text
+Attention(Q, K, V) = softmax(QK^T / sqrt(d_k))V
+```
+
+You can read this formula in four steps:
+
+```text
+Q: the current token asks what it should reference;
+K: each context token provides a matchable label;
+QK^T: the current question is compared with all labels;
+softmax(...)V: similarities become weights, then those weights summarize the corresponding information.
+```
+
+Dividing by `sqrt(d_k)` keeps similarity scores from growing too large as vector dimensions increase. `softmax` turns those scores into attention weights that can be used for a weighted average.
+
+So the intuition behind the formula is still the same sentence this post has been building toward:
+
+> Which positions in the context should the current token take information from, and how much from each?
+
+## 13. Three Questions You Should Be Able to Answer
+
+After reading this post, try answering these in your own words:
+
+1. What core problem does Attention solve?
+2. Why does information being visible in the context window not mean it will definitely be used?
+3. Why do RAG, tool use, and prompt structure all help the model organize context?
 
 In the next post, we will go one layer deeper: if the model is only predicting text, why does text prediction grow into knowledge, reasoning, and intelligence? In other words, why can we say language is a compression of the world?

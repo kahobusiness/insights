@@ -3,7 +3,7 @@ import { Callout } from 'nextra/components'
 export const metadata = {
   title: 'Scaling Laws and Emergence: Why Scale Changes Capability Boundaries',
   description: 'A first-principles explanation of scaling laws, loss, parameters, data, compute, and why emergent LLM abilities often appear when task thresholds are crossed.',
-  publishedAt: '2026-06-02'
+  publishedAt: '2026-06-26'
 }
 
 # 06: Scaling Laws and Emergence: Why Scale Changes Capability Boundaries
@@ -588,7 +588,24 @@ Do not treat the model as the whole product. Do not ignore the model's capabilit
 
 Good AI products often start with a model of the right scale, then add the right context, tools, constraints, and feedback.
 
-## 9. Summary: How Scale Changes Capability Boundaries
+## 9. Technical Appendix: MoE Changes the Relationship Between Total Scale and Activated Scale
+
+When discussing scale, one important architecture appears often: MoE, or Mixture of Experts.
+
+In a traditional dense model, most parameters are activated during each inference step. MoE has a different intuition: the model contains many expert networks, and each token is routed to only a subset of them.
+
+This creates an important distinction:
+
+```text
+total parameters: how much capacity and pattern storage the whole model has;
+active parameters: how many parameters actually participate in one generation step.
+```
+
+The value of MoE is that it can increase total parameter count, giving the model more capacity, while controlling the number of active parameters per token so inference cost does not grow linearly with total parameters.
+
+But MoE is not free. It introduces routing, load balancing, expert utilization, training stability, and deployment complexity. The product takeaway is this: "scale" is not only about bigger parameter counts. It is also about which parameters activate when, and whether that activation pattern can serve real requests reliably and cheaply.
+
+## 10. Summary: How Scale Changes Capability Boundaries
 
 ![Parameters, data, and compute merge into a scaling path that lights up task thresholds over time](/llm-first-principles/06-scaling-laws-and-emergence/scaling-summary.png)
 
@@ -611,5 +628,13 @@ Once we understand this, we do not need to mystify large language models, but we
 They are still predicting the next token.
 
 But when that prediction system is pushed to new boundaries by enough scale, enough data, and enough compute, it starts to reliably complete tasks it could not handle before.
+
+## 11. Three Questions You Should Be Able to Answer
+
+After reading this post, try answering these in your own words:
+
+1. Why can capability improvement be continuous while the user experience feels sudden?
+2. Why does a larger model not automatically mean a more reliable product?
+3. Why does MoE make us distinguish total parameters from active parameters?
 
 In the next post, we will look at what actually happens during generation: temperature, context windows, sampling, and why large language models always output one token at a time.

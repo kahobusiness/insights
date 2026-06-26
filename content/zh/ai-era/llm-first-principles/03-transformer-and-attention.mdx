@@ -3,7 +3,7 @@ import { Callout } from 'nextra/components'
 export const metadata = {
   title: 'Transformer 与 Attention：模型如何看见上下文',
   description: '从 embedding 进入 Transformer 开始，解释 Attention 如何为每个 token 找到上下文重点，并通过多层计算把离散 token 更新成能用于生成的上下文表示。',
-  publishedAt: '2026-05-22'
+  publishedAt: '2026-06-26'
 }
 
 # 03：Transformer 与 Attention：模型如何「看见」上下文
@@ -497,5 +497,36 @@ Multi-Head Attention 让模型同时捕捉多种关系；
 为什么长上下文仍然会丢重点？因为可见不等于可用。
 
 为什么 RAG 有用？因为它把可用信息放进模型能处理的上下文关系里。
+
+## 十二、技术附录：Attention 公式的直觉
+
+如果把 Self-Attention 写成最常见的公式，大概是：
+
+```text
+Attention(Q, K, V) = softmax(QK^T / sqrt(d_k))V
+```
+
+这行公式可以拆成四步理解：
+
+```text
+Q：当前 token 带着一个问题，它想知道自己该参考谁；
+K：上下文里的每个 token 提供一个可被匹配的标签；
+QK^T：当前问题和所有标签做相似度计算；
+softmax(...)V：把相似度变成权重，再按权重汇总对应的信息。
+```
+
+除以 `sqrt(d_k)` 是为了让相似度分数别因为向量维度变大而过度膨胀；`softmax` 则把这些分数变成一组可以加权平均的注意力权重。
+
+所以，公式背后的直觉仍然是本文一直在讲的那句话：
+
+> 当前 token 应该从上下文里的哪些位置拿信息，以及各拿多少。
+
+## 十三、你应该能回答的三个问题
+
+读完这一篇，可以试着用自己的话回答：
+
+1. Attention 解决的核心问题是什么？
+2. 为什么上下文窗口里的信息「可见」不等于「一定会被用上」？
+3. 为什么 RAG、工具调用和 prompt 结构，本质上都在帮助模型组织上下文？
 
 下一篇，我们继续往更深一层走：既然模型只是预测文字，为什么预测文字会长出知识、推理和智能？换句话说，为什么说语言是世界的压缩？

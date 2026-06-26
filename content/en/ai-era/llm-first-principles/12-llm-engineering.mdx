@@ -3,7 +3,7 @@ import { Callout } from 'nextra/components'
 export const metadata = {
   title: 'LLM Engineering: KV Cache, Inference Cost, and Deployment Systems',
   description: 'A first-principles explanation of prefill, decode, KV cache, long context, batching, inference cost, observability, and deployment architecture for scalable LLM products.',
-  publishedAt: '2026-06-16'
+  publishedAt: '2026-06-26'
 }
 
 # 12: LLM Engineering: KV Cache, Inference Cost, and Deployment Systems
@@ -928,5 +928,13 @@ But one important question remains:
 If an AI system is probabilistic inside,
 how should the product give users a reliable, trustworthy, controllable experience?
 ```
+
+## 14. Three Questions You Should Be Able to Answer
+
+After reading this post, try answering these in your own words:
+
+1. Why do prefill and decode create different cost and latency bottlenecks?
+2. Why does KV cache turn long context and concurrency into engineering problems?
+3. Why should LLM cost be measured per successful task, not only by token price?
 
 Next, we will move into AI-native product design: how probabilistic systems can provide reliable experiences.

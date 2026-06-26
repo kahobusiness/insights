@@ -3,7 +3,7 @@ import { Callout } from 'nextra/components'
 export const metadata = {
   title: 'Language as Compression of the World: Why Prediction Can Become Intelligence',
   description: 'A first-principles explanation of why next-token prediction forces language models to learn compressed structures of knowledge, relationships, and reasoning.',
-  publishedAt: '2026-05-25'
+  publishedAt: '2026-06-26'
 }
 
 # 04: Language as Compression of the World: Why Prediction Can Become Intelligence
@@ -182,6 +182,8 @@ Large models do memorize some high-frequency facts, fixed phrases, and fragments
 A more accurate description is that the model learns lossy statistical compression.
 
 It cannot store the whole world inside its parameters. It also does not store every training document as a literal database. Instead, it compresses repeated structures, similar patterns, and reusable relationships from massive text into parameterized representations.
+
+This kind of "compression" is not reversible compression like ZIP. ZIP tries to reconstruct the original file exactly. Model parameters are not optimized to reconstruct the training set; they are optimized to generate more likely next tokens in new contexts. They discard many concrete sample details and preserve reusable statistical structure.
 
 The process looks roughly like this:
 
@@ -491,5 +493,13 @@ Why can fine-tuning and alignment turn a continuation machine into an assistant?
 Why is hallucination hard to remove? Because generating text and verifying facts are not the same operation.
 
 Why do tools, RAG, and agents matter? Because they connect the language-compression system back to world state and action.
+
+## 10. Three Questions You Should Be Able to Answer
+
+After reading this post, try answering these in your own words:
+
+1. Why can we say "language is compression of the world," but not treat model parameters like a ZIP file?
+2. Why does predicting text force a model to learn part of the structure of facts, relationships, code, and reasoning processes?
+3. Why can a model show knowledge and reasoning behavior without having human real-world experience?
 
 In the next post, we will follow that turn: how does a pretrained model that only continues text become a system that follows instructions, cooperates with users, and behaves like an assistant?

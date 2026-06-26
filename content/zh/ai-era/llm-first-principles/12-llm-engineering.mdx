@@ -3,7 +3,7 @@ import { Callout } from 'nextra/components'
 export const metadata = {
   title: '大模型工程：KV Cache、推理成本与部署系统',
   description: '从 prefill、decode、KV Cache、长上下文、批处理、推理成本、可观测性和部署架构出发，解释大模型能力如何变成可规模化的产品服务。',
-  publishedAt: '2026-06-16'
+  publishedAt: '2026-06-26'
 }
 
 # 12：大模型工程：KV Cache、推理成本与部署系统
@@ -925,5 +925,13 @@ batching、调度和流式输出共同影响吞吐与体感延迟；
 既然 AI 系统内部是概率的，
 产品应该如何让用户获得确定、可信、可控的体验？
 ```
+
+## 十四、你应该能回答的三个问题
+
+读完这一篇，可以试着用自己的话回答：
+
+1. prefill 和 decode 为什么对应不同的成本与延迟瓶颈？
+2. KV Cache 为什么会让长上下文和并发变成工程问题？
+3. 为什么大模型成本应该按「成功任务」计算，而不只看 token 单价？
 
 下一篇，我们进入 AI Native 产品设计：概率系统如何提供确定体验。
