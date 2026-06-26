@@ -1,3 +1,9 @@
 # 单包项目，不声明 workspace packages，仅用于承载 pnpm 设置。
 # pnpm 11 起，lockfile 等 pnpm 专属设置从 .npmrc 迁移到此文件读取。
 lockfile: false
+
+# nextra / nextra-theme-docs 4.6.1 的 <Layout> 依赖旧版 zod 中 z.custom
+# 对缺失字段宽容的行为；zod 4.2+ 改了语义会让整站渲染崩。锁在 4.1.x 兼容档。
+# 待 nextra 发布修复 zod 4.4 兼容的新版后可移除此 override。
+overrides:
+  zod: ~4.1.12
