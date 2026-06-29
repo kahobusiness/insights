@@ -3,16 +3,18 @@ import { Callout } from 'nextra/components'
 export const metadata = {
   title: 'The First Principle of LLMs: Predicting the Next Token',
   description: 'A beginner-friendly explanation of why large language models are not knowledge databases, but probabilistic systems that compress patterns in language by predicting the next token.',
-  publishedAt: '2026-05-18'
+  publishedAt: '2026-06-26'
 }
 
-# 01: The First Principle of LLMs
+# 01: The First Principle of LLMs: Predicting the Next Token
 
 ![Abstract token tiles flowing through a neural network and branching into candidate next tokens](/llm-first-principles/01-next-token-prediction/cover.png)
 
 <Callout type="info" emoji="🧭">
 
-This is the first post in the "Understanding LLMs from First Principles" series, and it also serves as the guidepost for the whole series. In 2026, large language models (LLMs) have already become part of our work and everyday life. Across this series, we will use first principles thinking in plain language to analyze the most fundamental mechanisms of LLMs, then gradually expand toward everything built on top of them: tokens, token prediction, why models appear to develop "intelligence," pretraining, post-training, tool use, agents, engineering systems, and commercialization. I hope the series gives you something useful.
+This is the first post in the "Understanding LLMs from First Principles" series.
+
+This post does one thing: reduce LLMs to the most basic question behind the whole series — given context, why is "predicting the next token" enough to become the starting point for understanding LLMs?
 
 </Callout>
 
@@ -22,7 +24,7 @@ With the same curiosity, this series will use first principles thinking to look 
 
 Before we talk about the "first principle" of large language models, let's begin with what "first principles" means.
 
-There are many ways to explain "first principles." The version I find most useful goes back to Aristotle. Roughly speaking:
+There are many ways to explain "first principles." The idea can be traced back to Aristotle's discussion of first principles, but in today's engineering and product context, it is usually used as a method of decomposition:
 
 > Return to the most basic conditions of a thing, break it into elements that are hard to reduce further, then reason upward from those elements toward the path that can achieve the goal.
 
@@ -493,5 +495,31 @@ Why do hallucinations happen? Because generating plausible text is not the same 
 Why does RAG help? Because it puts traceable new material into the context.
 
 Why are agents an important direction? Because the model itself only generates tokens, while tools and action loops can turn tokens into real tasks.
+
+## 9. Common Misconceptions
+
+**Misconception 1: An LLM is looking things up in a database.**
+
+No. A bare model does not open an internal fact table when answering. It uses the current context and patterns compressed into its parameters to compute a probability distribution over the next token. Search, RAG, databases, and tool use are external system capabilities, not the bare model itself.
+
+**Misconception 2: An LLM is just advanced autocomplete.**
+
+The analogy helps explain token-by-token generation, but it underestimates the capability. Ordinary autocomplete mainly completes common phrases. To predict massive and complex text, an LLM is forced to learn concept relationships, code structure, reasoning steps, and task patterns.
+
+**Misconception 3: The model first thinks of the full answer, then prints it word by word.**
+
+No. It puts the tokens it has already generated back into the context, then predicts the next step. This is also why a small early error can be amplified later in the generation.
+
+**Misconception 4: If the model is large enough, it will automatically be reliable.**
+
+Scale can move capability boundaries, but it does not automatically provide factual grounding, permission control, business validation, or product accountability. Reliable AI products come from the combination of model, context, tools, evaluation, and interaction design.
+
+## 10. Three Questions You Should Be Able to Answer
+
+After reading this post, try answering these in your own words:
+
+1. Why is "predict the next token" not a shallow task?
+2. Why is model generation a probabilistic path rather than a fixed answer retrieved from a database?
+3. Why should modern AI products be evaluated by more than whether the model is "smart"?
 
 In the next post, we will continue downward: what exactly are tokens and embeddings? And how does language become numbers a model can process?

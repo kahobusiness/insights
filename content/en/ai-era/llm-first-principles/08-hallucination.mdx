@@ -3,7 +3,7 @@ import { Callout } from 'nextra/components'
 export const metadata = {
   title: 'The Nature of Hallucination: Why Models Confidently Make Things Up',
   description: 'Why LLMs hallucinate, from first principles: next-token prediction, lossy compression, knowledge boundaries, and the systems that keep fabrication in check.',
-  publishedAt: '2026-06-08'
+  publishedAt: '2026-06-26'
 }
 
 # 08: The Nature of Hallucination: Why Models Confidently Make Things Up
@@ -590,5 +590,13 @@ They are powerful language and pattern generation systems.
 When the task is creative writing, drafting, rewriting, summarization, or structured expression, that capability is extremely useful.
 
 When the task requires facts, numbers, sources, permissions, and execution results, the model needs to be placed inside a fuller system.
+
+## 11. Three Questions You Should Be Able to Answer
+
+After reading this post, try answering these in your own words:
+
+1. Why is hallucination not the model "lying on purpose," but a gap between generation and factual verification?
+2. Why can low temperature, more reasoning text, or a larger model not eliminate hallucination by themselves?
+3. How do RAG, tools, and validators each reduce hallucination risk at a different layer?
 
 Next, we will continue with that system question: RAG. How do we connect an external knowledge base to a model so answers move from "generated from impression" to "generated from evidence"?

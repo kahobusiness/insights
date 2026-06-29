@@ -6,27 +6,28 @@
     "start": "next start"
   },
   "dependencies": {
-    "@formatjs/intl-localematcher": "0.8.8",
+    "@formatjs/intl-localematcher": "0.8.10",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
-    "katex": "^0.16.46",
+    "katex": "^0.17.0",
     "lightgallery": "2.9.0",
     "negotiator": "^1.0.0",
-    "next": "~16.2.6",
+    "next": "~16.2.9",
     "next-themes": "^0.4.6",
     "nextra": "^4.6.1",
     "nextra-theme-docs": "^4.6.1",
     "pagefind": "^1.5.2",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "recharts": "^3.8.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "recharts": "^3.9.0",
     "server-only": "0.0.1"
   },
   "devDependencies": {
     "@types/negotiator": "^0.6.4",
     "@types/node": "^24.12.4",
-    "@types/react": "^19.2.15",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "typescript": "^6.0.3"
-  }
+  },
+  "packageManager": "pnpm@11.9.0+sha512.bd682d5d03fe525ef7c9fd6780c6884d1e756ac4c9c9fe00c538782824310dcf90e3ddc4f53835f06dfaebd5085e41855e0bcbb3b60de2ac5bbab89e5036f03b"
 }

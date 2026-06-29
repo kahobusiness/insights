@@ -3,7 +3,7 @@ import { Callout } from 'nextra/components'
 export const metadata = {
   title: 'Token 与 Embedding：语言如何变成模型能处理的数字',
   description: '从 token、token id 到 embedding，解释大模型如何把语言切成离散符号，再映射成高维向量，让语义、语法和上下文关系进入神经网络计算。',
-  publishedAt: '2026-05-21'
+  publishedAt: '2026-06-26'
 }
 
 # 02：Token 与 Embedding：语言如何变成模型能处理的数字
@@ -396,5 +396,27 @@ Transformer 根据上下文，把初始表示更新成上下文表示。
 为什么 prompt 结构会影响输出？因为你给模型的不是意图本身，而是一串会改变概率分布的 token。
 
 为什么下一篇要讲 Transformer 和 Attention？因为 token 和 embedding 只是入口。真正让模型「看见上下文关系」的，是后面层层计算中的注意力机制。
+
+## 十、技术附录：为什么 token id 不能直接表示语义
+
+token id 看起来是数字，但它更像词表里的座位号。
+
+```text
+token: 苹果
+token id: 12345
+embedding: [0.12, -0.03, 0.87, ...]
+```
+
+真正进入神经网络连续计算的，不是 `12345` 这个编号本身，而是通过 embedding table 查到的一整组向量。编号相邻的两个 token，不代表语义相近；语义相近通常体现为 embedding 和后续上下文表示在高维空间里的关系相近。
+
+所以，token id 解决的是「怎么索引词表」；embedding 解决的是「怎么让符号进入可学习的关系空间」。
+
+## 十一、你应该能回答的三个问题
+
+读完这一篇，可以试着用自己的话回答：
+
+1. token、token id 和 embedding 分别解决什么问题？
+2. 为什么 token id 是索引，而不是语义本身？
+3. 为什么同一句话在不同语言或不同 tokenizer 下，成本和表现可能不同？
 
 下一篇，我们继续往下拆：Transformer 和 Attention 到底如何让模型在生成当前 token 时，知道应该参考上下文里的哪些信息。

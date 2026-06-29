@@ -1,5 +1,5 @@
 export default {
-  '01-next-token-prediction': '01：LLM 的第一性原理',
+  '01-next-token-prediction': '01：LLM 的第一性原理：token 预测',
   '02-token-and-embedding': '02：Token 与 Embedding',
   '03-transformer-and-attention': '03：Transformer 与 Attention',
   '04-language-as-world-compression': '04：语言是世界的压缩',

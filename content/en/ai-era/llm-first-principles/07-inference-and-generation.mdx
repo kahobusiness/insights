@@ -3,7 +3,7 @@ import { Callout } from 'nextra/components'
 export const metadata = {
   title: 'Inference and Generation: Temperature, Context Window, and Token-by-Token Output',
   description: 'A first-principles explanation of LLM inference, sampling, temperature, top-p, context windows, stop conditions, and why models generate one token at a time.',
-  publishedAt: '2026-06-03'
+  publishedAt: '2026-06-26'
 }
 
 # 07: Inference and Generation: Temperature, Context Window, and Token-by-Token Output
@@ -586,7 +586,27 @@ Not exactly. A model can express plans during generation, and it can use learned
 
 Not always. Longer context can hold more information, but it can also introduce noise, conflicts, and attention dilution. The goal is not to fill the window. The goal is to make important information clearly visible.
 
-## 9. Summary: Generation Is a Probability Path, Not Answer Printing
+## 9. Technical Appendix: What Reasoning Models and Test-Time Compute Change
+
+Recent reasoning models raise a natural question: if models still generate token by token, why does giving them more "thinking time" improve complex tasks?
+
+The key is that token-by-token generation has not been overturned. The system gives the model more inference budget.
+
+You can think of it this way:
+
+```text
+ordinary generation: quickly walk one token path from the current context;
+reasoning models: before final output, use more intermediate steps to search, check, revise, and compress a solution path;
+test-time compute: spend more computation during inference, not only during training.
+```
+
+This has two direct product implications.
+
+First, reasoning quality depends not only on model parameters, but also on how much compute, latency, and cost you are willing to spend on one request. Second, reasoning models are especially useful for math, code, planning, and complex analysis. They are not always the right choice for casual chat, rewriting, or low-risk replies.
+
+So a reasoning model is not a model that suddenly escapes token generation. It is a model operating inside the same generation framework, but spending more inference budget to find a more reliable path for complex tasks.
+
+## 10. Summary: Generation Is a Probability Path, Not Answer Printing
 
 ![Context, probability distribution, sampling, token appending, and stopping conditions form the generation loop](/llm-first-principles/07-inference-and-generation/generation-summary.png)
 
@@ -609,5 +629,13 @@ Once we understand this, model output no longer looks like mysterious inspiratio
 It is making probability choices at every step.
 
 The job of product and engineering is to make the context clearer, the candidate space more appropriate, and mistakes easier to detect, so a probabilistic path becomes an experience users can trust.
+
+## 11. Three Questions You Should Be Able to Answer
+
+After reading this post, try answering these in your own words:
+
+1. Do temperature and top-p change model capability, or sampling behavior?
+2. Why does the context window provide visibility, not long-term memory or guaranteed attention?
+3. Why can reasoning models trade more test-time compute for better complex-task performance?
 
 Next, we will examine one of the most important and most misunderstood problems: hallucination. Why can a model confidently say false things? What is the relationship between hallucination, the training objective, probabilistic generation, and the boundary of knowledge?
