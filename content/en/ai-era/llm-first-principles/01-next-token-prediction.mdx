@@ -14,42 +14,41 @@ export const metadata = {
 
 This is the first post in the "Understanding LLMs from First Principles" series.
 
-This post does one thing: reduce LLMs to the most basic question behind the whole series — given context, why is "predicting the next token" enough to become the starting point for understanding LLMs?
+This post starts from the everyday experience of using an LLM and works through it step by step, to answer why the mechanism of "given context, predict the next token" is the starting point for understanding large language models.
 
 </Callout>
 
 Have you ever wondered how large language models can seem to "answer anything," and appear fluent at everything from poetry and prose to strategy, code, and creative work?
 
-With the same curiosity, this series will use first principles thinking to look inside the mechanisms behind the model.
+This series uses first principles thinking to take LLMs apart and analyze the principles behind them.
 
-Before we talk about the "first principle" of large language models, let's begin with what "first principles" means.
-
-There are many ways to explain "first principles." The idea can be traced back to Aristotle's discussion of first principles, but in today's engineering and product context, it is usually used as a method of decomposition:
+We invoke "first principles" not to trace the idea back to Aristotle's discussion of it, nor to chant a slogan. In a product and engineering context, we usually treat "first principles" as a method of decomposition:
 
 > Return to the most basic conditions of a thing, break it into elements that are hard to reduce further, then reason upward from those elements toward the path that can achieve the goal.
 
-That sentence contains two core questions:
+This raises two core questions:
 
 1. **What is the goal?** Why do we need large language models at all?
-2. **What are the key elements?** What are the most basic elements for realizing a large language model?
+2. **What are the key elements?** What are the most basic, irreducible elements for realizing a large language model?
 
-On the goal: my view is that, in order to further liberate productivity, humanity is pursuing artificial general intelligence (AGI): enabling machines to understand and handle open-ended human tasks. LLMs are an important branch of that pursuit, at least on the language side.
+On the goal: my view is that, at a high level, in order to further liberate productivity, humanity keeps pursuing artificial general intelligence (AGI): enabling machines to understand and handle open-ended human tasks. LLMs are one viable path toward AGI.
 
-"Make machines understand and handle open-ended human tasks": answering questions, explaining concepts, writing code, summarizing articles, translating sentences, planning steps, and continuing a conversation based on context.
+What it means to "make machines understand and handle open-ended human tasks": answering questions, explaining concepts, writing code, summarizing articles, translating sentences, planning steps, and continuing a conversation based on context. These tasks look different on the surface, but they share the same underlying form: they can all be written as a language input, and we expect the system to produce a suitable language output.
 
-These tasks look different on the surface, but they share the same underlying form: they can all be written as a language input, and we expect the system to produce a suitable language output. That gives us a computable goal:
+That gives us a computable goal:
 
 ```text
 Given the context so far, generate the most suitable continuation.
 ```
 
-This is the key trait that distinguishes large language models from search engines, knowledge bases, databases, and expert systems. They are not built to store one fixed answer, but to learn the regularities of how context leads to what comes next in human language — so they can take on more general tasks and answer questions they have never seen before.
+This also reveals the two most critical elements of a large language model:
 
-At the same time, this reveals the most critical training target of a large language model: given context, learn the conditional probability distribution of the next token.
+```text
+1. Context
+2. The ability to generate what comes next
+```
 
-Why is that enough to matter?
-
-Because language naturally unfolds in sequence. When people write, speak, code, or derive a formula, they keep adding new content after what already exists. During training, the model learns what the next token could be under the current context and how likely each option is. During generation, the system samples from that distribution token by token, unfolding an open-ended problem into a complete answer step by step.
+Large language models differ from search engines, knowledge bases, databases, and expert systems: they are not built to store one fixed answer, but to learn the regularities of how context leads to what comes next in human language — so they can take on more general tasks and answer questions they have never seen before.
 
 From here, "first principles" in this series is not a mysterious slogan. It is a chain of reasoning we can derive:
 
