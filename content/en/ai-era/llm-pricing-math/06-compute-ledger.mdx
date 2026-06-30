@@ -1,0 +1,431 @@
+import { Callout } from 'nextra/components'
+
+export const metadata = {
+  description: 'A lifecycle compute ledger for LLMs: 6ND training, 2N inference, RL effective cost, and why pretraining, RL, and inference converge to similar scale.',
+  publishedAt: '2026-06-29'
+}
+
+# ✏️ The Math Behind LLM Pricing 06: The Compute Ledger of Training, RL, and Inference
+
+<Callout type="info" emoji="📖">
+
+So far we've mostly analyzed **what happens on one machine or one cluster during inference**: which bytes move, what gets computed, how KV cache grows, how batching amortizes cost, and how GPUs communicate. This post zooms out one level further: **over a model's full lifecycle, from birth to large-scale use, how should compute be allocated?**
+
+</Callout>
+
+<Callout type="important" emoji="🧭">
+
+**Recap**: in [From One GPU to a Cluster](./05-gpu-to-cluster.mdx), we moved from a single GPU to racks and clusters, and saw why scale-up really solves bandwidth. This post is not about "how one request runs." It is about **how an AI lab budgets compute** across pretraining, RL, and inference.
+
+</Callout>
+
+## I. First, Define N: Compute-Active Parameters
+
+One easy source of confusion: what does `N` mean?
+
+In this post, `N` means the number of parameters that actually participate in multiply-adds for each token. Think of it as `N_compute`:
+
+- For a dense model: `N_compute ≈ N_total`
+- For an MoE model: `N_compute ≈ N_active`, the activated experts plus shared parameters
+
+Why not total parameters? Because this post is about **compute**, not storage. A MoE model may have 1T total parameters, but each token only visits a subset of them. Its memory footprint cares about `N_total`; its per-token FLOPs are closer to `N_active`.
+
+> 🔑 **Short version**: in this post, `N` means "how many parameters this token actually computes through," not "how many parameters exist in the model file."
+
+---
+
+## II. The Three Ledgers: Pretraining, RL, Inference
+
+Over a model's lifecycle, compute is mainly spent in three places:
+
+```
+1. Pretraining: feed massive text corpora so the model learns language and the world
+2. RL / post-training: feed high-value tasks so the model learns reasoning, preferences, and alignment
+3. Inference: users actually call the model, continuously consuming GPU time
+```
+
+They feel like different activities:
+
+- Pretraining is like building the highway
+- RL is like tuning signs, rules, speed limits, and navigation
+- Inference is the traffic that runs every day
+
+But all three eventually reduce to the same scarce resource: **GPU time**.
+
+So the real question is:
+
+> **If an AI lab has a fixed compute budget, how much should go to pretraining, how much to RL, and how much to inference?**
+
+---
+
+## III. 6ND: The First-Order Formula for Training Compute
+
+For pretraining, the standard first-order estimate is:
+
+$$
+C_{\text{train}} \approx 6ND
+$$
+
+where:
+
+- `N`: compute-active parameters per token
+- `D`: training tokens
+- `6`: the rough FLOPs coefficient for forward + backward
+
+### Where Does the 6 Come From?
+
+Split training into two passes.
+
+**Forward pass**: the model reads the token and predicts.
+
+- Each parameter roughly does one multiply and one add
+- So one token's forward pass is about `2N`
+
+**Backward pass**: the model computes gradients and updates parameters.
+
+- Backward propagation needs gradients, gradient flow, and update accumulation
+- Roughly speaking, it costs about 2x the forward pass, or `4N`
+
+Together:
+
+$$
+2N + 4N = 6N
+$$
+
+Training `D` tokens gives:
+
+$$
+C_{\text{pretrain}} \approx 6N D_{\text{pretrain}}
+$$
+
+<Callout type="warning" emoji="⚠️">
+
+**Do not treat 6 as a constant of nature.** Real training is affected by attention, optimizer choice, communication, activation checkpointing, sequence length, and hardware utilization. But for order-of-magnitude reasoning, `6ND` is a very useful starting point.
+
+</Callout>
+
+---
+
+## IV. Inference Compute: Forward Only
+
+Inference does not update model weights. It only runs the forward pass.
+
+So each token costs approximately:
+
+$$
+C_{\text{infer-token}} \approx 2N
+$$
+
+Let `D_inference` be the total number of tokens the model processes over its commercial lifetime: user inputs, system prompts, tool results, model outputs, and every other token that really goes through the model.
+
+Then:
+
+$$
+C_{\text{inference}} \approx 2N D_{\text{inference}}
+$$
+
+This is the same worldview as the previous posts. Here we are not expanding memory-bound vs KV-bound vs batching mechanics; we are compressing them into a lifecycle compute ledger.
+
+---
+
+## V. RL Is in the Middle: Part Inference, Part Training
+
+RL / post-training is the easiest part to miscount, because it is not simply "train on a bit more data."
+
+A typical RL loop has at least two kinds of work:
+
+1. **Rollout**: the model generates answers, reasoning traces, code, or action trajectories. This looks like inference: mostly forward passes.
+2. **Update**: the model updates from rewards, preference signals, verifier outcomes, or policy gradients. This looks like training: it needs backward passes.
+
+RL also tends to run less efficiently than pretraining:
+
+- Autoregressive decode is more serial
+- Rollouts may sample many candidates and keep only some
+- Reward models, verifiers, and evaluators consume compute too
+- Smaller batches, variable-length sequences, and online data streams all reduce MFU
+
+So the cleanest expression is not "RL's coefficient is exactly 4" or "exactly 6." Instead:
+
+$$
+C_{\text{RL}} \approx \beta N D_{\text{RL}}
+$$
+
+Here `β` is an **effective GPU-time coefficient**. It absorbs rollout, backward updates, multiple samples, verifiers, and lower utilization.
+
+### How Large Is β?
+
+It depends on what you call `D_RL`:
+
+- If `D_RL` means **all rollout tokens**, `β` is smaller
+- If `D_RL` means **high-quality tokens that actually enter updates**, `β` is much larger
+- If the task uses many samples, self-checks, or long reasoning traces, `β` grows
+
+For this post, the important qualitative fact is:
+
+> 🔑 **One effective RL token is usually more expensive than one pretraining token.**
+
+In many frontier-style training regimes, it is reasonable to think of `β` as higher than `6`. That judgment matters more than the exact number.
+
+---
+
+## VI. The Key Heuristic: Equal Marginal Returns, Not Literal Equal Costs
+
+Now to the central question: how should pretraining, RL, and inference be allocated?
+
+Strictly speaking, the optimum is not "all three total costs must be exactly equal." The real condition is:
+
+> **The last unit of GPU time should produce similar marginal value no matter which ledger receives it.**
+
+If pretraining has much higher marginal value than inference, the model is undertrained. If inference returns far more value than further training, the model is ready to be deployed more widely. If RL's marginal value rises, the bottleneck may have moved from "the model lacks knowledge" to "the model cannot reliably use what it knows."
+
+But in many power-law systems, "similar marginal returns" often leads to a rough pattern:
+
+> **Pretraining, RL, and inference compute land in the same order of magnitude, rather than one consuming 99% while the others are rounding errors.**
+
+That is the heuristic we will use.
+
+---
+
+## VII. What Happens When the Three Ledgers Balance?
+
+Write the three terms:
+
+$$
+C_{\text{pretrain}} \approx 6N D_{\text{pretrain}}
+$$
+
+$$
+C_{\text{RL}} \approx \beta N D_{\text{RL}}
+$$
+
+$$
+C_{\text{inference}} \approx 2N D_{\text{inference}}
+$$
+
+If lifecycle compute is roughly balanced:
+
+$$
+6N D_{\text{pretrain}} \approx \beta N D_{\text{RL}} \approx 2N D_{\text{inference}}
+$$
+
+The beautiful part: `N` cancels.
+
+$$
+6D_{\text{pretrain}} \approx \beta D_{\text{RL}} \approx 2D_{\text{inference}}
+$$
+
+The model's size disappears from the ratio. What remains is a relationship between token counts.
+
+### Pretraining vs Inference
+
+$$
+6D_{\text{pretrain}} \approx 2D_{\text{inference}}
+$$
+
+So:
+
+$$
+D_{\text{inference}} \approx 3D_{\text{pretrain}}
+$$
+
+> 🔑 **A successful model's lifetime inference tokens should be in the same order of magnitude as its pretraining tokens, and may be a few times larger.**
+
+Not exactly equal. The point is: if pretraining is 100T tokens, lifetime inference should not be 1T. It should be in the hundreds-of-trillions range.
+
+### Pretraining vs RL
+
+$$
+6D_{\text{pretrain}} \approx \beta D_{\text{RL}}
+$$
+
+So:
+
+$$
+D_{\text{RL}} \approx \frac{6}{\beta}D_{\text{pretrain}}
+$$
+
+If RL's effective coefficient is `β = 8-12`, then:
+
+$$
+D_{\text{RL}} \approx 0.5-0.75D_{\text{pretrain}}
+$$
+
+> 🔑 **RL GPU time can approach pretraining GPU time even when RL uses fewer effective tokens.**
+
+This fixes a common misconception: RL matters not because its raw token count must be enormous, but because each effective token is expensive, information-dense, and highly influential for the final product behavior.
+
+---
+
+## VIII. This Explains Why Models Are "Overtrained"
+
+Now apply this lens to Chinchilla.
+
+The classic Chinchilla scaling-law takeaway can be remembered roughly as:
+
+$$
+D_{\text{Chinchilla}} \approx 20N
+$$
+
+That is: if you only care about **the best model under a fixed training-compute budget**, the compute-optimal token count is about 20 tokens per parameter.
+
+Take a simplified model with `100B` compute-active parameters:
+
+$$
+20 \times 100B = 2T
+$$
+
+But the lifecycle ledger points in a different direction.
+
+If a frontier model's commercial lifetime inference volume is `100T-600T` tokens, then:
+
+$$
+D_{\text{pretrain}} \approx \frac{D_{\text{inference}}}{3} \approx 30T-200T
+$$
+
+That is `15-100×` above the `2T` Chinchilla-style point.
+
+> 🔑 **"Overtrained relative to Chinchilla" does not mean Chinchilla was wrong. It means Chinchilla optimized a narrower objective: training compute only, not the long inference bill that follows.**
+
+The real commercial target is not "best model for a fixed training budget." It is:
+
+> **Best lifecycle ROI across training + RL + inference.**
+
+Under that objective, **somewhat smaller, sparser, and trained for longer** can be rational: you spend more upfront training compute to lower active inference compute and improve quality, then earn it back over massive inference volume.
+
+---
+
+## IX. A Fermi Estimate: Infer Training Scale from Inference Volume
+
+We do not need any company's internal numbers to make an order-of-magnitude estimate.
+
+Suppose a frontier model family processes on average:
+
+```
+10M-100M tokens / second
+```
+
+and its main commercial lifetime is:
+
+```
+1-3 months ≈ 2.6M-7.8M seconds
+```
+
+Then total inference volume is:
+
+$$
+D_{\text{inference}} \approx 2.6 \times 10^{13} - 7.8 \times 10^{14}
+$$
+
+or:
+
+```
+roughly 30T-800T tokens
+```
+
+Using `D_inference ≈ 3D_pretrain`:
+
+```
+D_pretrain ≈ 10T-260T tokens
+```
+
+This range is intentionally wide. Real deployments involve model variants, cache hits, routing policies, free vs paid users, input/output mix, and model retirement schedules. But it is enough to show the point:
+
+> 🔑 **If a model is truly used at massive scale, pretraining on tens to hundreds of trillions of tokens is not surprising.**
+
+That is not merely "training harder for benchmarks." It falls naturally out of lifecycle economics.
+
+---
+
+## X. RL's Industrial Role: Not a Small Tail, a Second Major Ledger
+
+Many people still think of RL as "a small amount of human preference data at the end." That intuition is outdated.
+
+For stronger models, RL / post-training may include:
+
+- Math, code, tool-use, and long-task rollouts
+- Multiple samples filtered by verifiers
+- Reward models, process rewards, and rule-based judges
+- Self-play, self-rewriting, and self-critiquing
+- Product-specific behavior constraints and safety training
+
+It may not contain as many **raw tokens** as pretraining, but it can consume a comparable amount of **GPU time**.
+
+From the formula:
+
+$$
+C_{\text{RL}} \approx \beta N D_{\text{RL}}
+$$
+
+When `β` is large, RL compute can catch up with pretraining even if `D_RL` is smaller than `D_pretrain`.
+
+> 🔑 **That is where "fewer RL tokens, but large RL compute" comes from.**
+
+So when you see frontier labs emphasize RL, reasoning models, verifiers, and long-horizon tasks, do not read it only as "better data." A better framing is:
+
+> **Once pretraining's marginal returns decline, the next GPU may be more valuable in RL than in more undifferentiated web text.**
+
+---
+
+## XI. What This Framework Helps You Judge
+
+### 1. A Model Company's Compute Planning
+
+If a company trains aggressively but has no inference distribution, it may have built an asset that is not used enough.
+
+If a company has massive inference traffic but underinvests in training and RL, it may be stretching an old model too far and eventually get squeezed by both quality and cost.
+
+A healthy frontier lab has the three ledgers reinforcing one another: **pretraining creates capability, RL turns capability into reliable behavior, and inference turns behavior into revenue and feedback.**
+
+### 2. Architecture Choices
+
+Why does MoE matter? Because it makes `N_compute` smaller than `N_total`.
+
+In all three ledgers, `N` is a multiplier. Lowering active compute per token improves pretraining, RL, and inference at once. MoE, KV compression, speculative decoding, routing, and cache reuse are all trying to shrink that multiplier or amortize it better.
+
+### 3. Product-Level Routing
+
+If you are routing between models, you should not only look at the API price per token.
+
+At the same apparent capability level, a model with stronger pretraining, better RL, and a healthier inference stack may produce:
+
+- Fewer retries
+- Fewer failed tool calls
+- Less need for long prompt patches
+- Less human fallback
+
+All of that returns to real cost. **The cheapest token does not always produce the cheapest completed task.**
+
+---
+
+## XII. One-Paragraph Summary
+
+<Callout type="info" emoji="🗺️">
+
+**The key facts from this post**:
+
+- First-order training compute is `6ND`; first-order inference compute is `2ND`
+- Here `N` means compute-active parameters per token; for MoE, think `N_active`
+- RL includes rollout, update, verifiers, multiple samples, and lower MFU, so it needs an effective coefficient `β`
+- The strict optimum is **equal marginal returns**, not literal equality of total costs
+- Under rough balance, `D_inference ≈ 3D_pretrain`
+- If `β > 6`, RL can use fewer effective tokens than pretraining while still consuming similar GPU time
+- Overtraining relative to Chinchilla is rational because Chinchilla optimizes training alone, while industry optimizes the full training + RL + inference ledger
+
+</Callout>
+
+---
+
+## XIII. Questions to Think Through
+
+1. A 100B active-parameter model trained on only 2T tokens is close to Chinchilla-optimal. If it wants to serve massive user traffic, what problem might it run into? Would you make it larger, or train it on more tokens?
+2. If RL sampling rises from 4 samples per problem to 64 samples per problem, what happens to `β`? Does `D_RL` become larger or smaller relative to `D_pretrain`?
+3. Which company has more reason to train far beyond the Chinchilla point: one with a huge owned consumer app, or one that only sells API access? Why?
+4. A model has a very low API price but often requires retries, long prompt patches, and external tool fallback. Under this lifecycle-ledger view, is it really cheap?
+
+---
+
+<Callout type="info" emoji="🚀">
+
+**Next up**: we return to a harder physical limit: **the memory wall, long-context ceilings, and why context length around 200K / 1M is hard to keep expanding for free**. The earlier pieces on parameter movement, KV cache, rack bandwidth, and lifecycle compute will converge there into one conclusion: LLM prices are not arbitrary. They are squeezed out by physics, architecture, and business model all at once.
+
+</Callout>
