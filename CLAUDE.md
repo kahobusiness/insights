@@ -9,33 +9,51 @@ This is a bilingual (English/Chinese) blog built with Nextra 4 and Next.js 16, d
 ## Development Commands
 
 ```bash
-pnpm dev      # Start dev server with Turbopack
+pnpm dev      # Start dev server (runs `next dev --webpack` — see gotcha below)
 pnpm build    # Build for production (includes pagefind search index generation)
 pnpm start    # Start production server
 ```
 
+`pnpm dev` intentionally uses **webpack, not Turbopack**. Under Turbopack, editing an `.mdx` file triggers an incremental recompile that intermittently resolves a barrel-exported component (e.g. `Callout` from `nextra/components`, which Nextra force-adds to `optimizePackageImports`) to `undefined`, 500-ing the page with "Element type is invalid ... got: undefined" until a full restart. Webpack's MDX pipeline doesn't have this HMR race. Trade-off: slightly slower cold start.
+
 ## Architecture
+
+The whole site is a single Nextra 4 catch-all route. There are no hand-written page files for articles — every `.mdx` under `content/{locale}/` is compiled on demand and served through one dynamic route. Understanding how a URL turns into a rendered, SEO-complete page requires tracing across `proxy.ts` → `app/[lang]/[[...mdxPath]]/page.tsx` → `mdx-components.js`, which is the core flow described below.
 
 ### Content Structure
 - `content/en/` and `content/zh/` - MDX content files mirrored for both locales
 - `content/{locale}/_meta.js` - Navigation structure and page titles for Nextra
 - Navigation supports separators and hidden pages via `_meta.js` configuration
+- Frontmatter is authored as `export const metadata = { title, description, publishedAt, ... }` at the top of each `.mdx` (not YAML). See the commit gate below for required fields.
 
 ### Internationalization
 - Locales: `en` (default), `zh`
-- `i18n-config.ts` - Locale configuration and types
+- `i18n-config.ts` - Locale configuration and types (imported by routing, sitemap, and metadata code — the single source of truth for the locale list)
 - `proxy.ts` - Handles locale detection (cookie → browser preference), redirects root to `/say-hello` (Next.js 16 proxy convention)
 - `dictionaries/` - UI strings for each locale (JSON files)
 - `get-dictionary.ts` - Server-only dictionary loader
 
-### Routing
-- Dynamic route: `app/[lang]/[[...mdxPath]]/page.tsx` handles all MDX pages
-- Root path and locale roots redirect to `/{locale}/say-hello`
-- Proxy auto-prepends locale to paths missing it
+### Routing & rendering flow
+- Dynamic route: `app/[lang]/[[...mdxPath]]/page.tsx` handles all MDX pages via Nextra's `importPage`; `generateStaticParams` pre-renders every path
+- Root path and locale roots redirect to `/{locale}/say-hello`; `proxy.ts` auto-prepends locale to paths missing it
+- `app/[lang]/layout.tsx` wraps everything in the Nextra `Layout` (Navbar/Footer/Search/Banner), loads theme + KaTeX + `globals.css` (order matters — project CSS must come last), and mounts the auto-hide chrome components. It rejects non-locale first segments with `notFound()` (e.g. DevTools probing `/.well-known/...`) before calling `getPageMap`
 
-### Custom Components
-- `app/components/gallery.tsx` - Image gallery component using LightGallery for photo pages
-- `mdx-components.js` - Custom MDX component configuration extending Nextra theme
+### SEO pipeline (spread across three files — change them together)
+- `page.tsx` emits per-page **JSON-LD**: articles render `BlogPosting`, while top-level non-articles listed in `NON_ARTICLE_SLUGS` (`say-hello`, `logs`, `japan-gallery`) render `WebPage` to avoid missing-`datePublished` warnings. It also builds `canonical` + `hreflang` alternates in `generateMetadata`
+- `layout.tsx` sets site-level defaults: `metadataBase`, title template `%s | Insights`, OG/Twitter cards using `/preview.png`
+- `app/sitemap.ts` walks `content/{locale}/` at build time, emitting hreflang alternates per path and skipping `HIDDEN_SEGMENTS`. Pages hidden from nav or non-indexable must be added to that set or they leak into the sitemap
+- The commit gate's SEO checks (description / alt / anchor text) exist because these fields feed directly into the JSON-LD and cards above
+
+### MDX components & interactivity
+- `mdx-components.js` extends the Nextra theme and **globally registers** `ImageRow` and `RecentPosts` (usable in any `.mdx` without import). Its `Wrapper` translates author-controlled `metadata.publishedAt` into Nextra's `timestamp` (see commit gate check 6 for why `timestamp` can't be used directly)
+- Heavier interactive widgets (`CostBatchSimulator`, `TComputeMemorySimulator`, both recharts-based) are **imported per-file** in the MDX that uses them via the `@app/*` alias, not globally registered
+- `app/components/gallery.tsx` - LightGallery-based image gallery for photo pages
+- LaTeX is enabled (`latex: true` in `next.config.mjs`), rendered with KaTeX
+
+### Build & config gotchas
+- **Do NOT add `turbopack.resolveAlias['next-mdx-import-source-file']` to `next.config.mjs`.** Nextra already aliases it to `@vercel/turbopack-next/mdx-import-source` (its HMR-stable MDX provider); overriding it with a raw `./mdx-components.js` path replaces that machinery and 500s on cold compile. This alias was removed — see `next.config.mjs` comment. (Dev on webpack sidesteps the Turbopack MDX HMR issues entirely; see Development Commands.)
+- `pnpm build` runs `next build` then `pagefind` to generate the client-side search index into `public/_pagefind` — search is broken in a plain `next build` without this step
+- Package manager is **pnpm**; `pnpm-workspace.yaml` (not `.npmrc`, per pnpm 11) holds `lockfile: false` and a `zod: ~4.1.12` override — Nextra 4.6.1's `<Layout>` crashes the whole site under zod 4.2+
 
 ### Path Alias
 - `@app/*` maps to `./app/*`
@@ -125,7 +143,7 @@ pnpm start    # Start production server
 ### 检查 6: 文章 publishedAt 是否需要更新
 
 **背景**:
-站点底部显示的「最后更新于 xxx」取自每篇文章 `metadata.publishedAt` 字段（手动维护，由 `mdx-components.tsx` 里的 wrapper 转换为 Nextra 的 `timestamp` 渲染）。**注意：不能直接用 `timestamp` 字段** —— Nextra 的 `remark-assign-frontmatter` 会用每个文件的 git 最后修改时间无条件覆盖 `timestamp`，导致 SEO 批量改一行也会让所有文章显示同一天。
+站点底部显示的「最后更新于 xxx」取自每篇文章 `metadata.publishedAt` 字段（手动维护，由 `mdx-components.js` 里的 wrapper 转换为 Nextra 的 `timestamp` 渲染）。**注意：不能直接用 `timestamp` 字段** —— Nextra 的 `remark-assign-frontmatter` 会用每个文件的 git 最后修改时间无条件覆盖 `timestamp`，导致 SEO 批量改一行也会让所有文章显示同一天。
 
 这个时间是给读者看的「内容代表更新日期」，应该只在文章内容**实质性更新**时才往后调，避免 SEO 改一行字、修一个错别字也让所有文章看起来像刚翻新过。
 

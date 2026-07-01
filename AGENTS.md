@@ -125,7 +125,7 @@ pnpm start    # Start production server
 ### 检查 6: 文章 publishedAt 是否需要更新
 
 **背景**:
-站点底部显示的「最后更新于 xxx」取自每篇文章 `metadata.publishedAt` 字段（手动维护，由 `mdx-components.tsx` 里的 wrapper 转换为 Nextra 的 `timestamp` 渲染）。**注意：不能直接用 `timestamp` 字段** —— Nextra 的 `remark-assign-frontmatter` 会用每个文件的 git 最后修改时间无条件覆盖 `timestamp`，导致 SEO 批量改一行也会让所有文章显示同一天。
+站点底部显示的「最后更新于 xxx」取自每篇文章 `metadata.publishedAt` 字段（手动维护，由 `mdx-components.js` 里的 wrapper 转换为 Nextra 的 `timestamp` 渲染）。**注意：不能直接用 `timestamp` 字段** —— Nextra 的 `remark-assign-frontmatter` 会用每个文件的 git 最后修改时间无条件覆盖 `timestamp`，导致 SEO 批量改一行也会让所有文章显示同一天。
 
 这个时间是给读者看的「内容代表更新日期」，应该只在文章内容**实质性更新**时才往后调，避免 SEO 改一行字、修一个错别字也让所有文章看起来像刚翻新过。
 
