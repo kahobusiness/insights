@@ -2,7 +2,7 @@ import { Callout } from 'nextra/components'
 
 export const metadata = {
   description: 'A lifecycle compute ledger for LLMs: 6ND training, 2N inference, RL effective cost, and why pretraining, RL, and inference converge to similar scale.',
-  publishedAt: '2026-06-29'
+  publishedAt: '2026-07-01'
 }
 
 # ✏️ The Math Behind LLM Pricing 06: The Compute Ledger of Training, RL, and Inference
@@ -147,24 +147,26 @@ RL also tends to run less efficiently than pretraining:
 So the cleanest expression is not "RL's coefficient is exactly 4" or "exactly 6." Instead:
 
 $$
-C_{\text{RL}} \approx \beta N D_{\text{RL}}
+C_{\text{RL}} \approx \alpha N D_{\text{RL}}
 $$
 
-Here `β` is an **effective GPU-time coefficient**. It absorbs rollout, backward updates, multiple samples, verifiers, and lower utilization.
+Here `α` is the **effective compute coefficient per RL token**. But be careful: its size depends on what you count as a `D_RL` token.
 
-### How Large Is β?
+### How Large Is α? First Define the Token Counter
 
 It depends on what you call `D_RL`:
 
-- If `D_RL` means **all rollout tokens**, `β` is smaller
-- If `D_RL` means **high-quality tokens that actually enter updates**, `β` is much larger
-- If the task uses many samples, self-checks, or long reasoning traces, `β` grows
+- If `D_RL` means **all rollout tokens** generated, evaluated, and filtered inside the RL loop, `α` is smaller. In long-CoT RL, many tokens are just forward-generation tokens, so the coefficient can move toward `2-3`.
+- If `D_RL` means only **high-quality tokens that actually enter gradient updates**, then rollout, verifier, and multi-sample costs are hidden behind each update token; the effective `α` can be greater than `6`.
+- If a task uses many samples, self-checks, or long reasoning traces, whether `α` rises or falls depends on whether those generated tokens are included in the denominator or treated as hidden overhead.
 
-For this post, the important qualitative fact is:
+<Callout type="warning" emoji="⚠️">
 
-> 🔑 **One effective RL token is usually more expensive than one pretraining token.**
+**Always name the counting convention**. When this post asks whether "RL tokens can exceed pretraining tokens," `D_RL` means **rollout / generation / evaluation tokens inside the RL loop**. Under that convention, a smaller `α` means a larger `D_RL`. If you count only update tokens, the conclusion can flip.
 
-In many frontier-style training regimes, it is reasonable to think of `β` as higher than `6`. That judgment matters more than the exact number.
+</Callout>
+
+This is why RL is hard to count: it contains both inference-like generation and training-like updates, and modern reasoning-model training is pushing more of the cost into the generation side.
 
 ---
 
@@ -195,7 +197,7 @@ C_{\text{pretrain}} \approx 6N D_{\text{pretrain}}
 $$
 
 $$
-C_{\text{RL}} \approx \beta N D_{\text{RL}}
+C_{\text{RL}} \approx \alpha N D_{\text{RL}}
 $$
 
 $$
@@ -205,13 +207,13 @@ $$
 If lifecycle compute is roughly balanced:
 
 $$
-6N D_{\text{pretrain}} \approx \beta N D_{\text{RL}} \approx 2N D_{\text{inference}}
+6N D_{\text{pretrain}} \approx \alpha N D_{\text{RL}} \approx 2N D_{\text{inference}}
 $$
 
 The beautiful part: `N` cancels.
 
 $$
-6D_{\text{pretrain}} \approx \beta D_{\text{RL}} \approx 2D_{\text{inference}}
+6D_{\text{pretrain}} \approx \alpha D_{\text{RL}} \approx 2D_{\text{inference}}
 $$
 
 The model's size disappears from the ratio. What remains is a relationship between token counts.
@@ -235,24 +237,36 @@ Not exactly equal. The point is: if pretraining is 100T tokens, lifetime inferen
 ### Pretraining vs RL
 
 $$
-6D_{\text{pretrain}} \approx \beta D_{\text{RL}}
+6D_{\text{pretrain}} \approx \alpha D_{\text{RL}}
 $$
 
 So:
 
 $$
-D_{\text{RL}} \approx \frac{6}{\beta}D_{\text{pretrain}}
+D_{\text{RL}} \approx \frac{6}{\alpha}D_{\text{pretrain}}
 $$
 
-If RL's effective coefficient is `β = 8-12`, then:
+If `α = 6`, each RL token is as expensive as a full training token:
 
 $$
-D_{\text{RL}} \approx 0.5-0.75D_{\text{pretrain}}
+D_{\text{RL}} \approx D_{\text{pretrain}}
 $$
 
-> 🔑 **RL GPU time can approach pretraining GPU time even when RL uses fewer effective tokens.**
+If `α = 4`, some tokens are generated only while others are used for updates:
 
-This fixes a common misconception: RL matters not because its raw token count must be enormous, but because each effective token is expensive, information-dense, and highly influential for the final product behavior.
+$$
+D_{\text{RL}} \approx 1.5D_{\text{pretrain}}
+$$
+
+If long rollouts dominate and `α` moves toward `2-3`:
+
+$$
+D_{\text{RL}} \approx 2-3D_{\text{pretrain}}
+$$
+
+> 🔑 **Under the rollout-token convention, RL token count can absolutely exceed pretraining token count.**
+
+But if you count only "update tokens" and hide rollout / verifier / multi-sample cost behind each update token, the effective `α` may exceed `6`, in which case `D_RL` becomes smaller than `D_pretrain`. That is not a contradiction. It is a different denominator.
 
 ---
 
@@ -353,16 +367,22 @@ It may not contain as many **raw tokens** as pretraining, but it can consume a c
 From the formula:
 
 $$
-C_{\text{RL}} \approx \beta N D_{\text{RL}}
+C_{\text{RL}} \approx \alpha N D_{\text{RL}}
 $$
 
-When `β` is large, RL compute can catch up with pretraining even if `D_RL` is smaller than `D_pretrain`.
+Under the rollout-token convention, if `α` moves toward `2-3`, then for RL compute to catch up with pretraining, `D_RL` naturally becomes several times `D_pretrain`:
 
-> 🔑 **That is where "fewer RL tokens, but large RL compute" comes from.**
+$$
+D_{\text{RL}} \approx \frac{6}{2.5}D_{\text{pretrain}} \approx 2.4D_{\text{pretrain}}
+$$
+
+> 🔑 **That is where "RL tokens can exceed pretraining tokens" comes from: not because each token is more expensive, but because rollout tokens are cheaper, so you do more of them.**
 
 So when you see frontier labs emphasize RL, reasoning models, verifiers, and long-horizon tasks, do not read it only as "better data." A better framing is:
 
 > **Once pretraining's marginal returns decline, the next GPU may be more valuable in RL than in more undifferentiated web text.**
+
+The bottleneck then shifts: once rollout generation is no longer the only constraint, high-quality verifiable RL environments become critical. Code sandboxes, math datasets, tool tasks, and automatic evaluators are all ways to expand RL capacity.
 
 ---
 
@@ -405,22 +425,116 @@ All of that returns to real cost. **The cheapest token does not always produce t
 
 - First-order training compute is `6ND`; first-order inference compute is `2ND`
 - Here `N` means compute-active parameters per token; for MoE, think `N_active`
-- RL includes rollout, update, verifiers, multiple samples, and lower MFU, so it needs an effective coefficient `β`
+- RL includes rollout, update, verifiers, multiple samples, and lower MFU, so it needs an effective coefficient `α`
 - The strict optimum is **equal marginal returns**, not literal equality of total costs
 - Under rough balance, `D_inference ≈ 3D_pretrain`
-- If `β > 6`, RL can use fewer effective tokens than pretraining while still consuming similar GPU time
+- Under the rollout-token convention, `D_RL = (6/α)D_pretrain`; when long CoT pushes `α` toward `2-3`, RL tokens can exceed pretraining tokens
+- If you count only update tokens and hide rollout cost behind them, the effective `α` can exceed `6`, making RL token count smaller than pretraining
 - Overtraining relative to Chinchilla is rational because Chinchilla optimizes training alone, while industry optimizes the full training + RL + inference ledger
 
 </Callout>
 
 ---
 
-## XIII. Questions to Think Through
+## XIII. Two Exercises: Use the Ledger
 
-1. A 100B active-parameter model trained on only 2T tokens is close to Chinchilla-optimal. If it wants to serve massive user traffic, what problem might it run into? Would you make it larger, or train it on more tokens?
-2. If RL sampling rises from 4 samples per problem to 64 samples per problem, what happens to `β`? Does `D_RL` become larger or smaller relative to `D_pretrain`?
-3. Which company has more reason to train far beyond the Chinchilla point: one with a huge owned consumer app, or one that only sells API access? Why?
-4. A model has a very low API price but often requires retries, long prompt patches, and external tool fallback. Under this lifecycle-ledger view, is it really cheap?
+### Exercise 1: A 100B Model Trained on Only 2T Tokens
+
+**Question**: suppose a startup trains a `100B` active-parameter model on only `2T` tokens, close to the Chinchilla point. Under the "training + inference ledger" view, what is wrong with its compute allocation? If its goal is to serve many users, how should it adjust?
+
+The intuitive answer: **training and inference are badly imbalanced**.
+
+Compute it:
+
+$$
+C_{\text{pretrain}} = 6 \times 100B \times 2T = 1.2 \times 10^{24}
+$$
+
+If the model is meant to serve a large market, suppose its lifetime inference volume is `200T` tokens:
+
+$$
+C_{\text{inference}} = 2 \times 100B \times 200T = 4 \times 10^{25}
+$$
+
+Inference compute is more than **30x** pretraining compute. If this model is supposed to support massive inference volume, it was trained too lightly.
+
+But there is one important flip: **which direction you adjust depends on what is fixed**.
+
+**View A: inference demand is fixed**
+
+The company must serve that many users, so inference compute is not optional. Then the answer is: **increase training investment**.
+
+Concretely, do not train the same `100B` model for only `2T` tokens. Train it on `60T-100T` tokens so training compute catches up with expected inference scale.
+
+> 🔑 **This is where overtraining comes from**: not from the training team randomly wanting to burn more GPU, but from future inference scale pulling the training target upward.
+
+**View B: training budget is fixed**
+
+If the company can only afford the `2T`-token training run, then the conclusion flips: **do not serve that much inference volume**. Limit users, serve only high-paying customers, or position the model as a research / lower-traffic model rather than a mass-market product.
+
+In the real world, View A is more common. AI businesses are usually built around scaling usage; inference demand is pulled by the market, while training is a controllable investment. So the common path is: **given expected inference scale, infer how far training should go**.
+
+The startup has three adjustment paths:
+
+1. **Train the same 100B model on 60T-100T tokens**: inference cost stays the same, quality rises, and the ledger is healthier.
+2. **Train a larger model**: capability may improve, but per-token inference cost rises, so this may not be lifecycle-optimal.
+3. **Train a sparser MoE model**: larger total capacity, smaller active compute, more room to absorb training data while keeping inference cost low.
+
+> 🔑 **Modern frontier systems lean toward sparse MoE because architecture, training mix, and inference economics are one coupled decision.**
+
+📌 **Applied to Tbox**: when judging whether a model is "trained enough," do not only compare it to Chinchilla. Compare its training volume with its expected serving scale. A small model trained on 100T tokens may be preparing for mass deployment; one trained on 2T tokens may be closer to a research or low-traffic deployment.
+
+### Exercise 2: Can RL Tokens Exceed Pretraining Tokens?
+
+**Question**: if RL keeps taking a larger share of frontier-model compute, can RL token count exceed pretraining token count? Under what conditions?
+
+Return to the equation:
+
+$$
+6D_{\text{pretrain}} = \alpha D_{\text{RL}}
+$$
+
+So:
+
+$$
+D_{\text{RL}} = \frac{6}{\alpha}D_{\text{pretrain}}
+$$
+
+Answer: **yes, if `α` falls below `6` and RL's marginal returns have not saturated.**
+
+The numbers make it clear:
+
+| `α` | Meaning | Implied RL token count |
+| --- | --- | --- |
+| `6` | Every RL token costs like full training | `D_RL = D_pretrain` |
+| `4` | Part update, part generation | `D_RL = 1.5D_pretrain` |
+| `2` | Almost pure rollout inference | `D_RL = 3D_pretrain` |
+
+> 🔑 **Smaller `α` means more RL tokens. Cheaper tokens should be done more.**
+
+This is the key trend in long-CoT RL: one rollout may generate thousands or tens of thousands of tokens, while only part of the trajectory drives gradient updates.
+
+- Rollout generation: mostly forward pass, `α ≈ 2`
+- Gradient update: forward + backward, `α ≈ 6`
+- Weighted average: if generation dominates, `α` moves toward `2-3`
+
+Then:
+
+$$
+D_{\text{RL}} \approx \frac{6}{2.5}D_{\text{pretrain}} \approx 2.4D_{\text{pretrain}}
+$$
+
+So RL token count can plausibly reach **2-3x pretraining token count**.
+
+For RL to formally exceed pretraining, at least three conditions need to hold:
+
+1. **RL is dominated by long rollout inference**: lots of generation, relatively fewer updates, so `α` falls.
+2. **RL still has strong marginal returns**: the model has not saturated on RL.
+3. **There are enough high-quality, verifiable RL environments**: otherwise more generated tokens are just noise.
+
+The third condition may be the real bottleneck. Compute can scale and rollouts can be generated, but verifiable tasks, real environments, automatic evaluators, code sandboxes, and math datasets are harder to scale.
+
+📌 **Applied to Tbox**: if your product is an agent, code-generation system, math solver, or data-analysis workflow with verifiable outputs, then user interactions plus success / failure signals can themselves become an RL data source. That is an underrated strategic asset for application-layer companies.
 
 ---
 
