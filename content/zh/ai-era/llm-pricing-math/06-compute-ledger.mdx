@@ -2,7 +2,7 @@ import { Callout } from 'nextra/components'
 
 export const metadata = {
   description: '从单次推理走到模型生命周期总账：用 6ND 训练公式、2N 推理公式和 RL 的有效成本系数，解释预训练、强化学习与推理算力为什么会在产业里趋向同一数量级，以及为什么模型会相对 Chinchilla 过训。',
-  publishedAt: '2026-06-29'
+  publishedAt: '2026-07-01'
 }
 
 # ✏️ LLM 定价的数学原理 06：训练、RL 与推理的算力总账
@@ -147,24 +147,26 @@ RL / 后训练最容易算错，因为它不是单纯的「再训练一点数据
 所以更稳妥的写法不是硬说 RL 系数一定是 4 或 6，而是把它写成：
 
 $$
-C_{\text{RL}} \approx \beta N D_{\text{RL}}
+C_{\text{RL}} \approx \alpha N D_{\text{RL}}
 $$
 
-这里的 `β` 是**有效 GPU 时间系数**，已经把 rollout、反向传播、多次采样、验证器和低利用率都折进去了。
+这里的 `α` 是**每个 RL token 的有效算力系数**。但要小心：`α` 的大小，取决于你把什么叫作一个 `D_RL` token。
 
-### β 应该多大？
+### α 应该多大？先问 token 口径
 
 这取决于你怎么定义 `D_RL`：
 
-- 如果 `D_RL` 指**所有 rollout token**，`β` 会相对小一些
-- 如果 `D_RL` 指**真正进入训练更新的高质量 token**，`β` 会大很多
-- 如果任务需要多次采样、自我验证、长链路推理，`β` 也会变大
+- 如果 `D_RL` 指**所有 rollout token**，也就是模型在 RL 回路里生成、评估、筛选过的 token，那么 `α` 会偏小。长 CoT RL 里，大量 token 只是前向生成，系数会向 `2-3` 靠近。
+- 如果 `D_RL` 指**真正进入梯度更新的高质量 token**，那很多 rollout / verifier / 多次采样的成本都被藏进每个 update token 背后，等效 `α` 反而可能大于 `6`。
+- 如果任务需要大量采样、自我验证、长链路推理，`α` 到底变大还是变小，取决于你把这些生成 token 记进分母，还是把它们当作隐藏开销。
 
-在这篇里，咱们只需要一个定性事实：
+<Callout type="warning" emoji="⚠️">
 
-> 🔑 **RL 每个有效 token 通常比预训练 token 更贵。**
+**口径一定要说清楚**：后文讨论「RL token 数会不会超过预训练」时，默认 `D_RL` 指 **RL 回路里的 rollout / 生成 / 评估 token**。在这个口径下，`α` 变小会让 `D_RL` 变大。若只数「被拿来反向更新的 token」，结论可能反过来。
 
-也就是在很多前沿训练场景里，可以把 `β` 想成高于 `6` 的有效系数。这个判断比某个具体数字更重要。
+</Callout>
+
+这也是 RL 难算的地方：它同时有「推理式生成」和「训练式更新」，而现代推理模型正在把越来越多成本放到前者。
 
 ---
 
@@ -195,7 +197,7 @@ C_{\text{pretrain}} \approx 6N D_{\text{pretrain}}
 $$
 
 $$
-C_{\text{RL}} \approx \beta N D_{\text{RL}}
+C_{\text{RL}} \approx \alpha N D_{\text{RL}}
 $$
 
 $$
@@ -205,13 +207,13 @@ $$
 如果三项生命周期算力在同一个量级，先写成近似相等：
 
 $$
-6N D_{\text{pretrain}} \approx \beta N D_{\text{RL}} \approx 2N D_{\text{inference}}
+6N D_{\text{pretrain}} \approx \alpha N D_{\text{RL}} \approx 2N D_{\text{inference}}
 $$
 
 最漂亮的地方来了：`N` 可以消掉。
 
 $$
-6D_{\text{pretrain}} \approx \beta D_{\text{RL}} \approx 2D_{\text{inference}}
+6D_{\text{pretrain}} \approx \alpha D_{\text{RL}} \approx 2D_{\text{inference}}
 $$
 
 也就是说，**模型有多大在这个比例关系里消失了**。剩下的只是 token 数之间的关系。
@@ -235,24 +237,36 @@ $$
 ### 预训练 vs RL
 
 $$
-6D_{\text{pretrain}} \approx \beta D_{\text{RL}}
+6D_{\text{pretrain}} \approx \alpha D_{\text{RL}}
 $$
 
 所以：
 
 $$
-D_{\text{RL}} \approx \frac{6}{\beta}D_{\text{pretrain}}
+D_{\text{RL}} \approx \frac{6}{\alpha}D_{\text{pretrain}}
 $$
 
-如果 RL 的有效系数 `β = 8-12`，那么：
+如果 `α = 6`，表示每个 RL token 像一次完整训练一样贵：
 
 $$
-D_{\text{RL}} \approx 0.5-0.75D_{\text{pretrain}}
+D_{\text{RL}} \approx D_{\text{pretrain}}
 $$
 
-> 🔑 **RL 的 GPU 时间可以接近预训练，但它的有效 token 数往往会少一些。**
+如果 `α = 4`，表示部分 token 只做生成、部分 token 才做更新：
 
-这修掉了一个常见误解：RL 不是因为 token 数巨大才重要，而是因为**每个有效 token 贵、信息密度高、对最终产品能力影响大**。
+$$
+D_{\text{RL}} \approx 1.5D_{\text{pretrain}}
+$$
+
+如果长 rollout 占主导，`α` 向 `2-3` 靠近：
+
+$$
+D_{\text{RL}} \approx 2-3D_{\text{pretrain}}
+$$
+
+> 🔑 **在 rollout-token 口径下，RL token 数完全可能超过预训练 token 数。**
+
+但如果你只数「真正用于反向传播的 update token」，并把 rollout / verifier / 多次采样都当作隐藏开销，那么等效 `α` 可能大于 `6`，这时 `D_RL` 又会小于 `D_pretrain`。这不是矛盾，而是**分母不一样**。
 
 ---
 
@@ -353,16 +367,22 @@ D_pretrain ≈ 10T-260T token
 用公式看：
 
 $$
-C_{\text{RL}} \approx \beta N D_{\text{RL}}
+C_{\text{RL}} \approx \alpha N D_{\text{RL}}
 $$
 
-当 `β` 很大时，即使 `D_RL` 小于 `D_pretrain`，RL 算力也能追上预训练。
+在 rollout-token 口径下，如果 `α` 越来越接近 `2-3`，那为了让 RL 算力追上预训练，`D_RL` 就会自然变成 `D_pretrain` 的几倍：
 
-> 🔑 **这就是「RL token 略少，但 RL 算力不小」的来源。**
+$$
+D_{\text{RL}} \approx \frac{6}{2.5}D_{\text{pretrain}} \approx 2.4D_{\text{pretrain}}
+$$
+
+> 🔑 **这就是「RL token 可能超过预训练」的来源：不是因为每个 token 更贵，而是因为 rollout token 更便宜、可以做得更多。**
 
 所以当你看到头部实验室越来越强调 RL、推理模型、验证器、长链路任务，不要只理解成「数据质量更高了」。更准确的说法是：
 
 > **预训练的边际收益下降后，下一块 GPU 投到 RL 里，可能比继续无差别喂网页文本更划算。**
+
+真正的瓶颈也会随之改变：当生成 rollout 的算力不再是唯一瓶颈，高质量、可验证的 RL 环境就会变得更关键。代码沙盒、数学题库、工具任务、自动 evaluator，本质上都是在给 RL 扩产。
 
 ---
 
@@ -405,22 +425,116 @@ MoE 为什么重要？因为它让 `N_compute` 低于 `N_total`。
 
 - 训练算力的一阶公式是 `6ND`，推理算力的一阶公式是 `2ND`
 - 这里的 `N` 应该理解为每 token 实际参与计算的参数量，MoE 要看 `N_active`
-- RL 既包含 rollout，又包含 update，还常常有 verifier / 多次采样 / 低 MFU，所以要用有效系数 `β`
+- RL 既包含 rollout，又包含 update，还常常有 verifier / 多次采样 / 低 MFU，所以要用有效系数 `α`
 - 最优点严格说是**边际收益平衡**，不是三项成本数学上必须相等
 - 在粗略平衡下，`D_inference ≈ 3D_pretrain`
-- 如果 `β > 6`，RL 的有效 token 数可以少于预训练，但 GPU 时间仍然接近
+- 在 rollout-token 口径下，`D_RL = (6/α)D_pretrain`；当 long CoT 让 `α` 向 `2-3` 靠近时，RL token 数可能超过预训练
+- 如果只数 update token，并把 rollout 开销藏进每个 update token 背后，等效 `α` 可能大于 `6`，这时 RL token 数又会少于预训练
 - 模型相对 Chinchilla「过训」是合理的，因为 Chinchilla 只优化训练单项，而产业优化的是训练 + RL + 推理总账
 
 </Callout>
 
 ---
 
-## 十三、留几个可以自己想的问题
+## 十三、两道练习：把总账用起来
 
-1. 如果一个 100B active 参数模型只训了 2T token，刚好接近 Chinchilla optimal。它如果想服务海量用户，可能会遇到什么问题？你会建议它继续加大模型，还是继续加训练 token？
-2. 如果 RL 的多次采样从每题 4 次变成每题 64 次，公式里的 `β` 会怎么变？这会让 `D_RL` 相对 `D_pretrain` 变多还是变少？
-3. 如果某家公司拥有巨大的自有应用流量，而另一家公司只卖 API，谁更有理由把训练 token 推到 Chinchilla 推荐值的几十倍？为什么？
-4. 一个模型的 API 单价很低，但经常需要重试、长 prompt 补救、外部工具兜底。用这篇的总账视角看，它真的便宜吗？
+### 练习 1：100B 模型只训 2T token
+
+**题目**：假设有一家初创公司训练了一个 `100B` active 参数模型，只用了 `2T` token，刚好接近 Chinchilla optimal。问题是：在「训练 + 推理总账」框架下，它的算力分配出了什么问题？如果目标是服务大量用户，应该怎么调整？
+
+直觉答案是：**训练和推理严重不平衡**。
+
+算一下：
+
+$$
+C_{\text{pretrain}} = 6 \times 100B \times 2T = 1.2 \times 10^{24}
+$$
+
+如果它真的想服务大量用户，假设生命周期推理量是 `200T` token：
+
+$$
+C_{\text{inference}} = 2 \times 100B \times 200T = 4 \times 10^{25}
+$$
+
+推理算力大约是训练算力的 **30 多倍**。这说明什么？说明这个模型如果要承接大规模推理，训练投入太薄了。
+
+但这里有一个关键翻转：**该往哪个方向调，取决于你把什么当作约束**。
+
+**视角 A：推理需求是给定的**
+
+公司必须服务这么多用户，推理算力降不下来。那你的结论就是：**增加训练投入**。
+
+具体做法是：同一个 `100B` 模型不要只训 `2T` token，而是训到 `60T-100T` token，让训练算力追上预期推理规模。
+
+> 🔑 **这就是「过训」的合理性来源**：不是训练部门忽然想多烧 GPU，而是被未来推理规模反推出来的。
+
+**视角 B：训练预算是给定的**
+
+如果公司只能承担 `2T` token 的训练预算，那结论反过来：**不要服务那么大的推理规模**。它应该限制用户量、只服务高付费客户，或者把模型定位成研究模型，而不是全民级产品。
+
+现实中，视角 A 更常见。AI 公司的商业模式通常是服务规模化，推理需求由市场拉动，训练是可控投入。所以更常见的路径是：**给定推理规模，反推训练量应该做到什么程度**。
+
+这家公司有三种调整方式：
+
+1. **同一个 100B 模型训到 60T-100T token**：推理成本不变，模型更强，总账更合理。
+2. **训一个更大的模型**：能力可能更强，但单次推理成本也会变高，不一定是总账最优。
+3. **训一个更稀疏的 MoE 模型**：比如总参数更大，但 active 参数更小，让模型有更大容量吸收训练数据，同时保持推理成本低。
+
+> 🔑 **现代前沿模型偏爱稀疏 MoE，正是因为架构选择、训练配比、推理经济学是一整套联动决策。**
+
+📌 **应用到 Tbox**：评估一个模型是否「训练充分」时，不要只看它跟 Chinchilla 比过训多少倍，还要看它的训练量是否跟预期服务规模匹配。一个小模型训了 100T token，可能是在准备大规模服务；只训 2T token，可能更像研究性质或中低流量部署。
+
+### 练习 2：RL token 会超过预训练 token 吗？
+
+**题目**：如果未来 RL 在前沿模型里的算力占比继续上升，RL token 数会超过预训练 token 数吗？在什么条件下会？
+
+回到公式：
+
+$$
+6D_{\text{pretrain}} = \alpha D_{\text{RL}}
+$$
+
+所以：
+
+$$
+D_{\text{RL}} = \frac{6}{\alpha}D_{\text{pretrain}}
+$$
+
+答案是：**会，但前提是 `α` 下降到小于 `6`，并且 RL 的边际收益还没饱和。**
+
+几个数字就能看清：
+
+| `α` | 含义 | 推出的 RL token 数 |
+| --- | --- | --- |
+| `6` | 每个 RL token 都像完整训练一样贵 | `D_RL = D_pretrain` |
+| `4` | 部分训练、部分生成 | `D_RL = 1.5D_pretrain` |
+| `2` | 几乎纯 rollout 推理 | `D_RL = 3D_pretrain` |
+
+> 🔑 **`α` 越小，RL token 越多。便宜的 token，就应该多做。**
+
+这正是 long CoT RL 的关键趋势：一次 rollout 可能生成几千到几万 token，但真正做梯度更新的只是其中一部分。
+
+- Rollout 生成阶段：主要是前向，`α ≈ 2`
+- 梯度更新阶段：前向 + 反向，`α ≈ 6`
+- 加权平均后：如果生成占比越来越高，`α` 会向 `2-3` 靠近
+
+于是：
+
+$$
+D_{\text{RL}} \approx \frac{6}{2.5}D_{\text{pretrain}} \approx 2.4D_{\text{pretrain}}
+$$
+
+也就是说，**RL token 数完全可能达到预训练的 2-3 倍**。
+
+但它要正式超过预训练，至少需要三个条件：
+
+1. **RL 主要由长 rollout 推理构成**：生成很多，更新相对少，`α` 变小。
+2. **RL 的边际收益仍然显著**：模型还没在 RL 上饱和。
+3. **有足够高质量、可验证的 RL 环境**：否则生成再多 token，也只是噪音。
+
+第 3 条可能才是当前真正的瓶颈。算力可以扩，rollout 可以生成，但可验证任务、真实环境、自动 evaluator、代码沙盒、数学题库这些东西没那么容易扩。
+
+📌 **应用到 Tbox**：如果你的产品是 agent、代码生成、数学求解、数据分析这类有可验证输出的系统，那么用户交互数据 + 成功 / 失败信号，本身就可能成为 RL 数据源。这是应用层公司在 AI 时代容易被低估的一种战略资产。
 
 ---
 

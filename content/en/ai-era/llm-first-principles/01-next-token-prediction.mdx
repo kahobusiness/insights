@@ -3,7 +3,7 @@ import { Callout } from 'nextra/components'
 export const metadata = {
   title: 'The First Principle of LLMs: Predicting the Next Token',
   description: 'A beginner-friendly explanation of why large language models are not knowledge databases, but probabilistic systems that compress patterns in language by predicting the next token.',
-  publishedAt: '2026-06-26'
+  publishedAt: '2026-07-01'
 }
 
 # 01: The First Principle of LLMs: Predicting the Next Token
@@ -26,14 +26,12 @@ We invoke "first principles" not to trace the idea back to Aristotle's discussio
 
 > Return to the most basic conditions of a thing, break it into elements that are hard to reduce further, then reason upward from those elements toward the path that can achieve the goal.
 
-This raises two core questions:
+Following this line of thinking, we need to figure out two things:
 
 1. **What is the goal?** Why do we need large language models at all?
 2. **What are the key elements?** What are the most basic, irreducible elements for realizing a large language model?
 
-On the goal: my view is that, at a high level, in order to further liberate productivity, humanity keeps pursuing artificial general intelligence (AGI): enabling machines to understand and handle open-ended human tasks. LLMs are one viable path toward AGI.
-
-What it means to "make machines understand and handle open-ended human tasks": answering questions, explaining concepts, writing code, summarizing articles, translating sentences, planning steps, and continuing a conversation based on context. These tasks look different on the surface, but they share the same underlying form: they can all be written as a language input, and we expect the system to produce a suitable language output.
+At a high level, in order to further liberate productivity, humanity keeps pursuing artificial general intelligence (AGI): enabling machines to understand and handle open-ended human tasks — answering questions, explaining concepts, writing code, summarizing articles, translating sentences, planning steps, and continuing a conversation based on context. These tasks look different on the surface, but they share the same underlying form: they can all be written as a language input, and we expect the system to produce a suitable language output.
 
 That gives us a computable goal:
 
@@ -97,13 +95,9 @@ repeat until the answer is finished.
 
 Sounds like autocomplete, right?
 
-That intuition is not wrong, but it is not enough. Ordinary autocomplete fills in a few common words. A large language model is trained across massive amounts of text, code, papers, web pages, conversations, and mathematical reasoning, until it becomes an extremely complex prediction system.
+That intuition is not wrong, but it is not enough. Ordinary autocomplete fills in a few common words. A large language model is trained across massive amounts of text, code, papers, web pages, conversations, and mathematical reasoning, until it becomes an extremely complex prediction system. Once this prediction task is scaled far enough, it is no longer just guessing words. In order to predict well, the model is forced to learn the structure behind language: facts, grammar, logic, style, code patterns, the relationship between questions and answers, and the common ways humans complete tasks.
 
-Once this prediction task is scaled far enough, it is no longer just guessing words. In order to predict well, the model is forced to learn the structure behind language: facts, grammar, logic, style, code patterns, the relationship between questions and answers, and the common ways humans complete tasks.
-
-Now let's shrink the scale back down and return to "tokens."
-
-A token is the basic unit a model uses to process the world.
+Coming back to tokens, a token is the basic unit a model uses to process the world.
 
 When a person reads this sentence:
 
@@ -156,9 +150,7 @@ Because tokens are the model's basic unit for processing the world.
 
 ![The model uses the true next token as the training target and updates parameters through prediction error feedback](/llm-first-principles/01-next-token-prediction/training-next-token.png)
 
-Once we understand tokens, we can look at training.
-
-What is a large language model actually trained to do? Its most basic training task is called next-token prediction.
+Once we understand tokens, we can look at training. The most basic training task of a large language model is called next-token prediction.
 
 More precisely, it is not trying to predict one uniquely correct answer. It is learning:
 
@@ -166,39 +158,11 @@ More precisely, it is not trying to predict one uniquely correct answer. It is l
 Given the current context, what is the probability distribution over the next token?
 ```
 
-For example, if the model sees:
+For example, given "Happy birthday," it should assign a high probability to "to you"; given the start of a function `function add(a, b)`, it should know the body will most likely be `return a + b`.
 
-```text
-Happy birthday
-```
+"Guess the next token" is not a difficult task by itself. The difficult part is guessing well across many different kinds of context. If the model has only seen a few thousand sentences, it can mostly learn fixed phrases, such as "nice weather," "happy birthday to you," or "Beijing is the capital of China" — that is closer to memorization. But if the model has seen massive amounts of text, the situation changes. It will encounter novels, news articles, legal documents, code repositories, research papers, encyclopedias, forum answers, product docs, math problems, and chat logs.
 
-it should learn to assign a high probability, or high priority, to:
-
-```text
-to
-```
-
-And if the model sees:
-
-```text
-function add(a, b) { return
-```
-
-it should know that the next part is likely to be:
-
-```text
-a + b
-```
-
-"Guess the next token" is not a difficult task by itself. The difficult part is guessing well across many different kinds of context.
-
-If the model has only seen a few thousand sentences, it can mostly learn fixed phrases, such as "nice weather," "happy birthday to you," or "Beijing is the capital of China." That is closer to memorization.
-
-But if the model has seen massive amounts of text, the situation changes. It will encounter novels, news articles, legal documents, code repositories, research papers, encyclopedias, forum answers, product docs, math problems, and chat logs.
-
-At that scale, simply memorizing which words often appear together is not enough.
-
-To predict better, the model has to gradually learn:
+At that scale, simply memorizing which words often appear together is not enough. To predict better, the model has to gradually learn:
 
 ```text
 how sentences are organized
@@ -247,11 +211,7 @@ calculus: 5%
 other: 5%
 ```
 
-The real situation is, of course, much more complex. The model is not choosing from only these few options. It calculates a probability for every possible token in its vocabulary.
-
-Then the system chooses one token according to certain rules. After that token is chosen, it is appended back into the context, and the model predicts the next token again.
-
-So generating an answer roughly looks like this:
+The real situation is more complex: the model calculates a probability for every possible token in its vocabulary. Then the system chooses one token according to certain rules, appends it back into the context, and continues predicting the next one:
 
 ```text
 you enter a question
@@ -262,30 +222,24 @@ you enter a question
 → a complete answer is built step by step
 ```
 
-This is also why the same question can sometimes produce different answers.
+This is also why the same question can sometimes produce different answers. If the system always chooses the highest-probability token, the answer will be more stable, but it may also become stiff. If the system is allowed to choose from tokens with slightly lower probabilities, the answer becomes richer and more varied.
 
-If the system always chooses the highest-probability token, the answer will be more stable, but it may also become stiff. If the system is allowed to choose from tokens with slightly lower probabilities, the answer becomes richer and more varied.
-
-Parameters such as temperature and top-p, which you may have seen in model APIs, are ways to tune this process.
-
-A simple intuition is enough for now:
+Parameters such as temperature and top-p, which you may have seen in model APIs, are ways to tune this process. To put it simply:
 
 ```text
 lower temperature: steadier, more conservative
 higher temperature: more varied, more exploratory
 ```
 
-So during inference, a large language model does not first "think through the whole answer" or "create an outline and then fill it in." It generates part by part, puts what it just generated back into the context, and builds the answer one step at a time.
-
-This is the foundation for understanding hallucination, context engineering, reasoning, and agents.
+So during inference, a large language model does not first "think through the whole answer" or "create an outline and then fill it in." It generates part by part, puts what it just generated back into the context, and builds the answer one step at a time. This is the foundation for understanding hallucination, context engineering, reasoning, and agents.
 
 ## 4. Transformer and Attention: "Where Should I Look Now?"
 
 ![Attention lines of different strengths point from earlier context tokens to the current token being generated](/llm-first-principles/01-next-token-prediction/attention.png)
 
-Think about what happens every time the model predicts a token: it needs to refer to all the previous tokens and compute how relevant they are. The context may contain many pieces of information, and some are far more relevant than others. So where should the current prediction look?
+Every time the model predicts a token, it has to refer to everything that came before. But the context holds so much, and its pieces vary in relevance — so where exactly should the current prediction look?
 
-Consider this sentence:
+For example, this sentence:
 
 ```text
 Tom put the backpack on the chair because it was too heavy.
@@ -323,25 +277,9 @@ At this point, we reach the central question:
 
 If the model is only guessing the next token, why does it look like it understands, reasons, and creates?
 
-The answer is compression. Through language as the medium, the model compresses a huge amount of regularity into its parameters during training.
+The answer is compression. Through language as the medium, the model compresses a huge amount of regularity into its parameters during training. It keeps reading text, predicting, discovering where it guessed wrong, and adjusting its internal parameters, until word combinations, concept relationships, narrative structures, code patterns, and other regularities are all packed in. In the end, model parameters become something like a giant compressed package of patterns. This is what it means to say the model is a compression of the world.
 
-Training looks roughly like this:
-
-```text
-the model keeps reading text
-keeps predicting the next token
-keeps discovering that its guesses are wrong
-keeps adjusting its internal parameters
-eventually compresses many patterns into those parameters
-```
-
-These patterns include word combinations, but also deeper things: concept relationships, narrative structures, code patterns, mathematical paths, question-answer habits, and ways of arguing.
-
-In the end, model parameters become something like a giant compressed package of patterns. This is what it means to say the model is a compression of the world.
-
-Many parts of human society leave traces in language. Scientific knowledge is written into papers. Business experience is written into case studies. Program logic is written into code. Legal systems are written into statutes. Common sense is written into conversations and stories.
-
-When a model learns the distribution of language, it also indirectly learns the structure behind that language.
+Many parts of human society leave traces in language. Scientific knowledge is written into papers. Business experience is written into case studies. Program logic is written into code. Legal systems are written into statutes. Common sense is written into conversations and stories. When a model learns the distribution of language, it also indirectly learns the structure behind that language.
 
 This does not mean it experiences the world like a person. It has no childhood, no body, and no subjective feelings. Its "understanding" is closer to an ability:
 
@@ -351,7 +289,9 @@ modeling relationships among symbols in a high-dimensional space, then transferr
 
 That sounds technical. A plainer way to say it is:
 
-> It has not seen the world with its own eyes. It has learned many recurring patterns from the ways humans describe the world.
+```text
+It has not seen the world with its own eyes. It has learned many recurring patterns from the ways humans describe the world.
+```
 
 This also explains why large language models are both powerful and fallible.
 
@@ -361,9 +301,7 @@ They are powerful because language really does contain a huge amount of human ci
 
 ![As model scale, data, and compute grow, the simple prediction task crosses increasingly complex capability thresholds](/llm-first-principles/01-next-token-prediction/scaling-bridge.png)
 
-If we only look at "guess the next token," large language models should not seem this capable.
-
-But when several dimensions scale together, things change:
+If we only look at "guess the next token," large language models should not seem this capable. But when several dimensions scale together, things change:
 
 ```text
 more data
@@ -451,49 +389,27 @@ The model itself provides powerful language and reasoning ability. The product c
 
 ![A large language model summarized as probabilistic prediction, compressed world structure, and a surrounding product system](/llm-first-principles/01-next-token-prediction/llm-summary.png)
 
-Now we can return to the opening question.
+Now we can return to the opening question. What is a large language model?
 
-What is a large language model?
-
-First, it is a probabilistic prediction model.
-
-```text
-Given a context, predict a probability distribution over the next token.
-```
-
-Second, it gains capability through compression.
-
-Model parameters are not knowledge cards. They are compressed results of massive patterns in language.
-
-Third, its "understanding" comes from the pressure to predict well.
-
-To predict well enough, it has to learn grammar, facts, logic, style, code patterns, and task structures.
-
-Fourth, its reasoning is generated step by step.
-
-The model does not first obtain a perfect answer and then output it. It chooses a more reasonable next token at each step, gradually completing the whole response.
-
-Fifth, today's model capability comes from system composition.
-
-```text
-model × data × compute × alignment × context × tools × product design
-```
+- First, it is a probabilistic prediction model: given a context, it predicts a probability distribution over the next token.
+- Second, it gains capability through compression: model parameters are not knowledge cards, but the compressed result of massive patterns in language.
+- Third, its "understanding" comes from the pressure to predict well: to predict well enough, it has to learn grammar, facts, logic, style, code patterns, and task structures.
+- Fourth, its reasoning is generated step by step: the model does not first obtain a perfect answer and then output it, but chooses a more reasonable next token at each step, gradually completing the whole response.
+- Fifth, today's model capability comes from system composition: model capability = model × data × compute × alignment × context × tools × product design
 
 If we compress all of this into one sentence:
 
-> The first principle of LLMs: compress the distribution of human knowledge by predicting the next token.
+```text
+The first principle of LLMs: compress the distribution of human knowledge by predicting the next token.
+```
 
-Once you understand this, many later questions become clearer.
+Once you understand this, many later questions become clearer:
 
-Why do tokens affect cost? Because tokens are the model's basic unit for processing the world.
-
-Why is context so important? Because every step of generation depends on the current context.
-
-Why do hallucinations happen? Because generating plausible text is not the same as guaranteeing truth.
-
-Why does RAG help? Because it puts traceable new material into the context.
-
-Why are agents an important direction? Because the model itself only generates tokens, while tools and action loops can turn tokens into real tasks.
+- Why do tokens affect cost? Because tokens are the model's basic unit for processing the world.
+- Why is context so important? Because every step of generation depends on the current context.
+- Why do hallucinations happen? Because generating plausible text is not the same as guaranteeing truth.
+- Why does RAG help? Because it puts traceable new material into the context.
+- Why are agents an important direction? Because the model itself only generates tokens, while tools and action loops can turn tokens into real tasks.
 
 ## 9. Common Misconceptions
 
