@@ -3,6 +3,12 @@ import nextra from 'nextra'
 // Set up Nextra with its configuration
 const withNextra = nextra({
     latex: true,
+    // Prefix internal links with the active locale (/zh/..., /en/...). Without this,
+    // Nextra emits locale-less hrefs (/ai-era/...) that proxy.ts 307-redirects to a
+    // locale. Googlebot (no cookie → default locale) then crawls a graph made almost
+    // entirely of redirects and files those URLs under "Page with redirect" instead of
+    // indexing them. Locale-prefixed links resolve to 200 directly. See proxy.ts.
+    unstable_shouldAddLocaleToLinks: true,
 })
 
 // Export the final Next.js config with Nextra included
