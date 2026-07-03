@@ -35,11 +35,16 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 根路径或语言根路径重定向到 say-hello
-  if (pathname === "/" || i18n.locales.some(locale => pathname === `/${locale}` || pathname === `/${locale}/`)) {
-    const locale = getLocale(request);
+  // 语言根路径（/en、/zh）→ 保留路径里的语言，永久跳到对应 say-hello。
+  //   目标确定，用 308；此前误用 getLocale 重新猜语言，导致 /zh 被跳到 /en/say-hello。
+  // 裸根路径（/）→ 语言协商，目标随语言变化，保持 307 临时跳转。
+  const rootLocale = i18n.locales.find(
+    locale => pathname === `/${locale}` || pathname === `/${locale}/`
+  );
+  if (pathname === "/" || rootLocale) {
+    const locale = rootLocale ?? getLocale(request);
     const url = new URL(`/${locale}/say-hello`, request.url);
-    const response = NextResponse.redirect(url);
+    const response = NextResponse.redirect(url, rootLocale ? 308 : 307);
     response.cookies.set(LOCALE_COOKIE_NAME, locale, { path: "/" });
     return response;
   }
