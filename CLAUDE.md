@@ -42,6 +42,7 @@ The whole site is a single Nextra 4 catch-all route. There are no hand-written p
 - `page.tsx` emits per-page **JSON-LD**: articles render `BlogPosting`, while top-level non-articles listed in `NON_ARTICLE_SLUGS` (`say-hello`, `logs`, `japan-gallery`) render `WebPage` to avoid missing-`datePublished` warnings. It also builds `canonical` + `hreflang` alternates in `generateMetadata`
 - `layout.tsx` sets site-level defaults: `metadataBase`, title template `%s | Insights`, OG/Twitter cards using `/preview.png`
 - `app/sitemap.ts` walks `content/{locale}/` at build time, emitting hreflang alternates per path and skipping `HIDDEN_SEGMENTS`. Pages hidden from nav or non-indexable must be added to that set or they leak into the sitemap
+- `next.config.mjs` sets `unstable_shouldAddLocaleToLinks: true` so Nextra emits locale-prefixed internal hrefs (`/zh/...`). Without it, links are locale-less, every crawl hop goes through a `proxy.ts` 307, and Googlebot files pages under "Page with redirect" instead of indexing them
 - The commit gate's SEO checks (description / alt / anchor text) exist because these fields feed directly into the JSON-LD and cards above
 
 ### MDX components & interactivity

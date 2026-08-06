@@ -11,7 +11,7 @@ const SITE = 'https://insights.kaho.io'
 // from nav (`display: 'hidden'` in `_meta.js`) and not meant to be indexed,
 // or carry a `robots: { index: false }` frontmatter — listing them in the
 // sitemap would waste crawl budget.
-const HIDDEN_SEGMENTS = new Set(['japan-gallery', 'series-outline', 'rag-r4'])
+const HIDDEN_SEGMENTS = new Set(['japan-gallery', 'series-outline', 'rag-r4', 'ten-years-review'])
 
 function hreflangFor(locale: Locale): string {
   return locale === 'zh' ? 'zh-CN' : 'en'
