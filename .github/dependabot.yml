@@ -15,3 +15,7 @@ updates:
       minor-and-patch:
         update-types: ["minor", "patch"]
     labels: ["dependencies"]
+    ignore:
+      # 运行时是 Node 24（本地与 Vercel 一致），@types/node 不跨大版本升级
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
