@@ -54,7 +54,7 @@ The whole site is a single Nextra 4 catch-all route. There are no hand-written p
 ### Build & config gotchas
 - **Do NOT add `turbopack.resolveAlias['next-mdx-import-source-file']` to `next.config.mjs`.** Nextra already aliases it to `@vercel/turbopack-next/mdx-import-source` (its HMR-stable MDX provider); overriding it with a raw `./mdx-components.js` path replaces that machinery and 500s on cold compile. This alias was removed — see `next.config.mjs` comment. (Dev on webpack sidesteps the Turbopack MDX HMR issues entirely; see Development Commands.)
 - `pnpm build` runs `next build` then `pagefind` to generate the client-side search index into `public/_pagefind` — search is broken in a plain `next build` without this step
-- Package manager is **pnpm**; `pnpm-workspace.yaml` (not `.npmrc`, per pnpm 11) holds `lockfile: false` and a `zod: ~4.1.12` override — Nextra 4.6.1's `<Layout>` crashes the whole site under zod 4.2+
+- Package manager is **pnpm** locally, but **Vercel builds with npm** (no lockfile is committed, and the `packageManager` field is not honored without corepack). `pnpm-workspace.yaml` (not `.npmrc`, per pnpm 11) holds `lockfile: false` and a `zod: ~4.1.12` override for pnpm; the **same override is duplicated in `package.json` `overrides`** so npm applies it too — keep both in sync. Nextra 4.6.1's `<Layout>` crashes the whole site under zod 4.2+; earlier Vercel builds only survived because the restored build cache kept an old zod, and a cache-less build fails at prerender with `expected nonoptional, received undefined → at children`
 
 ### Path Alias
 - `@app/*` maps to `./app/*`
@@ -178,3 +178,13 @@ The whole site is a single Nextra 4 catch-all route. There are no hand-written p
 | publishedAt 是否应更新 | 继续 | 列出建议、与用户确认每篇取值 |
 
 **执行时机**: 用户请求 commit 时，先执行以上检查，全部通过或用户确认处理完问题后，再执行 commit 操作。
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

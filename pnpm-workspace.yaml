@@ -5,5 +5,7 @@ lockfile: false
 # nextra / nextra-theme-docs 4.6.1 的 <Layout> 依赖旧版 zod 中 z.custom
 # 对缺失字段宽容的行为；zod 4.2+ 改了语义会让整站渲染崩。锁在 4.1.x 兼容档。
 # 待 nextra 发布修复 zod 4.4 兼容的新版后可移除此 override。
+# 注意：Vercel 上没有 lockfile 时用 npm 安装，不读本文件；同一 override 因此也写在
+# package.json 的 overrides 字段里，两处必须保持一致。
 overrides:
   zod: ~4.1.12
