@@ -1,0 +1,17 @@
+# Dependabot 版本更新：每周检查一次，minor/patch 合并成一个 PR，目标分支 dev（走 dev → main 的常规流程）。
+# 注意：安全更新（security updates）不受 target-branch 影响，GitHub 固定针对默认分支 main 提 PR。
+version: 2
+updates:
+  - package-ecosystem: "npm" # pnpm 同样使用 npm 生态类型，依据 pnpm-lock.yaml 更新
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    labels: ["dependencies"]
