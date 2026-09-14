@@ -54,7 +54,7 @@ The whole site is a single Nextra 4 catch-all route. There are no hand-written p
 ### Build & config gotchas
 - **Do NOT add `turbopack.resolveAlias['next-mdx-import-source-file']` to `next.config.mjs`.** Nextra already aliases it to `@vercel/turbopack-next/mdx-import-source` (its HMR-stable MDX provider); overriding it with a raw `./mdx-components.js` path replaces that machinery and 500s on cold compile. This alias was removed — see `next.config.mjs` comment. (Dev on webpack sidesteps the Turbopack MDX HMR issues entirely; see Development Commands.)
 - `pnpm build` runs `next build` then `pagefind` to generate the client-side search index into `public/_pagefind` — search is broken in a plain `next build` without this step
-- Package manager is **pnpm**; `pnpm-workspace.yaml` (not `.npmrc`, per pnpm 11) holds `lockfile: false` and a `zod: ~4.1.12` override — Nextra 4.6.1's `<Layout>` crashes the whole site under zod 4.2+
+- Package manager is **pnpm** locally, but **Vercel builds with npm** (no lockfile is committed, and the `packageManager` field is not honored without corepack). `pnpm-workspace.yaml` (not `.npmrc`, per pnpm 11) holds `lockfile: false` and a `zod: ~4.1.12` override for pnpm; the **same override is duplicated in `package.json` `overrides`** so npm applies it too — keep both in sync. Nextra 4.6.1's `<Layout>` crashes the whole site under zod 4.2+; earlier Vercel builds only survived because the restored build cache kept an old zod, and a cache-less build fails at prerender with `expected nonoptional, received undefined → at children`
 
 ### Path Alias
 - `@app/*` maps to `./app/*`
