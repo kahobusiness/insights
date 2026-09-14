@@ -1,5 +1,6 @@
 export default {
   "vibe-coding": "💻 Vibe Coding",
+  "wanda-agent-architecture": "🏗️ Mall Agent Architecture",
   "intent": "🎯 Intent Recognition",
   "rag": "🔗 RAG Intro",
   "rag-r4": {

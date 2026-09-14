@@ -1,0 +1,304 @@
+import { Callout } from 'nextra/components'
+
+export const metadata = {
+  title: '商圈 Agent 架构对比：从单体 Demo 到组件化平台',
+  description: '对比 wanda-agent 与 wanda-agent-release 两个商圈智能体仓库的架构差异：分层与依赖方向、消息链路、能力组织、卡片契约、厂商抽象、写通道安全、消息双轨与工程护栏，以及平台化的代价。',
+  publishedAt: '2026-09-14'
+}
+
+# 🏗️ 同一个商圈 Agent 的两种长法：wanda-agent 与 wanda-agent-release 架构对比
+
+<Callout type="info" emoji="🧭">
+
+本文基于 2026 年 9 月初的两个仓库快照。`wanda-agent` 是万达广场「商圈搭子」的单体 Demo；`wanda-agent-release` 是同一业务演化出来的组件化平台，仓库自称 tbox-app。两边都是人和 coding agent 协作产出的，文中引用的设计原话均来自各自仓库里的 AGENTS.md、docs 与 Agent Notes。
+
+</Callout>
+
+两个仓库做的是同一件事：一个商场的 AI 助手，能查会员积分、查停车缴费、领优惠券、做品牌导购、参加活动。
+
+两个仓库用的也是同一套底座：Mastra 编排、Vercel AI SDK 调模型、AG-UI 事件协议流式返回、WebSocket 传输、TBox 平台 SDK 管会话与知识库。
+
+时间上它们几乎重叠。但把两棵树摆在一起看，形状完全不同。
+
+| | wanda-agent | wanda-agent-release |
+|---|---|---|
+| 时间跨度 | 2026-07-30 → 08-24 | 2026-08-03 → 09-06 |
+| 提交数 / 作者数 | 59 / 4 | 1621 / 10 |
+| 仓库形态 | pnpm workspace，`client` + `server` 两个包 | pnpm monorepo：契约 + SDK + 6 个业务模块 + 3 个 provider + 4 个模板 + CLI |
+| 编排层 | `@mastra/core` 0.10、`ai` 4.3 | `@mastra/core` 1.59、`ai` 6.0 |
+| 服务端核心文件 | `agent-service.ts`，3161 行，业务与框架混写 | `chat-engine.ts`，2058 行，零业务字样 |
+| 测试文件 | 87 | 316 |
+| CI 与门禁 | 无 | 三路并行 CI、21 条 doctor 规则、5 个 guard 脚本 |
+
+一句话概括：前者在回答「Demo 能不能跑起来」，后者在回答「第二个商场来了怎么办」。
+
+下面从八个切面把差异拆开。
+
+## 一、树的形状：两个包各干各的，还是单向分层
+
+`wanda-agent` 的结构很朴素：
+
+```text
+wanda-agent
+├── client/   Taro 4 · React · zustand         约 18k 行
+├── server/   Express · ws · Mastra             约 14.6k 行
+└── config/   8 个 JSON（商场身份、组件开关、停车计费、活动快照……）
+```
+
+两个包之间没有共享包，没有任何跨包 import。客户端唯一读到的根配置是构建期打进去的 `chat.json`。也就是说，这里没有「层」，只有「端」。
+
+`wanda-agent-release` 则是一座分层的塔：
+
+```text
+wanda-agent-release（tbox-app）
+TIER0  packages/contracts        协议类型与常量，零依赖
+       packages/app-sdk          chat-engine · 注册表 · 出卡管线 · auth · 记忆
+TIER1  modules/contracts-mall    商圈 Port 接口 · 卡片 zod schema · 装配器
+       modules/module-*          member / parking / promotion / shopping-guide …
+       modules/provider-*        mock / wanda / joycity
+       templates/template-agent* base / mall / support 三类应用模板
+       cli/                      create · module add/remove/update · doctor · card preview
+          ↓ tbox-app create，再 module add
+       生成出来的应用             apps/{server,client} + packages/{module-*,provider-*}
+```
+
+依赖方向只能向上：业务模块依赖 SDK 与契约，provider 依赖 `contracts-mall`，SDK 不能 import 任何 TIER1 的东西，模块之间禁止互相 import。这些不是口头约定，而是 CLI 里 doctor 的 `workspace-dag` 规则，违反就报错。
+
+切分的轴是「什么会变」。仓库最早的方案文档写得很直白：
+
+> 分层混合模型：沿代码「变化轴」切分，安全边界走 SDK 黑盒，领域实现走源码分发。
+
+安全逻辑与框架核心以 SDK 黑盒运行，业务方物理上改不到；会员、停车这些领域实现则以源码形式分发到应用里，业务方可以随便改。纯 SDK 方案被否决，理由是扩展点会膨胀成 DSL；纯源码方案也被否决，理由是资损风险。
+
+## 二、一条消息怎么走完
+
+先说相同点：两边都只走 WebSocket，因为支付宝小程序不支持 SSE；都用 AG-UI 事件流；都是 Mastra Agent 包一层 AI SDK 去调 OpenAI 兼容端点；都采取「确定性直连优先、模型兜底」的混合编排。
+
+再看不同。`wanda-agent` 的链路：
+
+```text
+SEND_MESSAGE
+→ ws-server 校验 actor token
+→ agent-service.chat()
+   ├─ 21 个 detect* 函数依次匹配固定文案或正则
+   │    命中 → run*Direct：服务端直接出卡，再让一次隐藏模型调用写句引导语
+   └─ 未命中 → 受限 LLM 做单标签意图分类（8 秒超时）→ 完整 Agent
+→ Mastra agent.stream(history)
+→ 工具返回 { presentation: { kind: 'mall.xxx-card', … } }
+→ AG-UI TOOL_CALL_RESULT
+→ 客户端按 kind 字符串走 if 链分发到卡片组件
+```
+
+`wanda-agent-release` 的链路：
+
+```text
+HELLO（携带 mallId 作用域）→ HELLO_ACK
+SEND_MESSAGE
+→ chat-engine.chat()
+   ├─ matchIntent：各模块贡献的 intent routes → handler registry，零 LLM 直出
+   ├─ preTools：BM25 路由预召回，单工具 2 秒预算；并发记忆召回，600 毫秒
+   ├─ skills：按路由词注入模块的 SKILL.md（完整 SOP 或摘要）
+   └─ 组装 user 消息，顺序恒定：卡片决策 → preTool → 记忆 → skill → 用户原文
+→ Mastra agent.stream(history)
+→ 工具返回 { …facts, cards: [{ cardType, data }] }
+   → 平台按 CardRegistry 校验入候选池，剥离成 { id: 'c1', cardType }
+→ 模型在正文末尾用一个标签点名要展示哪几张
+→ 平台裁决：按序展示 / 模型弃权 / 兜底池末张，每轮最多 3 张
+→ CUSTOM 事件 tbox:card
+→ 客户端按 cardType 查 registry 渲染
+```
+
+两处差异最值得看。
+
+**第一，确定性路由归谁管。** 直连路由的动机两边一致，`wanda-agent` 的代码注释说得很清楚：「弱模型在多轮后会照抄历史模式跳过工具调用，直接在 server 侧执行并回放同样的事件序列」。区别在于放哪里。`wanda-agent` 把 21 个 detect 函数和对应的 run 函数全部塞进 `agent-service.ts`，用一条长三元链选路。`wanda-agent-release` 让每个模块自己贡献 intent routes 和 handler，平台只负责收集与分发。
+
+这条差异不是审美问题。平台化方案文档列出的 12 项病根里，第 4 项就是：
+
+> 核心文件被重度修改，升级断裂：`agent-service.ts` 从 696 行被改到 2988 到 6990 行；registry 文件被完全重写。
+
+一个文件既装框架又装业务，模板升级时业务改动就会和框架改动打架。
+
+**第二，顺序被冻结了。** `wanda-agent-release` 有一条设计原则叫「前缀缓存稳定」，展开是三条铁律：工具集无条件恒定、system prompt 恒定、个性数据只走 user 消息前部这一个通道。于是 system prompt 是纯平台指令加一段业务段，每轮变化的东西（预召回结果、记忆、skill）按固定顺序拼在用户消息前面，历史消息原样回填不做改写。这样多轮对话里 KV cache 能持续命中。
+
+`wanda-agent` 没有这个约束。它的系统提示词是一段 82 行的单体文本，逐条硬编码了工具 ID 和触发语，直连路由的引导语要靠一次额外的隐藏模型调用生成。能跑，但没有为缓存命中率做设计。
+
+## 三、能力怎么组织：横切散落，还是单包双端
+
+这是两边最本质的差别。
+
+在 `wanda-agent` 里，「停车」不是一个目录，而是散落在两个包里的一组文件：工具定义、领域服务、`agent-service.ts` 里的检测与执行、REST 路由、提示词段落、客户端的解析器、卡片组件、注册表、if 链分支。按仓库自己的 AGENTS.md 和代码倒推，新增一个能力大致要改这些地方：
+
+```text
+server/src/tools/<x>.ts                      工具实现
+server/src/components/definitions.ts         登记工具 ID 与所属组件
+server/src/tools/registry.ts                 加入工具目录
+config/components.json                       组件开关
+server/src/agent/agent-service.ts            detect 函数 + run*Direct + 三元链
+server/src/agent/prompts/wanda.ts            提示词加一段
+client/src/components/<X>Cards/              types / parser / 组件 / 样式
+client/src/components/MallMessageCards/registry.ts   注册卡片契约
+client/src/components/JoycityMessageCards/index.tsx  加 kind 分支
+client/src/pages/index/service-queries.ts    首页快捷入口
+两端测试 + evals 数据集
+```
+
+十几处，横跨两个包。配置文件能做的只有开关：`components.json` 里 8 个组件各一个 `enabled`。触发文案、图片域名白名单、活动 ID、商场名全在代码里，同一句「品牌导览」在服务端正则、客户端快捷入口、系统提示词三处重复维护。
+
+`wanda-agent-release` 把一个能力收成一个 npm 包，服务端和客户端代码在同一个包里：
+
+```text
+modules/module-member/
+├── tbox.component.json        声明 contributes：tools / cards / handlers / services 槽位
+├── skills/member/SKILL.md     提示词片段 + routingTerms
+├── src/server/
+│   ├── index.ts               serverModule = { declaration, cards, skills, preTools, register(ctx) }
+│   ├── tool.ts                查积分工具，出参带 cards
+│   ├── handler.ts             意图直出
+│   └── cards/<cardType>/meta.ts
+└── src/client/
+    ├── index.ts               clientModule = { cards, register(ctx) }
+    └── cards/<cardType>/index.tsx
+```
+
+`register(ctx)` 只注册不解析。平台的 `registerServerModules` 逐个注入 ctx，`build-engine` 把所有注册表收集起来合并成引擎。模块之间不能直接 import，跨模块交互一律经 ctx 的服务注册表。
+
+把模块装进应用靠 CLI 的 `module add`：从 npm 拉下源码包，用 TypeScript AST 把包名与 import 改写成 `@app/module-member`，在应用 `modules.ts` 的锚点区插入一行 import 和一个数组项，往 `.tbox/app.json` 记下 baseVersion，缺 `integrations.json` 就自动生成 mock 绑定，最后跑一遍 doctor。仓库把这叫「形态与发布态同构」：模块的发布物就是源码本身，展开到应用里的模块与仓库里的一模一样，将来升级用 3-way merge。
+
+支撑这个设计的是一个实证数字。方案文档写道：
+
+> 实证数据表明，两个实际应用中真正业务专属的代码只占约 30%，70% 是可复用的框架逻辑。
+
+如果 70% 都能复用，那「每个商场 fork 一份再改」显然是错的组织方式。
+
+## 四、卡片契约：字符串约定，还是共享 schema 加三方协议
+
+卡片是这类 Agent 的核心交互面，两边差得最远的也是这里。
+
+`wanda-agent` 的做法：
+
++ 服务端用 zod schema 校验工具出参，客户端另外手写一份 TS 类型，再配一个防御式解析器，检查键名是否完全匹配、日期格式、图片域名白名单
++ 契约键是 `kind` 字符串，新契约 `mall.*` 与遗留契约 `joycity.*` 并存，最后一个兜底解析器叫 `legacy-joycity-v1`
++ 「卡片 kind 不得重命名」写在 AGENTS.md 里，靠人记
++ 客户端可以本地伪造：支付成功后，`chat.ts` 里的 `buildWandaPaymentSuccessMessage` 直接构造一条名为 `mallClaimedVouchers` 的 toolCall 塞进消息列表，服务端对此毫不知情
++ 历史只存文本，页面刷新后卡片全部消失
+
+方案文档把后三条列为病根第 9、10、11 项：「历史卡片完全丢失」「支付卡片客户端拦截绕过服务端」「卡片协议类型手动镜像」。
+
+`wanda-agent-release` 的做法：
+
++ `contracts-mall` 里一份 zod schema，服务端的 `meta.ts` 和客户端的组件同时引用；应用侧的卡片类型直接从装配数组用 `InferModuleCards` 推导出来
++ 每张卡的 `CardMeta` 带 `cardType`、`dataSchema`、`sampleData`、`schemaVersion` 和可选的 `migrate`，历史恢复走同一份 schema 加迁移
++ doctor 有三条规则盯着它：`card-type-consistent`、`schema-version`、`sample-data-valid`；`card preview` 命令用 `sampleData` 渲染出静态预览
++ 出卡是一个三方协议：工具出参只声明候选，平台校验后入池并剥离，模型在正文末尾点名，平台兜底保证不空
+
+三方协议这一条值得多说一句。`wanda-agent` 里「工具返回」就等于「出卡」，谁调了工具谁决定展示。`wanda-agent-release` 把「有资格出」与「这一轮出不出」拆开：工具只说「我这里有这几张」，模型根据对话决定展示哪几张、什么顺序，模型忘了或写错了则平台兜底。卡片 meta 里原本有 `allowedTools` 和 `modelHint`，后来删掉了，理由是不希望卡片反向绑定工具。
+
+## 五、厂商与租户：一仓一商场，还是 slot / provider / binding
+
+`wanda-agent` 的 AGENTS.md 明确写着「本仓库是可独立构建部署的商场实例」。`mallId` 只用来校验配置一致性，没有运行时多租户；模型只有一个 OpenAI 兼容 provider；从杭州大悦城迁到杭州万达，走的是 fork 再改的路。
+
+这条路留下的债很显眼：包名还是 `tbox-agent-template`，工具 ID 还是 `joycity*`，积分商品快照还是 7 月底大悦城的数据，`docs/` 里躺着大悦城的开放平台接口清单。更麻烦的是 Demo 语义写进了数据结构：`mode: 'demo'`、`receiptKind: 'simulation'` 是 schema 里的枚举字面量。要生产化，不是改一个开关，而是新增一整套定义。
+
+`wanda-agent-release` 把这件事拆成三个概念：
+
+```text
+模块 manifest 声明需求        module-member 的 contributes.services：member.main
+provider 包声明供给           provider-wanda 提供 6 个槽位，附签名策略 wanda-c-signed-v1
+config/integrations.json     services.member.main = { provider: 'wanda', instances: { <mallId>: … } }
+运行期解析                    ctx.integrations.resolveService({ service, scope: { mallId } })
+```
+
+mock、wanda、joycity 三个 provider 实现同一组 Port 接口（`MemberAccountPort`、`ParkingQueryPort` 等）。mock 是标了 `local: true` 的内存实现，clone 下来不配任何凭据就能把全部卡片跑通。换厂商等于换 provider 包再换一份绑定文件，业务模块一行不动。
+
+还有一个护栏叫 `guard-vendor-neutrality`：扫描 5 个业务模块、`contracts-mall`、`provider-mock` 和两个模板的出厂面，出现 joycity、wanda、大悦城、万达任一字样直接失败。AGENTS.md 把这条写成铁律：「业务面零 vendor 关联，厂商集成唯一真源等于 provider 包」。
+
+顺带一提，「一个应用同时接两家厂商」的混合合成方案被明确拒绝了，8 月底裁决为单应用单厂商，实例级覆盖机制保留。
+
+## 六、写操作与安全边界
+
+`wanda-agent` 的卡片按钮有两条出口：把一句固定文案回填进对话，或者直接调 REST 接口做车牌登记、入会、缴费。再加上第四节说的客户端本地伪造工具结果，服务端对支付状态的了解程度取决于客户端是否诚实。
+
+`wanda-agent-release` 把写通道整个搬到服务端：
+
+```text
+按钮 → UI_ACTION { surfaceId, action: { actionId, contextToken } }
+→ ws-server → component-action dispatcher
+   会话断言 → authorize → cardType 校验 → inputSchema 校验 → execute → effects
+→ tbox:card-update / tbox:notice / tbox:effect
+```
+
+每张卡下发时附带一枚 HMAC 签发、只能用一次的 ActionGrant；客户端能触发的宿主效果（拉起支付、拉起授权）是一个封闭的联合类型，没有 custom 槽。这就是第一节引用的「安全逻辑走 SDK 黑盒，业务方物理上无法修改」的落地。
+
+doctor 里还有一条 `naked-write-route` 规则，专门拦裸写路由。
+
+## 七、状态、记忆与消息双轨
+
+`wanda-agent` 的会话历史放在进程内的一个 Map 里；Journey 状态可以选内存或 Appwrite；`saveToConversation` 只存文本。
+
+`wanda-agent-release` 提出「消息双轨」：内存里的 history 是 LLM 轨道，Mastra 的 messageList 真值原样回填，零丢失零改写；数据库是渲染轨道，四个字段各 60k 预算剪枝后保形落库，单向写入只供前端渲染。两条轨零交集，永不回灌。这样做一是为了前缀缓存稳定，二是为了让「模型看到的」与「用户看到的」各自可控。
+
+另一个有意思的决策是关于上下文传递的。`wanda-agent` 用 AsyncLocalStorage 传 actor 上下文；`wanda-agent-release` 在 8 月底做了一次上下文统一化，把身份通道改成显式传参，笔记里记录了两轮评审的反转：
+
+> ALS 正确性是非局部不变式：延迟回调在他人 run 作用域内触发会静默拿到错误身份，「不许在回调里捕获」不可 AST 化；显式正确性局部可见，调用点自见且 doctor 可机械拦截。
+
+不过展示数据用的 `toolCardScope` 依然保留了 ALS，理由是那是 best-effort 的展示数据，与身份数据风险等级不同。
+
+需要诚实指出的是，两边在这一层的边界是一样的：都是单实例内存态。重启失忆、多副本不共享、history 无界增长，这些平台在 `runtime.md` 的「已知边界」里都写明了。平台化解决的是结构问题，不是规模问题。
+
+## 八、工程护栏：靠人记，还是靠机器拦
+
+`wanda-agent` 的测试不算少，服务端 47 个文件、客户端 40 个文件。但没有 CI；eval 数据集有 20 条用例，README 里提到的回放执行器在仓库里不存在；commitlint 配置在，husky 目录没提交。规则写在 AGENTS.md 里：「kind 不得重命名」「不得 import 上级工作区」，靠阅读者自觉。
+
+`wanda-agent-release` 把规则尽量变成机器能拦的东西：
+
++ **doctor 21 条 AST 规则**：`workspace-dag`、`register-pure`、`singleton`、`sdk-internal-import`、`naked-write-route`、`card-type-consistent`、`schema-version`、`sample-data-valid` 等等
++ **5 个 guard 脚本**：secrets、vendor-neutrality、workspace、visual、dev-probe，外加 `verify-docs`
++ **lefthook**：pre-commit 跑 guard-secrets 与 verify-docs，pre-push 跑 typecheck
++ **CI**：PR 三路并行（basic、mall 快链、support 快链），夜间跑完整档
++ **发布**：`release.mjs` 管 17 个包的拓扑发布顺序，用 git tag、`.release/state.json`、registry 三源对账
++ **发布同意铁律**：任何对真实 registry 的写入必须由用户显式同意，`--yes` 与非 TTY 隐式 yes 都不算
+
+还有一件事是文档。`docs/reference/` 有 11 页架构真源，`.agents/notes/` 里有约 250 篇 Agent Notes，按 proposed、implemented、rejected、archived 归档，每篇记录「为什么这么做」和「被拒的备选」。改代码必须同一变更内改文档，`verify-docs` 校验格式。
+
+为什么如此重视机械门禁？答案在设计原则的第一条：
+
+> P0 Coding Agent 高效：一切 API 形状以「Coding Agent 少猜、少错、少往返」为第一优先级。
+
+这些护栏首先是给 coding agent 用的。人会读 AGENTS.md 然后记住，agent 每次都是新的上下文，它需要的是违反即报错。
+
+## 九、平台化的代价
+
+对比到这里，很容易得出「平台碾压单体」的结论。但代价同样真实。
+
+**复杂度。** 同一份 `pnpm-workspace` 要在三种上下文里解析：根仓库开发态通过 overrides 指回 `workspace:*`，生成应用验证态注入 `file:` 指向本地 tgz，生产态走 registry。为了守住这套机制，`guard-workspace` 专门有 5 条规则：catalog 恒等式、vite 锚点、相对 filter、脚本镜像、lockfile 一致。平台包还禁止 peerDependencies，因为 pnpm 的 peer 组合会分裂出多个实例。
+
+**协同发布。** 0.x 版本号下 minor 即 breaking，七个包要一起 bump。
+
+**漂移。** 文档写 app-sdk 0.15.0，源码是 0.14.0；`.release/state.json` 的最后一条停在 8 月 14 日；base 与 mall 两个模板「双生无同步机制」，公共能力要「先落 base 再评估回灌」。
+
+**速度带来的抽象风险。** 五周 1621 次提交、10 位作者。9 月初的 support 模板把能力接入标准化为「能力包声明 + 装配器 + 投影 registry」，笔记里自己承认：「三实例都偏轻，抽象错配风险仍在，装配器保留逃生口」。
+
+反过来看 `wanda-agent`：59 次提交、4 个人，两周内完成万达化并把 Demo 端到端跑起来。在「验证这个业务是否成立」的阶段，单体是对的选择。
+
+## 十、什么时候该翻到第二种长法
+
+把两个仓库放在一起，我得到的判断是这几条：
+
++ **第二个商场出现时。** `wanda-agent` 从大悦城 fork 到万达留下的 `joycity*` 债务，就是平台化的触发信号。一个租户不需要 provider 抽象，两个租户没有它就会开始复制粘贴。
++ **Demo 要变成生产时。** 写通道是否在服务端、历史卡片能否恢复、支付状态能否回查，这三件事在单体里都缺，而它们决定了能不能上线。
++ **主要开发者是 coding agent 时。** agent 需要「少猜」的 API 形状与「违反即报错」的门禁，而不是三千行文件里的隐含约定。`wanda-agent-release` 的 P0 原则、doctor、Agent Notes，本质上都是在为 agent 而不是为人优化仓库。
++ **但别在第一个商场就做平台。** 平台化的仓库自己也是先花了 5 天把方案从 v2.0 改到 v5.0，把 8 个 Registry 砍成 4 加 1，删掉 IoC 容器和 Transaction 引擎之后才动手。没有单体阶段的实证，就不知道该抽象什么、不该抽象什么。
+
+最后用一张表收尾：
+
+| 切面 | wanda-agent | wanda-agent-release |
+|---|---|---|
+| 分层 | 只有端，没有层 | TIER0 契约 → SDK → TIER1 契约 → 模块 / provider → 模板 → 应用 |
+| 直连路由 | 21 个函数集中在一个 3k 行文件 | 模块贡献，平台分发 |
+| 能力组织 | 横切两个包，新增改十几处 | 单包双端，`module add` 展开 |
+| 卡片契约 | `kind` 字符串，两端各一份类型 | 共享 zod schema，schemaVersion 加 migrate，三方出卡协议 |
+| 厂商 | 一仓一商场，fork 再改 | slot / provider / binding，中立门禁 |
+| 写通道 | 客户端可直接 REST，可伪造工具结果 | 服务端 dispatcher，single-use grant，封闭效果集 |
+| 状态 | 进程内 Map，只存文本 | 消息双轨，零交集 |
+| 门禁 | 测试 + 文档约定 | doctor + guard + lefthook + CI + 发布同意 |
+| 共同边界 | 单实例内存态 | 单实例内存态 |
