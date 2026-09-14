@@ -7,5 +7,10 @@
 # 对缺失字段宽容的行为；zod 4.2+ 改了语义会让整站渲染崩。锁在 4.1.x 兼容档。
 # 待 nextra 发布修复 zod 4.4 兼容的新版后可移除此 override。
 # 注意：同一 override 也写在 package.json 的 overrides 字段里作为 npm 兜底，两处必须保持一致。
+#
+# @xmldom/xmldom：speech-rule-engine 4.1.4（mathjax-full 3.2.2 → better-react-mathjax → nextra）把它精确
+# 固定在 0.9.10，2026-08 的 13 条 xmldom 安全告警修复在 0.9.12。站点用 KaTeX 渲染公式，MathJax 链
+# 实际不会加载，但拉高版本可以清掉 Dependabot 告警。待 nextra 升到 better-react-mathjax 3 / @mathjax/src 4 后可移除。
 overrides:
   zod: ~4.1.12
+  '@xmldom/xmldom': ^0.9.12
