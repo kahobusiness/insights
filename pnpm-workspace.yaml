@@ -14,3 +14,11 @@
 overrides:
   zod: ~4.1.12
   '@xmldom/xmldom': ^0.9.12
+
+# Security fixes for transitive dependencies; keep package.json overrides in sync.
+# KaTeX also arrives through Nextra, Mermaid, and the remark/rehype math plugins.
+  sharp: ^0.35.5
+  dompurify: ^3.4.16
+  katex: ^0.19.0
+  source-map-js: ^1.2.2
+  brace-expansion: ^5.0.12
