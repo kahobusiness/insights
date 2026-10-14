@@ -1,6 +1,5 @@
 export default {
   "vibe-coding": "💻 Vibe Coding",
-  "wanda-agent-architecture": "🏗️ 商圈 Agent 架构对比",
   "intent": "🎯 意图识别",
   "rag": "🔗 RAG 检索增强生成",
   "rag-r4": {
