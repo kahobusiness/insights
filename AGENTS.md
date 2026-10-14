@@ -9,12 +9,14 @@ This is a bilingual (English/Chinese) blog built with Nextra 4 and Next.js 16, d
 ## Development Commands
 
 ```bash
-pnpm dev      # Start dev server (runs `next dev --webpack` — see gotcha below)
+pnpm dev      # Start dev server with Turbopack
+pnpm dev:turbo # Explicit Turbopack alias
+pnpm dev:webpack # Start dev server with webpack as a fallback
 pnpm build    # Build for production (includes pagefind search index generation)
 pnpm start    # Start production server
 ```
 
-`pnpm dev` intentionally uses **webpack, not Turbopack**. Under Turbopack, editing an `.mdx` file triggers an incremental recompile that intermittently resolves a barrel-exported component (e.g. `Callout` from `nextra/components`, which Nextra force-adds to `optimizePackageImports`) to `undefined`, 500-ing the page with "Element type is invalid ... got: undefined" until a full restart. Webpack's MDX pipeline doesn't have this HMR race. Trade-off: slightly slower cold start.
+`pnpm dev` uses **Turbopack** by default. On Next.js 16.4.0 with Nextra 4.6.1, page loading and five consecutive MDX incremental updates with `Callout` passed local verification. Earlier Turbopack sessions intermittently resolved barrel-exported components (e.g. `Callout` from `nextra/components`, which Nextra force-adds to `optimizePackageImports`) to `undefined`, causing an "Element type is invalid ... got: undefined" 500 after MDX edits. The short verification does not prove that this intermittent issue is gone. If it recurs, stop the server and run `pnpm dev:webpack`; webpack remains the fallback for MDX HMR issues.
 
 ## Architecture
 
@@ -181,7 +183,7 @@ The whole site is a single Nextra 4 catch-all route. There are no hand-written p
 
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
