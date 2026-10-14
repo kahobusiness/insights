@@ -9,12 +9,14 @@ This is a bilingual (English/Chinese) blog built with Nextra 4 and Next.js 16, d
 ## Development Commands
 
 ```bash
-pnpm dev      # Start dev server (runs `next dev --webpack` — see gotcha below)
+pnpm dev      # Start dev server with Turbopack
+pnpm dev:turbo # Explicit Turbopack alias
+pnpm dev:webpack # Start dev server with webpack as a fallback
 pnpm build    # Build for production (includes pagefind search index generation)
 pnpm start    # Start production server
 ```
 
-`pnpm dev` intentionally uses **webpack, not Turbopack**. Under Turbopack, editing an `.mdx` file triggers an incremental recompile that intermittently resolves a barrel-exported component (e.g. `Callout` from `nextra/components`, which Nextra force-adds to `optimizePackageImports`) to `undefined`, 500-ing the page with "Element type is invalid ... got: undefined" until a full restart. Webpack's MDX pipeline doesn't have this HMR race. Trade-off: slightly slower cold start.
+`pnpm dev` uses **Turbopack** by default. On Next.js 16.4.0 with Nextra 4.6.1, page loading and five consecutive MDX incremental updates with `Callout` passed local verification. Earlier Turbopack sessions intermittently resolved barrel-exported components (e.g. `Callout` from `nextra/components`, which Nextra force-adds to `optimizePackageImports`) to `undefined`, causing an "Element type is invalid ... got: undefined" 500 after MDX edits. The short verification does not prove that this intermittent issue is gone. If it recurs, stop the server and run `pnpm dev:webpack`; webpack remains the fallback for MDX HMR issues.
 
 ## Architecture
 
@@ -53,7 +55,7 @@ The whole site is a single Nextra 4 catch-all route. There are no hand-written p
 
 ### Build & config gotchas
 - **Do NOT add `turbopack.resolveAlias['next-mdx-import-source-file']` to `next.config.mjs`.** Nextra already aliases it to `@vercel/turbopack-next/mdx-import-source` (its HMR-stable MDX provider); overriding it with a raw `./mdx-components.js` path replaces that machinery and 500s on cold compile. This alias was removed — see `next.config.mjs` comment. (Dev on webpack sidesteps the Turbopack MDX HMR issues entirely; see Development Commands.)
-- `pnpm build` runs `next build` then `pagefind` to generate the client-side search index into `public/_pagefind` — search is broken in a plain `next build` without this step
+- `pnpm build` runs `next build` then `scripts/build-search.mjs` to generate the client-side search index into `public/_pagefind` — search is broken in a plain `next build` without this step. The script stages HTML with public URL paths from `.next/server/app` (ordinary builds) or `.next/server/route-cache/APP_PAGE/<source hash>/$/` (Next.js 16.4+ with a deployment adapter). It also copies the fresh index into `.next/output/static/_pagefind`, because the Vercel adapter copies `public/` before the post-build search step.
 - Package manager is **pnpm** locally and on Vercel, and **`pnpm-lock.yaml` is committed**. Vercel installs in CI mode (frozen lockfile), so any dependency change must regenerate the lockfile in the same commit or the build fails with `ERR_PNPM_OUTDATED_LOCKFILE`. The project env var `ENABLE_EXPERIMENTAL_COREPACK=1` (Production + Preview) pins Vercel to the `packageManager` version (pnpm 11.9.0); without it Vercel would pick pnpm 10 from the lockfile version, not 11. `pnpm-workspace.yaml` (not `.npmrc`, per pnpm 11) holds the dependency overrides (`zod: ~4.1.12`, `@xmldom/xmldom: ^0.9.12`), duplicated in `package.json` `overrides` as a safety net for npm — keep both in sync; the yaml comments explain each one. Nextra 4.6.1's `<Layout>` crashes the whole site under zod 4.2+ (a build that misses the override fails at prerender with `expected nonoptional, received undefined → at children`). Dependabot (`.github/dependabot.yml`) opens weekly grouped version-update PRs against `dev`; security updates always target `main`
 
 ### Path Alias
@@ -181,7 +183,7 @@ The whole site is a single Nextra 4 catch-all route. There are no hand-written p
 
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
