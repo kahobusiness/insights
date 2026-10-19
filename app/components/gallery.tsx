@@ -6,8 +6,8 @@ import Image from 'next/image'
 import type { StaticImageData } from 'next/image'
 import styles from './gallery.module.css'
 
-import LightGallery from 'lightgallery/react'
-import lgZoom from 'lightgallery/plugins/zoom'
+import { LightGallery, LightGalleryItem } from '@lightgallery/react'
+import Zoom from '@lightgallery/react/plugins/zoom'
 import 'lightgallery/css/lightgallery.css'
 import 'lightgallery/css/lg-zoom.css'
 
@@ -25,7 +25,7 @@ const Gallery: React.FC<GalleryProps> = ({ images }) => {
     <div className={styles.gallery}>
       <LightGallery
         licenseKey='852-0769-020-9527'
-        plugins={[lgZoom]}
+        plugins={[Zoom]}
         backdropDuration={150}
         mode="lg-fade"
         speed={300}
@@ -33,8 +33,12 @@ const Gallery: React.FC<GalleryProps> = ({ images }) => {
         mousewheel={true}
       //更多 LightGallery 设置见：https://www.lightgalleryjs.com/docs/settings/
       >
-        {images.map((img, idx) => (
-          <a key={img.src} data-src={img.src}>
+        {images.map((img) => (
+          <LightGalleryItem
+            key={img.src}
+            item={{ src: img.src, alt: getAltFromSrc(img.src), lgSize: `${img.width}-${img.height}` }}
+            href={img.src}
+          >
             <Image
               src={img}
               alt={getAltFromSrc(img.src)}
@@ -43,7 +47,7 @@ const Gallery: React.FC<GalleryProps> = ({ images }) => {
               placeholder='blur'
               blurDataURL={img.blurDataURL}
             />
-          </a>
+          </LightGalleryItem>
         ))}
       </LightGallery>
     </div>
