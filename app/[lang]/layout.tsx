@@ -4,8 +4,7 @@ import { getPageMap } from 'nextra/page-map'
 import { getDictionary, getDirection } from '../../get-dictionary'
 import { notFound } from 'next/navigation'
 import { i18n } from '../../i18n-config'
-import { Analytics } from '@vercel/analytics/next'
-import { SpeedInsights } from '@vercel/speed-insights/next'
+import { SiteInsights } from '../components/site-insights'
 import { NavbarAutoHide } from '../components/navbar-auto-hide'
 import { SidebarAutoHide } from '../components/sidebar-auto-hide'
 import { TocAutoHide } from '../components/toc-auto-hide'
@@ -124,9 +123,12 @@ export default async function RootLayout({ children, params }: LayoutProps) {
           <NavbarAutoHide />
           <SidebarAutoHide />
           <TocAutoHide />
-          <Analytics />
-          <SpeedInsights />
         </Layout>
+        {/* Exclude local development and Vercel preview visits from blog metrics. */}
+        <SiteInsights enabled={
+          process.env.NODE_ENV === 'production' &&
+          (!process.env.VERCEL_ENV || process.env.VERCEL_ENV === 'production')
+        } />
       </body>
     </html>
   )
