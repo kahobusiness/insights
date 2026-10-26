@@ -24,7 +24,8 @@ const Gallery: React.FC<GalleryProps> = ({ images }) => {
   return (
     <div className={styles.gallery}>
       <LightGallery
-        licenseKey='852-0769-020-9527'
+        // Temporary evaluation key from the official React docs; replace with the v3 license when confirmed.
+        licenseKey='0000-0000-000-0000'
         plugins={[Zoom]}
         backdropDuration={150}
         mode="lg-fade"
