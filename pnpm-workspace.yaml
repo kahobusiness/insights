@@ -3,22 +3,26 @@
 # pnpm-lock.yaml 已提交：改动依赖后必须在同一次提交里重新生成 lockfile，
 # 否则 Vercel（CI 模式默认 frozen-lockfile）会以 ERR_PNPM_OUTDATED_LOCKFILE 失败。
 
-# nextra / nextra-theme-docs 4.6.1 的 <Layout> 依赖旧版 zod 中 z.custom
-# 对缺失字段宽容的行为；zod 4.2+ 改了语义会让整站渲染崩。锁在 4.1.x 兼容档。
-# 待 nextra 发布修复 zod 4.4 兼容的新版后可移除此 override。
-# 注意：同一 override 也写在 package.json 的 overrides 字段里作为 npm 兜底，两处必须保持一致。
+# Zod <4.6.6 is affected by GHSA-mrhx-c7xc-m3w5. Keep the secure patch line.
+# nextra-theme-docs 4.6.1 needs the persisted patch below for Zod 4.4+.
+# Backport of https://github.com/shuding/nextra/pull/4990 (merged, not yet on npm).
+# Remove the patch after upgrading to a release containing that fix.
+# Keep package.json overrides in sync as an npm fallback for version resolution.
+# The compatibility patch itself requires pnpm, the project/CI package manager.
 #
 # @xmldom/xmldom：speech-rule-engine 4.1.4（mathjax-full 3.2.2 → better-react-mathjax → nextra）把它精确
 # 固定在 0.9.10，2026-08 的 13 条 xmldom 安全告警修复在 0.9.12。站点用 KaTeX 渲染公式，MathJax 链
 # 实际不会加载，但拉高版本可以清掉 Dependabot 告警。待 nextra 升到 better-react-mathjax 3 / @mathjax/src 4 后可移除。
 overrides:
-  zod: ~4.1.12
+  zod: ~4.6.7
   '@xmldom/xmldom': ^0.9.12
 
-# Security fixes for transitive dependencies; keep package.json overrides in sync.
-# KaTeX also arrives through Nextra, Mermaid, and the remark/rehype math plugins.
+  # Security fixes for transitive dependencies; keep package.json overrides in sync.
+  # KaTeX also arrives through Nextra, Mermaid, and the remark/rehype math plugins.
   sharp: ^0.35.5
   dompurify: ^3.4.16
   katex: ^0.19.0
   source-map-js: ^1.2.2
   brace-expansion: ^5.0.12
+patchedDependencies:
+  nextra-theme-docs@4.6.1: patches/nextra-theme-docs@4.6.1.patch
