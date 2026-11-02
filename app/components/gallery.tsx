@@ -5,6 +5,7 @@
 import Image from 'next/image'
 import type { StaticImageData } from 'next/image'
 import styles from './gallery.module.css'
+import { GALLERY_IMAGE_SIZES } from '../lib/image-sizes'
 
 import { LightGallery, LightGalleryItem } from '@lightgallery/react'
 import Zoom from '@lightgallery/react/plugins/zoom'
@@ -45,6 +46,7 @@ const Gallery: React.FC<GalleryProps> = ({ images }) => {
               alt={getAltFromSrc(img.src)}
               width={img.width}
               height={img.height}
+              sizes={GALLERY_IMAGE_SIZES}
               placeholder='blur'
               blurDataURL={img.blurDataURL}
             />

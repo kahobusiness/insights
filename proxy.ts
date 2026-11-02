@@ -5,7 +5,6 @@ import { match as matchLocale } from "@formatjs/intl-localematcher";
 import Negotiator from "negotiator";
 
 const LOCALE_COOKIE_NAME = "NEXT_LOCALE";
-const STATIC_FILE_REGEX = /\.(png|jpe?g|gif|svg|webp|ico|bmp|txt|xml|json|pdf|woff2?|ttf|eot|mp4|mp3|zip|rar)$/i;
 
 function getLocale(request: NextRequest): string {
   const cookieLocale = request.cookies.get(LOCALE_COOKIE_NAME)?.value;
@@ -18,22 +17,13 @@ function getLocale(request: NextRequest): string {
   }
 
   // 从请求头自动检测语言
-  const headers: Record<string, string> = {};
-  request.headers.forEach((v, k) => (headers[k] = v));
+  const headers = { 'accept-language': request.headers.get('accept-language') ?? '' };
   const languages = new Negotiator({ headers }).languages([...i18n.locales]);
   return matchLocale(languages, i18n.locales, i18n.defaultLocale);
 }
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // 跳过静态资源
-  if (
-    pathname.startsWith('/_pagefind') ||
-    STATIC_FILE_REGEX.test(pathname)
-  ) {
-    return NextResponse.next();
-  }
 
   // 语言根路径（/en、/zh）→ 保留路径里的语言，永久跳到对应 say-hello。
   //   目标确定，用 308；此前误用 getLocale 重新猜语言，导致 /zh 被跳到 /en/say-hello。
@@ -43,9 +33,10 @@ export function proxy(request: NextRequest) {
   );
   if (pathname === "/" || rootLocale) {
     const locale = rootLocale ?? getLocale(request);
-    const url = new URL(`/${locale}/say-hello`, request.url);
+    const url = new URL(request.url);
+    url.pathname = `/${locale}/say-hello`;
     const response = NextResponse.redirect(url, rootLocale ? 308 : 307);
-    response.cookies.set(LOCALE_COOKIE_NAME, locale, { path: "/" });
+    rememberLocale(request, response, locale);
     return response;
   }
 
@@ -55,9 +46,10 @@ export function proxy(request: NextRequest) {
   );
   if (missingLocale) {
     const locale = getLocale(request);
-    const url = new URL(`/${locale}${pathname.startsWith("/") ? "" : "/"}${pathname}`, request.url);
+    const url = new URL(request.url);
+    url.pathname = `/${locale}${pathname}`;
     const response = NextResponse.redirect(url);
-    response.cookies.set(LOCALE_COOKIE_NAME, locale, { path: "/" });
+    rememberLocale(request, response, locale);
     return response;
   }
 
@@ -67,11 +59,20 @@ export function proxy(request: NextRequest) {
   );
   if (matchedLocale) {
     const response = NextResponse.next();
-    response.cookies.set(LOCALE_COOKIE_NAME, matchedLocale, { path: "/" });
+    rememberLocale(request, response, matchedLocale);
     return response;
   }
 }
 
+function rememberLocale(request: NextRequest, response: NextResponse, locale: string) {
+  // Avoid re-sending an unchanged cookie on every page and RSC request.
+  if (request.cookies.get(LOCALE_COOKIE_NAME)?.value !== locale) {
+    response.cookies.set(LOCALE_COOKIE_NAME, locale, { path: "/" });
+  }
+}
+
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  // Exclude assets before invoking Proxy, rather than paying for an invocation
+  // just to return next(). _vercel includes Analytics and Speed Insights.
+  matcher: ["/((?!api(?:/|$)|_next(?:/|$)|_vercel(?:/|$)|_pagefind(?:/|$)|\\.well-known(?:/|$)|.*\\.(?:[pP][nN][gG]|[jJ][pP][eE]?[gG]|[gG][iI][fF]|[sS][vV][gG]|[wW][eE][bB][pP]|[aA][vV][iI][fF]|[iI][cC][oO]|[bB][mM][pP]|[tT][xX][tT]|[xX][mM][lL]|[jJ][sS][oO][nN]|[pP][dD][fF]|[wW][oO][fF][fF]2?|[tT][tT][fF]|[eE][oO][tT]|[mM][pP]4|[mM][pP]3|[zZ][iI][pP]|[rR][aA][rR]|[cC][sS][sS]|[jJ][sS]|[mM][jJ][sS]|[mM][aA][pP])$).*)"],
 };
