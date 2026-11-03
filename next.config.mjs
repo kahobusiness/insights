@@ -1,10 +1,9 @@
 import nextra from 'nextra'
-import remarkMathStyles from './scripts/remark-math-styles.mjs'
+import withMathStyles from './scripts/with-math-styles.mjs'
 
 // Set up Nextra with its configuration
 const withNextra = nextra({
     latex: true,
-    mdxOptions: { remarkPlugins: [remarkMathStyles] },
     // Prefix internal links with the active locale (/zh/..., /en/...). Without this,
     // Nextra emits locale-less hrefs (/ai-era/...) that proxy.ts 307-redirects to a
     // locale. Googlebot (no cookie → default locale) then crawls a graph made almost
@@ -14,7 +13,7 @@ const withNextra = nextra({
 })
 
 // Export the final Next.js config with Nextra included
-export default withNextra({
+export default withMathStyles(withNextra({
     // Avoid the HTML -> stylesheet request waterfall on a first visit. Styles
     // arrive with the prerendered HTML; full reloads transfer more HTML, while
     // Next keeps using cached stylesheets for subsequent client navigations.
@@ -31,4 +30,4 @@ export default withNextra({
         locales: ['en', 'zh'],
         defaultLocale: 'en'
     }
-})
+}))
