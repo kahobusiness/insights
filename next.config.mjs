@@ -1,4 +1,5 @@
 import nextra from 'nextra'
+import withMathStyles from './scripts/with-math-styles.mjs'
 
 // Set up Nextra with its configuration
 const withNextra = nextra({
@@ -12,7 +13,11 @@ const withNextra = nextra({
 })
 
 // Export the final Next.js config with Nextra included
-export default withNextra({
+export default withMathStyles(withNextra({
+    // Avoid the HTML -> stylesheet request waterfall on a first visit. Styles
+    // arrive with the prerendered HTML; full reloads transfer more HTML, while
+    // Next keeps using cached stylesheets for subsequent client navigations.
+    experimental: { inlineCss: true },
     // ... Add regular Next.js options here
     // NOTE: do NOT add a `turbopack.resolveAlias['next-mdx-import-source-file']`
     // override here. Nextra already aliases it to `@vercel/turbopack-next/mdx-import-source`
@@ -25,4 +30,4 @@ export default withNextra({
         locales: ['en', 'zh'],
         defaultLocale: 'en'
     }
-})
+}))

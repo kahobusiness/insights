@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { RECENT_POST_IMAGE_SIZES } from '../lib/image-sizes'
 
 import styles from './recent-posts.module.css'
 
@@ -113,7 +114,7 @@ export async function RecentPosts({ locale, limit = 6 }: RecentPostsProps) {
                 width={192}
                 height={108}
                 className={styles.cover}
-                sizes="(max-width: 640px) 90vw, 192px"
+                sizes={RECENT_POST_IMAGE_SIZES}
               />
             </Link>
           )}
