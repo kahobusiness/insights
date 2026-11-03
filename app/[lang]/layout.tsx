@@ -9,13 +9,13 @@ import { NavbarAutoHide } from '../components/navbar-auto-hide'
 import { SidebarAutoHide } from '../components/sidebar-auto-hide'
 import { TocAutoHide } from '../components/toc-auto-hide'
 import { NavbarLocaleSwitch, NavbarThemeSwitch } from '../components/navbar-switches'
+import { LocalePreference } from '../components/locale-preference'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import type { Locale } from '../../i18n-config'
 
 // Required for theme styles, previously was imported under the hood
 import 'nextra-theme-docs/style.css'
-import 'katex/dist/katex.min.css'
 // Project-level overrides — must come after the theme stylesheet so its rules
 // can override Nextra's defaults.
 import '../globals.css'
@@ -78,6 +78,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <body>
+        <LocalePreference locale={lang} />
         <Layout
           // banner={<Banner storageKey="some-key">{dictionary.banner}</Banner>} // 禁用 banner
           docsRepositoryBase="https://github.com/kahobusiness/insights"
@@ -132,4 +133,4 @@ export default async function RootLayout({ children, params }: LayoutProps) {
       </body>
     </html>
   )
-} 
+}

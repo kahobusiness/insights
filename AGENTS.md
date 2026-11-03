@@ -31,14 +31,14 @@ The whole site is a single Nextra 4 catch-all route. There are no hand-written p
 ### Internationalization
 - Locales: `en` (default), `zh`
 - `i18n-config.ts` - Locale configuration and types (imported by routing, sitemap, and metadata code — the single source of truth for the locale list)
-- `proxy.ts` - Handles locale detection (cookie → browser preference), redirects root to `/say-hello` (Next.js 16 proxy convention)
+- `proxy.ts` - Handles locale detection (cookie → browser preference) for locale-less URLs and redirects locale roots to `/say-hello` (Next.js 16 proxy convention). Locale-prefixed content bypasses Proxy so the CDN can serve it directly; `app/components/locale-preference.tsx` remembers the locale on real browser navigations, not prefetches. With JavaScript disabled, explicit locale URLs still work, but direct article visits do not update the preference cookie
 - `dictionaries/` - UI strings for each locale (JSON files)
 - `get-dictionary.ts` - Server-only dictionary loader
 
 ### Routing & rendering flow
 - Dynamic route: `app/[lang]/[[...mdxPath]]/page.tsx` handles all MDX pages via Nextra's `importPage`; `generateStaticParams` pre-renders every path
 - Root path and locale roots redirect to `/{locale}/say-hello`; `proxy.ts` auto-prepends locale to paths missing it
-- `app/[lang]/layout.tsx` wraps everything in the Nextra `Layout` (Navbar/Footer/Search/Banner), loads theme + KaTeX + `globals.css` (order matters — project CSS must come last), and mounts the auto-hide chrome components. It rejects non-locale first segments with `notFound()` (e.g. DevTools probing `/.well-known/...`) before calling `getPageMap`
+- `app/[lang]/layout.tsx` wraps everything in the Nextra `Layout` (Navbar/Footer/Search/Banner), loads theme + `globals.css` (order matters — project CSS must come last), and mounts the auto-hide chrome components. It rejects non-locale first segments with `notFound()` (e.g. DevTools probing `/.well-known/...`) before calling `getPageMap`
 
 ### SEO pipeline (spread across three files — change them together)
 - `page.tsx` emits per-page **JSON-LD**: articles render `BlogPosting`, while top-level non-articles listed in `NON_ARTICLE_SLUGS` (`say-hello`, `logs`, `japan-gallery`) render `WebPage` to avoid missing-`datePublished` warnings. It also builds `canonical` + `hreflang` alternates in `generateMetadata`
@@ -49,9 +49,10 @@ The whole site is a single Nextra 4 catch-all route. There are no hand-written p
 
 ### MDX components & interactivity
 - `mdx-components.js` extends the Nextra theme and **globally registers** `ImageRow` and `RecentPosts` (usable in any `.mdx` without import). Its `Wrapper` translates author-controlled `metadata.publishedAt` into Nextra's `timestamp` (see commit gate check 6 for why `timestamp` can't be used directly)
-- Heavier interactive widgets (`CostBatchSimulator`, `TComputeMemorySimulator`, both recharts-based) are **imported per-file** in the MDX that uses them via the `@app/*` alias, not globally registered
-- `app/components/gallery.tsx` - LightGallery-based image gallery for photo pages
-- LaTeX is enabled (`latex: true` in `next.config.mjs`), rendered with KaTeX
+- Heavier interactive widgets (`CostBatchSimulator`, `TComputeMemorySimulator`, both recharts-based) are **imported per-file** in the MDX that uses them via the `@app/*` alias, not globally registered. Their public component files are client-side `next/dynamic` boundaries; implementations live in `*-impl.tsx`. Keep SSR enabled. Directly importing their implementations from MDX pulls the heavy libraries back into the shared catch-all bundle
+- `app/components/gallery.tsx` - The same dynamic boundary for the LightGallery implementation in `gallery-impl.tsx`; photos remain server-rendered
+- LaTeX is enabled (`latex: true` in `next.config.mjs`), rendered with KaTeX. `scripts/remark-math-styles.mjs` adds the globally registered `MathStyles` component only when actual math nodes are present; its dynamic boundary loads KaTeX CSS for those pages. Do not restore a global KaTeX CSS import in the layout
+- `experimental.inlineCss` in `next.config.mjs` sends initial CSS with prerendered HTML to reduce the first-visit render-blocking waterfall. It increases full-reload HTML size; Next uses external stylesheets for subsequent client navigations. Evaluate both cold and cached visits when changing this option
 
 ### Build & config gotchas
 - **Do NOT add `turbopack.resolveAlias['next-mdx-import-source-file']` to `next.config.mjs`.** Nextra already aliases it to `@vercel/turbopack-next/mdx-import-source` (its HMR-stable MDX provider); overriding it with a raw `./mdx-components.js` path replaces that machinery and 500s on cold compile. This alias was removed — see `next.config.mjs` comment. (Dev on webpack sidesteps the Turbopack MDX HMR issues entirely; see Development Commands.)

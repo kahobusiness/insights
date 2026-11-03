@@ -2,6 +2,7 @@ import { useMDXComponents as getThemeComponents } from 'nextra-theme-docs'
 import { ImageRow } from '@app/components/image-row'
 import { RecentPosts } from '@app/components/recent-posts'
 import { ARTICLE_IMAGE_SIZES, LAZY_ARTICLE_IMAGE_SIZES } from '@app/lib/image-sizes'
+import { MathStyles } from '@app/components/math-styles-loader'
 
 const themeComponents = getThemeComponents()
 const ThemeWrapper = themeComponents.wrapper
@@ -30,6 +31,7 @@ export function useMDXComponents(components) {
     img: ResponsiveImage,
     ImageRow,
     RecentPosts,
+    MathStyles,
     ...components
   }
 }

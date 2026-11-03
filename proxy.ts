@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { i18n } from "./i18n-config";
-import { match as matchLocale } from "@formatjs/intl-localematcher";
 import Negotiator from "negotiator";
 
 const LOCALE_COOKIE_NAME = "NEXT_LOCALE";
@@ -18,8 +17,8 @@ function getLocale(request: NextRequest): string {
 
   // 从请求头自动检测语言
   const headers = { 'accept-language': request.headers.get('accept-language') ?? '' };
-  const languages = new Negotiator({ headers }).languages([...i18n.locales]);
-  return matchLocale(languages, i18n.locales, i18n.defaultLocale);
+  // Negotiator already returns only supported locales in preference order.
+  return new Negotiator({ headers }).language([...i18n.locales]) ?? i18n.defaultLocale;
 }
 
 export function proxy(request: NextRequest) {
@@ -53,15 +52,7 @@ export function proxy(request: NextRequest) {
     return response;
   }
 
-  // 路径已包含 locale，设置 cookie
-  const matchedLocale = i18n.locales.find(
-    locale => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
-  );
-  if (matchedLocale) {
-    const response = NextResponse.next();
-    rememberLocale(request, response, matchedLocale);
-    return response;
-  }
+  return NextResponse.next();
 }
 
 function rememberLocale(request: NextRequest, response: NextResponse, locale: string) {
@@ -72,7 +63,9 @@ function rememberLocale(request: NextRequest, response: NextResponse, locale: st
 }
 
 export const config = {
-  // Exclude assets before invoking Proxy, rather than paying for an invocation
-  // just to return next(). _vercel includes Analytics and Speed Insights.
-  matcher: ["/((?!api(?:/|$)|_next(?:/|$)|_vercel(?:/|$)|_pagefind(?:/|$)|\\.well-known(?:/|$)|.*\\.(?:[pP][nN][gG]|[jJ][pP][eE]?[gG]|[gG][iI][fF]|[sS][vV][gG]|[wW][eE][bB][pP]|[aA][vV][iI][fF]|[iI][cC][oO]|[bB][mM][pP]|[tT][xX][tT]|[xX][mM][lL]|[jJ][sS][oO][nN]|[pP][dD][fF]|[wW][oO][fF][fF]2?|[tT][tT][fF]|[eE][oO][tT]|[mM][pP]4|[mM][pP]3|[zZ][iI][pP]|[rR][aA][rR]|[cC][sS][sS]|[jJ][sS]|[mM][jJ][sS]|[mM][aA][pP])$).*)"],
+  // Locale-prefixed content needs no negotiation: serve it directly from CDN.
+  // Keep /en and /zh roots matched for their redirect to say-hello. These
+  // literal locales must stay in sync with i18n-config.ts (Next requires a
+  // statically analyzable matcher).
+  matcher: ["/((?!(?:en|zh)/.+|api(?:/|$)|_next(?:/|$)|_vercel(?:/|$)|_pagefind(?:/|$)|\\.well-known(?:/|$)|.*\\.(?:[pP][nN][gG]|[jJ][pP][eE]?[gG]|[gG][iI][fF]|[sS][vV][gG]|[wW][eE][bB][pP]|[aA][vV][iI][fF]|[iI][cC][oO]|[bB][mM][pP]|[tT][xX][tT]|[xX][mM][lL]|[jJ][sS][oO][nN]|[pP][dD][fF]|[wW][oO][fF][fF]2?|[tT][tT][fF]|[eE][oO][tT]|[mM][pP]4|[mM][pP]3|[zZ][iI][pP]|[rR][aA][rR]|[cC][sS][sS]|[jJ][sS]|[mM][jJ][sS]|[mM][aA][pP])$).*)"],
 };
