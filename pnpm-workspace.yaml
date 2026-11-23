@@ -24,5 +24,7 @@ overrides:
   katex: ^0.19.1
   source-map-js: ^1.2.2
   brace-expansion: ^5.0.12
+  # GHSA-g3hv-75wg-m249: glob pattern amplification in minimatch <11.0.1.
+  minimatch: ^11.0.1
 patchedDependencies:
   nextra-theme-docs@4.6.1: patches/nextra-theme-docs@4.6.1.patch
